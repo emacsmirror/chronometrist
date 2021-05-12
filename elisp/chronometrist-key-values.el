@@ -4,7 +4,7 @@
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Keywords: calendar
 ;; Homepage: gemini://tilde.team/~contrapunctus/software.gmi
-;; Package-Requires: ((chronometrist "0.5.0") (choice "0.0.1"))
+;; Package-Requires: ((chronometrist "0.7.0"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.

@@ -5,6 +5,7 @@
 ** TODO [50%]
 1. [X] Remove calls from =chronometrist.org= to make this an optional dependency.
 2. [ ] key-values and tags should work regardless of what hook they're called from, including =chronometrist-before-in-functions=
+3. [ ] investigate =rmc.el= (read multiple choice) as an alternative to =choice.el=
 ** About this file
 *** Definition metadata
 Each definition has its own heading. The type of definition is stored in tags -
@@ -75,7 +76,7 @@ Each of these has a corresponding function to clear it and fill it with values -
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Keywords: calendar
 ;; Homepage: gemini://tilde.team/~contrapunctus/software.gmi
-;; Package-Requires: ((chronometrist "0.5.0") (choice "0.0.1"))
+;; Package-Requires: ((chronometrist "0.5.0"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.
@@ -102,7 +103,6 @@ Each of these has a corresponding function to clear it and fill it with values -
 #+BEGIN_SRC emacs-lisp
 ;;; Code:
 (require 'chronometrist)
-(require 'choice)
 #+END_SRC
 ** Code
 *** Common
@@ -709,7 +709,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
       (chronometrist-key-choice-prompt "Which keys?"))
     t))
 #+END_SRC
-**** WIP chronometrist-kv-prompt-helper                                     :function:
+**** WIP chronometrist-kv-prompt-helper                                        :function:
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-kv-prompt-helper (mode task)
   (let ((table (case mode
@@ -721,21 +721,26 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 **** WIP unified-choice                                      :hook:writer:
 1. [ ] Improve appearance
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-key-values-unified-choice (task)
+(defun chronometrist-key-values-unified-prompt (task)
   "Query user for tags and key-values to be added for TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
   (let ((key-values (chronometrist-loop-file for plist in chronometrist-file
                       when (equal (plist-get plist :name) task)
-                      collect (chronometrist-plist-remove plist :name :start :stop)
+                      collect
+                      (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
+                        (when plist (format "%S" plist)))
                       into key-value-plists
                       finally return
                       (--> (seq-filter #'identity key-value-plists)
                         (cl-remove-duplicates it :test #'equal :from-end t)))))
     (if (null key-values)
         (progn (chronometrist-tags-add) (chronometrist-kv-add))
-      (chronometrist-defchoice "unified" :key-values key-values)
-      (chronometrist-unified-choice-prompt  (format "Key-values for %s" task))))
+      (chronometrist-sexp-replace-last
+       (chronometrist-plist-update (chronometrist-sexp-last)
+                       (read (completing-read (format "Key-values for %s: " task)
+                                              key-values))))))
   t)
+
 #+END_SRC
 ** Provide
 #+BEGIN_SRC emacs-lisp
