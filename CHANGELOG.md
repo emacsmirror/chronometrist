@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2021-05-14
+### Added
+* key-values - `chronometrist-key-values-unified-prompt`, which uses `completing-read`. A more streamlined way to enter key-values, for those comfortable with entering/editing s-expressions directly.
+### Removed
+* key-values - all `choice.el`-based prompts have been removed.
+
 ## [0.7.0] - 2021-05-07
 ### Added
 * Single key prompts for key-values - `chronometrist-tag-choice`, and `chronometrist-key-values-unified-choice`, with more to come.

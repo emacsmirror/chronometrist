@@ -657,7 +657,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
    * [X] basic implementation
    * [ ] make it more aesthetically pleasing in case of long suggestion strings
 **** defchoice                                                :function:
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-defchoice (name type list)
   "Construct and evaluate a `defchoice' form.
   NAME should be a string - `defchoice' will be called with chronometrist-NAME.
@@ -684,7 +684,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
                    ("s" nil "skip")))))
 #+END_SRC
 **** tag-choice                                               :function:
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-tag-choice (task)
   "Query user for tags to be added to TASK.
   Return t, to permit use in `chronometrist-before-out-functions'."
@@ -697,7 +697,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
     t))
 #+END_SRC
 **** WIP chronometrist-key-choice                                        :hook:writer:
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-key-choice (task)
   "Query user for keys to be added to TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
@@ -718,7 +718,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
                  (:value chronometrist-value-history)))
         ())))
 #+END_SRC
-**** WIP unified-choice                                      :hook:writer:
+**** WIP unified-prompt                                      :hook:writer:
 1. [ ] Improve appearance
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-key-values-unified-prompt (task)
