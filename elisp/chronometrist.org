@@ -16,7 +16,7 @@ I hope this book—when completed—passes Tim Daly's [[https://www.youtube.com/
 :DESCRIPTION: The design, the implementation, and a little history
 :END:
 *** Why I wrote Chronometrist
-It probably started of by me frequently wondering - what did I do all day? How much time have I spent doing X? Call it a mix of introspection and curiosity. It is also a tool to help me stay focused on a single task at a time, and to not go overboard and work on something for 7 hours straight.
+It probably started off with a desire for introspection and self-awareness - what did I do all day? How much time have I spent doing X? It is also a tool to help me stay focused on a single task at a time, and to not go overboard and work on something for 7 hours straight.
 
 At first I tried an Android application, "A Time Tracker". The designs of Chronometrist's main buffer and the =chronometrist-report= buffer still resemble that of A Time Tracker. However, every now and then I'd forget to start or stop tracking. Each time I did, I had to open an SQLite database and edit UNIX timestamps to correct it, which was not fun :\
 
