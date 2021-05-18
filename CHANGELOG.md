@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+### Changed
+* If `chronometrist-file` is being edited, `chronometrist-timer` will not refresh the buffer or run `chronometrist-timer-hook`, preventing errors resulting from `read`ing of incomplete data and easing editing of the file.
+
 ## [0.7.1] - 2021-05-14
 ### Added
 * key-values - `chronometrist-key-values-unified-prompt`, which uses `completing-read`. A more streamlined way to enter key-values, for those comfortable with entering/editing s-expressions directly.
