@@ -1320,6 +1320,7 @@ If REPLACE is non-nil, replace the last event with PLIST."
 **** last-date                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-events-last-date ()
+  "Return an ISO-8601 date string for the latest date present in `chronometrist-events'."
   (--> (hash-table-keys chronometrist-events)
        (last it)
        (car it)))
@@ -1806,6 +1807,7 @@ ARG should be the new update interval, in seconds."
 *** Frontends
 All three of these use =(info "(elisp)Tabulated List Mode")=. Each of them also contains a "-print-non-tabular" function, which prints the non-tabular parts of the buffer.
 
+1. [ ] There is some duplication between the three frontend commands, e.g. all three act as toggles for their respective buffers, point preservation, etc.
 **** Chronometrist
 :PROPERTIES:
 :CUSTOM_ID: program-frontend-chronometrist
@@ -2925,13 +2927,141 @@ If ARG is a numeric argument, go forward that many times."
     (kill-buffer)
     (chronometrist-statistics t)))
 #+END_SRC
+**** Details
+=chronometrist= displays the total time spent on a task - but what were the details? That's where =chronometrist-details= comes in - to display details of recorded time intervals for a given day, in a format terser and more informative than the plists in the file.
+
+1. Handle active task (no =:stop=).
+2. Permit forward/backward scrolling through dates + input a specific date.
+3. Reexamine how to toggle display of key-values and tags.
+
+***** details                                              :custom:group:
+#+BEGIN_SRC emacs-lisp
+(defgroup chronometrist-details nil
+  "Details buffer for the `chronometrist' time tracker."
+  :group 'chronometrist)
+#+END_SRC
+
+***** buffer-name                                       :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-details-buffer-name "*chronometrist-details*"
+  "Name of buffer created by `chronometrist-details'.")
+
+#+END_SRC
+
+***** display-tags                                      :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-details-display-tags "%s"
+  "How to display tags in `chronometrist-details' buffers.
+Value can be
+nil, meaning do not display tags, or
+a format string consuming a single argument passed to `format', or
+a function of one argument (the tags, as a list of symbols),
+which must return the string to be displayed.
+
+To disable display of tags, customize `chronometrist-details-table-format'.")
+#+END_SRC
+
+***** display-key-values                                :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-details-display-key-values nil
+  "How to display tags in `chronometrist-details' buffers.
+Value can be
+nil, meaning do not display key-values, or
+a format string consuming a single argument passed to `format', or
+a function of one argument (the key-values as a plist),
+which must return the string to be displayed.
+
+To disable display of key-values, customize `chronometrist-details-table-format'.")
+#+END_SRC
+
+***** FIXME table-format                                :custom:variable:
+1. Index column does not sort correctly - see =tabulated-list-format=
+
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-details-table-format
+  [("#" 3 t)
+   ("Task" 20 t)
+   ("Tags" 20 t)
+   ("Duration" 20 t :right-align t :pad-right 3)
+   ("Time" 10 t)]
+  "Vector specifying format of `chronometrist-details' buffer.
+See `tabulated-list-format'.")
+#+END_SRC
+
+***** entries                                                  :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details-entries ()
+  "Return entries to be displayed in the `chronometrist-details' buffer.
+Return value is a list as specified by `tabulated-list-entries'."
+  (cl-loop with index = 1
+    for plist in (gethash (chronometrist-events-last-date) chronometrist-events) collect
+    (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
+            (tags (if tags
+                      (pcase chronometrist-details-display-tags
+                        ((pred stringp)
+                         (format chronometrist-details-display-tags tags))
+                        ((pred functionp)
+                         (funcall 'chronometrist-details-display-tags tags)))
+                    ""))
+            (start         (chronometrist-iso-timestamp-to-ts start))
+            (stop          (chronometrist-iso-timestamp-to-ts stop))
+            (interval      (floor (ts-diff stop start)))
+            (hours         (/ interval 60 60))
+            (minutes       (% (/ interval 60) 60))
+            (hour-string   (if (= 1 hours) "hour" "hours"))
+            (minute-string (if (= 1 minutes) "minute" "minutes")))
+      (list index
+            (vconcat (vector (format "%s" index)
+                             name)
+                     (when chronometrist-details-display-tags
+                       (vector tags))
+                     (vector
+                      (if (zerop hours)
+                          (format "%s %s" minutes minute-string)
+                        (format "%s %s, %s %s"
+                                hours hour-string
+                                minutes minute-string)))
+                     (vector
+                      (format "from %s to %s"
+                              (ts-format "%H:%M" start)
+                              (ts-format "%H:%M" stop))))))
+    do (cl-incf index)))
+#+END_SRC
+
+***** chronometrist-details-mode                                         :major:mode:
+#+BEGIN_SRC emacs-lisp
+(define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
+  "Major mode for `chronometrist-details'."
+  (make-local-variable 'tabulated-list-format)
+  (setq tabulated-list-format chronometrist-details-table-format)
+  (make-local-variable 'tabulated-list-entries)
+  (setq tabulated-list-entries 'chronometrist-details-entries)
+  (make-local-variable 'tabulated-list-sort-key)
+  (tabulated-list-init-header)
+  (run-hooks 'chronometrist-mode-hook))
+#+END_SRC
+
+***** chronometrist-details                                                 :command:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details ()
+  (interactive)
+  (let ((buffer (get-buffer-create chronometrist-details-buffer-name))
+        (window (save-excursion
+                  (get-buffer-window chronometrist-details-buffer-name t))))
+    (cond (window (kill-buffer chronometrist-details-buffer-name))
+          (t (with-current-buffer buffer
+               (switch-to-buffer buffer)
+               (chronometrist-details-mode)
+               (tabulated-list-print))))))
+#+END_SRC
+
 *** Provide
 #+BEGIN_SRC emacs-lisp
 (provide 'chronometrist)
 
 ;;; chronometrist.el ends here
 #+END_SRC
-** Local Variables
+** Local Variables                                                :noexport:
 # Local Variables:
 # org-html-self-link-headlines: t
 # eval: (visual-fill-column-mode -1)
