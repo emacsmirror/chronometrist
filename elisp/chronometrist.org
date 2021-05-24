@@ -3015,20 +3015,19 @@ Return value is a list as specified by `tabulated-list-entries'."
             (hour-string   (if (= 1 hours) "hour" "hours"))
             (minute-string (if (= 1 minutes) "minute" "minutes")))
       (list index
-            (vconcat (vector (format "%s" index)
-                             name)
+            (vconcat `(,(format "%s" index) ,name)
                      (when chronometrist-details-display-tags
                        (vector tags))
-                     (vector
-                      (if (zerop hours)
-                          (format "%s %s" minutes minute-string)
-                        (format "%s %s, %s %s"
-                                hours hour-string
-                                minutes minute-string)))
-                     (vector
-                      (format "from %s to %s"
-                              (ts-format "%H:%M" start)
-                              (ts-format "%H:%M" stop))))))
+                     `(,(cond ((zerop hours)
+                               (format "%s %s" minutes minute-string))
+                              ((zerop minutes)
+                               (format "%s %s" hours hour-string))
+                              (t (format "%s %s, %s %s"
+                                         hours hour-string
+                                         minutes minute-string))))
+                     `(,(format "from %s to %s"
+                                (ts-format "%H:%M" start)
+                                (ts-format "%H:%M" stop))))))
     do (cl-incf index)))
 #+END_SRC
 
