@@ -3003,8 +3003,12 @@ Return value is a list as specified by `tabulated-list-entries'."
                         ((pred functionp)
                          (funcall 'chronometrist-details-display-tags tags)))
                     ""))
-            (start         (chronometrist-iso-timestamp-to-ts start))
-            (stop          (chronometrist-iso-timestamp-to-ts stop))
+            ;; resetting seconds with `ts-apply' is necessary to
+            ;; prevent situations like "1 hour  from 00:08 to 01:09"
+            (start         (ts-apply :second 0
+                                     (chronometrist-iso-timestamp-to-ts start)))
+            (stop          (ts-apply :second 0
+                                     (chronometrist-iso-timestamp-to-ts stop)))
             (interval      (floor (ts-diff stop start)))
             (hours         (/ interval 60 60))
             (minutes       (% (/ interval 60) 60))
