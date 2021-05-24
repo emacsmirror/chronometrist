@@ -106,50 +106,6 @@ Each of these has a corresponding function to clear it and fill it with values -
 #+END_SRC
 ** Code
 *** Common
-**** plist-remove                                             :function:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-remove (plist &rest keys)
-  "Return PLIST with KEYS and their associated values removed."
-  (let ((keys (--filter (plist-member plist it) keys)))
-    (mapc (lambda (key)
-            (let ((pos (seq-position plist key)))
-              (setq plist (append (seq-take plist pos)
-                                  (seq-drop plist (+ 2 pos))))))
-          keys)
-    plist))
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp :load test
-(ert-deftest chronometrist-plist-remove ()
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a)
-          '(:b 2 :c 3 :d 4)))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :b)
-          '(:a 1 :c 3 :d 4)))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :c)
-          '(:a 1 :b 2 :d 4)))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :d)
-          '(:a 1 :b 2 :c 3)))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :b)
-          '(:c 3 :d 4)))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :d)
-          '(:b 2 :c 3)))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :c :d)
-          '(:a 1 :b 2)))
-  (should (equal
-           (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :b :c :d)
-           nil))
-  (should
-   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :d :a)
-          '(:b 2 :c 3))))
-
-#+END_SRC
 **** history-prep                                               :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-history-prep (key history-table)
@@ -197,9 +153,9 @@ alongside new tags from NEW-PLIST."
   (-let* (((&plist :name  old-name  :tags old-tags
                    :start old-start :stop old-stop) old-plist)
           ;; Anything that's left will be the user's key-values.
-          (old-kvs   (chronometrist-plist-remove old-plist :name :tags :start :stop))
+          (old-kvs   (chronometrist-plist-key-values old-plist))
           ;; Prevent the user from adding reserved key-values.
-          (plist     (chronometrist-plist-remove new-plist :name :tags :start :stop))
+          (plist     (chronometrist-plist-key-values new-plist))
           (new-tags  (-> (append old-tags (plist-get new-plist :tags))
                          (cl-remove-duplicates :test #'equal)))
           ;; In case there is an overlap in key-values, we use
@@ -209,7 +165,7 @@ alongside new tags from NEW-PLIST."
                          (-> (cl-loop for (key val) on plist by #'cddr
                                do (plist-put new-kvs key val)
                                finally return new-kvs)
-                             (chronometrist-plist-remove :name :tags :start :stop))
+                             (chronometrist-plist-key-values))
                        old-kvs)))
     (append `(:name ,old-name)
             (when new-tags `(:tags ,new-tags))
@@ -399,7 +355,7 @@ HISTORY-TABLE must be a hash table (see `chronometrist-key-history')."
     (catch 'quit
       (let* ((name  (plist-get plist :name))
              (check (unless (equal name task) (throw 'quit nil)))
-             (keys  (--> (chronometrist-plist-remove plist :name :start :stop :tags)
+             (keys  (--> (chronometrist-plist-key-values plist)
                          (seq-filter #'keywordp it)
                          (cl-loop for key in it collect
                            (chronometrist-keyword-to-string key))))
@@ -444,7 +400,7 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-value-history')"
   (chronometrist-loop-file for plist in file do
     ;; We call them user-key-values because we filter out Chronometrist's
     ;; reserved key-values
-    (let ((user-key-values (chronometrist-plist-remove plist :name :tags :start :stop)))
+    (let ((user-key-values (chronometrist-plist-key-values plist)))
       (cl-loop for (key value) on user-key-values by #'cddr do
         (let* ((key-string (chronometrist-keyword-to-string key))
                (old-values (gethash key-string history-table))
@@ -568,7 +524,7 @@ used in `chronometrist-before-out-functions'."
          (first-key-p t)
          (last-sexp   (chronometrist-last))
          (last-name   (plist-get last-sexp :name))
-         (last-kvs    (chronometrist-plist-remove last-sexp :name :tags :start :stop))
+         (last-kvs    (chronometrist-plist-key-values last-sexp))
          (used-keys   (--map (chronometrist-keyword-to-string it)
                              (seq-filter #'keywordp last-kvs))))
     (chronometrist-key-history-populate last-name chronometrist-key-history chronometrist-file)

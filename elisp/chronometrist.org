@@ -1554,6 +1554,56 @@ TS must be a ts struct (see `ts.el')."
     do (ts-decf (ts-day ts))
     finally return ts))
 #+END_SRC
+**** plist-remove                                               :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-plist-remove (plist &rest keys)
+  "Return PLIST with KEYS and their associated values removed."
+  (let ((keys (--filter (plist-member plist it) keys)))
+    (mapc (lambda (key)
+            (let ((pos (seq-position plist key)))
+              (setq plist (append (seq-take plist pos)
+                                  (seq-drop plist (+ 2 pos))))))
+          keys)
+    plist))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp :load test
+(ert-deftest chronometrist-plist-remove ()
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a)
+          '(:b 2 :c 3 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :b)
+          '(:a 1 :c 3 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :c)
+          '(:a 1 :b 2 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :d)
+          '(:a 1 :b 2 :c 3)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :b)
+          '(:c 3 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :d)
+          '(:b 2 :c 3)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :c :d)
+          '(:a 1 :b 2)))
+  (should (equal
+           (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :b :c :d)
+           nil))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :d :a)
+          '(:b 2 :c 3))))
+
+#+END_SRC
+**** plist-key-values                                           :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-plist-key-values (plist)
+  "Return user key-values from PLIST."
+  (chronometrist-plist-remove plist :name :tags :start :stop))
+#+END_SRC
 *** Time functions
 **** iso-timestamp-to-ts                                        :function:
 #+BEGIN_SRC emacs-lisp
