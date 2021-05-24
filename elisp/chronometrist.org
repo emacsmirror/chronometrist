@@ -2930,9 +2930,10 @@ If ARG is a numeric argument, go forward that many times."
 **** Details
 =chronometrist= displays the total time spent on a task - but what were the details? That's where =chronometrist-details= comes in - to display details of recorded time intervals for a given day, in a format terser and more informative than the plists in the file.
 
-1. Handle active task (no =:stop=).
-2. Permit forward/backward scrolling through dates + input a specific date.
-3. Reexamine how to toggle display of key-values and tags.
+1. [X] Handle active task (no =:stop=).
+2. Update data with timer
+3. Permit forward/backward scrolling through dates + input a specific date.
+4. Reexamine how to toggle display of key-values and tags.
 
 ***** details                                              :custom:group:
 #+BEGIN_SRC emacs-lisp
@@ -3008,7 +3009,9 @@ Return value is a list as specified by `tabulated-list-entries'."
             (start         (ts-apply :second 0
                                      (chronometrist-iso-timestamp-to-ts start)))
             (stop          (ts-apply :second 0
-                                     (chronometrist-iso-timestamp-to-ts stop)))
+                                     (if stop
+                                         (chronometrist-iso-timestamp-to-ts stop)
+                                       (ts-now))))
             (interval      (floor (ts-diff stop start)))
             (hours         (/ interval 60 60))
             (minutes       (% (/ interval 60) 60))
