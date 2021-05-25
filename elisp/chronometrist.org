@@ -230,7 +230,7 @@ Further details are stored in properties -
   * Used by [[https://www.github.com/contrapunctus-1/chronometrist-goal][chronometrist-goal]] (chronometrist-goals-list, chronometrist-get-goal) - minutes seems like the ideal unit for users to enter
 **** list-duration
   =(hours minute seconds)=
-  * Only returned by chronometrist-seconds-to-hms, called by chronometrist-format-time
+  * Only returned by =chronometrist-seconds-to-hms=, called by =chronometrist-format-time=
 
 ** The Program
 *** Library headers and commentary
@@ -1471,7 +1471,7 @@ file.")
 #+END_SRC
 **** format-time                                                :function:
 #+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-format-time (seconds &optional (blank "   "))
+(cl-defun chronometrist-format-duration (seconds &optional (blank "   "))
   "Format SECONDS as a string suitable for display in Chronometrist buffers.
 SECONDS must be a positive integer.
 
@@ -1939,9 +1939,11 @@ Return the value returned by Fₙ."
   (cl-loop with index = 1
     for task in (-sort #'string-lessp chronometrist-task-list) collect
     (let* ((index       (number-to-string index))
-           (task-button `(,task action chronometrist-toggle-task-button follow-link t))
-           (task-time   (chronometrist-format-time (chronometrist-task-time-one-day task)))
-           (indicator   (if (chronometrist-task-active? task) (chronometrist-activity-indicator) "")))
+           (task-button `(,task action chronometrist-toggle-task-button
+                                follow-link t))
+           (task-time   (chronometrist-format-duration (chronometrist-task-time-one-day task)))
+           (indicator   (if (chronometrist-task-active? task)
+                            (chronometrist-activity-indicator) "")))
       (--> (vector index task-button task-time indicator)
         (list task it)
         (chronometrist-run-transformers chronometrist-entry-transformers it)))
@@ -1986,7 +1988,7 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
           (keybind-toggle    (chronometrist-format-keybinds 'chronometrist-toggle-task chronometrist-mode-map t)))
       (goto-char (point-max))
       (--> (chronometrist-active-time-one-day)
-           (chronometrist-format-time it)
+           (chronometrist-format-duration it)
            (format "%s%- 26s%s" w "Total" it)
            (insert it))
       (insert "\n")
@@ -2449,9 +2451,9 @@ The first date is the first occurrence of
     for task in chronometrist-task-list collect
     (let* ((durations        (--map (chronometrist-task-time-one-day task (chronometrist-date it))
                                     week-dates))
-           (duration-strings (mapcar #'chronometrist-format-time durations))
+           (duration-strings (mapcar #'chronometrist-format-duration durations))
            (total-duration   (->> (-reduce #'+ durations)
-                                  (chronometrist-format-time)
+                                  (chronometrist-format-duration)
                                   (vector))))
       (list task
             (vconcat
@@ -2488,11 +2490,11 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
     (insert "\n")
     (goto-char (point-max))
     (insert w (format "%- 21s" "Total"))
-    (->> (mapcar #'chronometrist-format-time total-time-daily)
+    (->> (mapcar #'chronometrist-format-duration total-time-daily)
          (--map (format "% 9s  " it))
          (apply #'insert))
     (->> (-reduce #'+ total-time-daily)
-         (chronometrist-format-time)
+         (chronometrist-format-duration)
          (format "% 13s")
          (insert))
     (insert "\n" w)
@@ -2726,7 +2728,7 @@ reduced to the desired range using
                                                "-"
                                              active-days)))
                    (average-time   (->> (chronometrist-statistics-count-average-time-spent task table)
-                                        (chronometrist-format-time)
+                                        (chronometrist-format-duration)
                                         (format "% 5s")))
                    (content        (vector task
                                            active-days
