@@ -2988,6 +2988,17 @@ This was originally called =chronometrist-details-table-format=, but "schema" is
 See `tabulated-list-format'.")
 #+END_SRC
 
+***** schema-transformers                      :extension:variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-details-schema-transformers nil
+  "List of functions to transform `chronometrist-details-schema' (which see).
+This is passed to `chronometrist-run-transformers', which see.
+
+Extensions adding to this list to increase the number of columns
+will also need to modify the value of `tabulated-list-entries' by
+using `chronometrist-details-entry-transformers'.")
+#+END_SRC
+
 ***** entries                                                  :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-entries ()
@@ -3033,14 +3044,27 @@ Return value is a list as specified by `tabulated-list-entries'."
     do (cl-incf index)))
 #+END_SRC
 
-***** chronometrist-details-mode                                         :major:mode:
+***** entry-transformers                             :extension:variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-details-entry-transformers nil
+  "List of functions to transform each entry of `chronometrist-details-entries'.
+This is passed to `chronometrist-run-transformers', which see.
+
+Extensions adding to this list to increase the number of columns
+will also need to modify the value of `tabulated-list-format' by
+using `chronometrist-details-schema-transformers'.")
+#+END_SRC
+
+***** chronometrist-details-mode                                                 :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
   (make-local-variable 'tabulated-list-format)
-  (setq tabulated-list-format chronometrist-details-schema)
+  (--> (chronometrist-run-transformers chronometrist-details-schema-transformers chronometrist-details-schema)
+    (setq tabulated-list-format it))
   (make-local-variable 'tabulated-list-entries)
-  (setq tabulated-list-entries 'chronometrist-details-entries)
+  (--> (chronometrist-run-transformers chronometrist-details-entry-transformers chronometrist-details-entries)
+    (setq tabulated-list-entries it))
   (make-local-variable 'tabulated-list-sort-key)
   (tabulated-list-init-header)
   (run-hooks 'chronometrist-mode-hook))
