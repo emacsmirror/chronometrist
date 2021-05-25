@@ -2480,7 +2480,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
         (total-time-daily  (->> (mapcar #'chronometrist-date chronometrist-report--ui-week-dates)
                                 (mapcar #'chronometrist-active-time-one-day))))
     (goto-char (point-min))
-    (insert "                         ")
+    (insert (make-string 25 ?\s))
     (insert (mapconcat (lambda (ts)
                          (ts-format "%F" ts))
                        (chronometrist-report-date-to-week-dates)
