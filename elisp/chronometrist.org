@@ -1937,16 +1937,16 @@ Return the value returned by Fₙ."
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-entries ()
   "Create entries to be displayed in the buffer created by `chronometrist', in the format specified by `tabulated-list-entries'."
-  (->> (-sort #'string-lessp chronometrist-task-list)
-       (--map-indexed
-        (let* ((task        it)
-               (index       (number-to-string (1+ it-index)))
-               (task-button `(,task action chronometrist-toggle-task-button follow-link t))
-               (task-time   (chronometrist-format-time (chronometrist-task-time-one-day task)))
-               (indicator   (if (chronometrist-task-active? task) (chronometrist-activity-indicator) "")))
-          (--> (vector index task-button task-time indicator)
-               (list task it)
-               (chronometrist-run-transformers chronometrist-entry-transformers it))))))
+  (cl-loop with index = 1
+    for task in (-sort #'string-lessp chronometrist-task-list) collect
+    (let* ((index       (number-to-string index))
+           (task-button `(,task action chronometrist-toggle-task-button follow-link t))
+           (task-time   (chronometrist-format-time (chronometrist-task-time-one-day task)))
+           (indicator   (if (chronometrist-task-active? task) (chronometrist-activity-indicator) "")))
+      (--> (vector index task-button task-time indicator)
+        (list task it)
+        (chronometrist-run-transformers chronometrist-entry-transformers it)))
+    do (cl-incf index)))
 #+END_SRC
 ***** task-at-point                                           :procedure:
 #+BEGIN_SRC emacs-lisp
