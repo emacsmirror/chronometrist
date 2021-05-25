@@ -1471,7 +1471,7 @@ file.")
 #+END_SRC
 **** format-time                                                :function:
 #+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-format-duration (seconds &optional (blank "   "))
+(cl-defun chronometrist-format-duration (seconds &optional (blank (make-string 3 ?\s)))
   "Format SECONDS as a string suitable for display in Chronometrist buffers.
 SECONDS must be a positive integer.
 
@@ -1479,7 +1479,7 @@ BLANK is a string to display in place of blank values. If not
 supplied, 3 spaces are used."
   (-let [(h m s) (chronometrist-seconds-to-hms seconds)]
     (if (and (zerop h) (zerop m) (zerop s))
-        "       -"
+        (concat (make-string 7 ?\s) "-")
       (let ((h (if (zerop h) blank (format "%2d:" h)))
             (m (cond ((and (zerop h) (zerop m))  blank)
                      ((zerop h)  (format "%2d:" m))
