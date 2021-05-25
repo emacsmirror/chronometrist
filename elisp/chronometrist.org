@@ -2975,6 +2975,13 @@ which must return the string to be displayed.
 To disable display of key-values, customize `chronometrist-details-table-format'.")
 #+END_SRC
 
+***** time-format-string                                :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-details-time-format-string "%H:%M"
+  "String specifying time format in `chronometrist-details' buffers.
+See `format-time-string'.")
+#+END_SRC
+
 ***** FIXME table-format                                :custom:variable:
 1. Index column does not sort correctly - see =tabulated-list-format=
 
@@ -3029,8 +3036,8 @@ Return value is a list as specified by `tabulated-list-entries'."
                                          hours hour-string
                                          minutes minute-string))))
                      `(,(format "from %s to %s"
-                                (ts-format "%H:%M" start)
-                                (ts-format "%H:%M" stop))))))
+                                (ts-format chronometrist-details-time-format-string start)
+                                (ts-format chronometrist-details-time-format-string stop))))))
     do (cl-incf index)))
 #+END_SRC
 
