@@ -2924,6 +2924,8 @@ If ARG is a numeric argument, go forward that many times."
 2. Update data with timer
 3. Permit forward/backward scrolling through dates + input a specific date.
 4. Reexamine how to toggle display of key-values and tags.
+   * make it possible to create columns using keys
+5. Remove outer parentheses from tags
 
 ***** details                                              :custom:group:
 #+BEGIN_SRC emacs-lisp
@@ -3026,25 +3028,27 @@ Return value is a list as specified by `tabulated-list-entries'."
             (hours         (/ interval 60 60))
             (minutes       (% (/ interval 60) 60))
             (hour-string   (if (= 1 hours) "hour" "hours"))
-            (minute-string (if (= 1 minutes) "minute" "minutes")))
-      (list index
-            (vconcat `(,(format "%s" index) ,name)
-                     (when chronometrist-details-display-tags
-                       (vector tags))
-                     `(,(cond ((zerop hours)
-                               (format "%s %s" minutes minute-string))
-                              ((zerop minutes)
-                               (format "%s %s" hours hour-string))
-                              (t (format "%s %s, %s %s"
-                                         hours hour-string
-                                         minutes minute-string))))
-                     `(,(format "from %s to %s"
-                                (ts-format chronometrist-details-time-format-string start)
-                                (ts-format chronometrist-details-time-format-string stop))))))
+            (minute-string (if (= 1 minutes) "minute" "minutes"))
+            (index-string  (format "%s" index))
+            (duration      (cond ((zerop hours)
+                                  (format "%s %s" minutes minute-string))
+                                 ((zerop minutes)
+                                  (format "%s %s" hours hour-string))
+                                 (t (format "%s %s, %s %s"
+                                            hours hour-string
+                                            minutes minute-string))))
+            (timespan      (format "from %s to %s"
+                                   (ts-format chronometrist-details-time-format-string start)
+                                   (ts-format chronometrist-details-time-format-string stop))))
+      (--> (vconcat (vector index-string name)
+                    (when chronometrist-details-display-tags (vector tags))
+                    (vector duration timespan))
+        (list index it)
+        (chronometrist-run-transformers chronometrist-details-row-transformers it)))
     do (cl-incf index)))
 #+END_SRC
 
-***** row-transformers                             :extension:variable:
+***** row-transformers                               :extension:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-details-row-transformers nil
   "List of functions to transform each row of `chronometrist-details-rows'.
