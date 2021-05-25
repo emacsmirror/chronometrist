@@ -531,7 +531,7 @@ used in `chronometrist-before-out-functions'."
     (chronometrist-value-history-populate chronometrist-value-history chronometrist-file)
     (switch-to-buffer buffer)
     (with-current-buffer buffer
-      (chronometrist-common-clear-buffer buffer)
+      (erase-buffer)
       (chronometrist-kv-read-mode)
       (if (and (chronometrist-current-task) last-kvs)
           (progn

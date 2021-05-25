@@ -1174,7 +1174,7 @@ file names respectively."
           t)
     (let ((output (find-file-noselect out-file)))
       (with-current-buffer output
-        (chronometrist-common-clear-buffer output)
+        (erase-buffer)
         (chronometrist-migrate-populate in-file)
         (maphash (lambda (_key value)
                    (chronometrist-plist-pp value output)
@@ -1495,14 +1495,6 @@ supplied, 3 spaces are used."
 (defun chronometrist-common-file-empty-p (file)
   "Return t if FILE is empty."
   (zerop (nth 7 (file-attributes file))))
-#+END_SRC
-**** clear-buffer                                                 :writer:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-common-clear-buffer (buffer)
-  "Clear the contents of BUFFER."
-  (with-current-buffer buffer
-    (goto-char (point-min))
-    (delete-region (point-min) (point-max))))
 #+END_SRC
 **** format-keybinds                                            :function:
 #+BEGIN_SRC emacs-lisp
@@ -2350,7 +2342,7 @@ If numeric argument ARG is 2, run `chronometrist-statistics'."
                  ;; first run
                  (chronometrist-common-create-file)
                  (let ((inhibit-read-only t))
-                   (chronometrist-common-clear-buffer buffer)
+                   (erase-buffer)
                    (insert "Welcome to Chronometrist! Hit RET to ")
                    (insert-text-button "start a new task."
                                        'action #'chronometrist-add-new-task-button
