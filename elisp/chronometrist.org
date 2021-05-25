@@ -1111,8 +1111,7 @@ See `timeclock-log-data' for a description."
                                                                (point-at-eol)))
                  (event-list   (split-string event-string "[ /:]"))
                  (code         (cl-first event-list))
-                 (date-time    (--> event-list
-                                    (seq-drop it 1)
+                 (date-time    (--> (seq-drop event-list 1)
                                     (seq-take it 6)
                                     (mapcar #'string-to-number it)
                                     (reverse it)
@@ -2478,8 +2477,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
   "Print the non-tabular part of the buffer in `chronometrist-report'."
   (let ((inhibit-read-only t)
         (w                 "\n    ")
-        (total-time-daily  (->> chronometrist-report--ui-week-dates
-                                (mapcar #'chronometrist-date)
+        (total-time-daily  (->> (mapcar #'chronometrist-date chronometrist-report--ui-week-dates)
                                 (mapcar #'chronometrist-active-time-one-day))))
     (goto-char (point-min))
     (insert "                         ")
@@ -2490,12 +2488,10 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
     (insert "\n")
     (goto-char (point-max))
     (insert w (format "%- 21s" "Total"))
-    (->> total-time-daily
-         (mapcar #'chronometrist-format-time)
+    (->> (mapcar #'chronometrist-format-time total-time-daily)
          (--map (format "% 9s  " it))
          (apply #'insert))
-    (->> total-time-daily
-         (-reduce #'+)
+    (->> (-reduce #'+ total-time-daily)
          (chronometrist-format-time)
          (format "% 13s")
          (insert))
