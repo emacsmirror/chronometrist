@@ -2925,7 +2925,7 @@ If ARG is a numeric argument, go forward that many times."
 1. [X] Handle active task (no =:stop=).
 2. Update data with timer
 3. Permit forward/backward scrolling through dates + input a specific date.
-4. Reexamine how to toggle display of key-values and tags.
+4. Display key-values and tags
    * make it possible to create columns using keys
 5. Remove outer parentheses from tags
 
@@ -3003,6 +3003,38 @@ will also need to modify the value of `tabulated-list-entries' by
 using `chronometrist-details-row-transformers'.")
 #+END_SRC
 
+***** rows-helper                                              :reader:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details-rows-helper (arg)
+  "Return ARG as a string to be inserted in a `chronometrist-details' buffer.
+ARG must be either tags (a list of symbols) or key-values (a plist)."
+  (let ((custom (if (chronometrist-plist-p arg)
+                    chronometrist-details-display-key-values
+                  chronometrist-details-display-tags)))
+    (if (and arg custom)
+        (pcase custom
+          ((pred stringp)   (format custom arg))
+          ((pred functionp) (funcall custom arg)))
+      "")))
+#+END_SRC
+
+****** tests
+#+BEGIN_SRC emacs-lisp :load test
+(ert-deftest chronometrist-details-row-helper ()
+  (let ((tags  '(a b c))
+        (plist '(:a 1 :b 2 :c 3)))
+    (let ((chronometrist-details-display-tags nil)
+          (chronometrist-details-display-key-values nil))
+      (should (equal (chronometrist-details-rows-helper tags) ""))
+      (should (equal (chronometrist-details-rows-helper plist) "")))
+    (let ((chronometrist-details-display-tags "%s")
+          (chronometrist-details-display-key-values "%s"))
+      (should (equal (chronometrist-details-rows-helper tags)
+                     "(a b c)"))
+      (should (equal (chronometrist-details-rows-helper plist)
+                     "(:a 1 :b 2 :c 3)")))))
+#+END_SRC
+
 ***** rows                                                     :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-rows ()
@@ -3011,13 +3043,9 @@ Return value is a list as specified by `tabulated-list-entries'."
   (cl-loop with index = 1
     for plist in (gethash (chronometrist-events-last-date) chronometrist-events) collect
     (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
-            (tags (if tags
-                      (pcase chronometrist-details-display-tags
-                        ((pred stringp)
-                         (format chronometrist-details-display-tags tags))
-                        ((pred functionp)
-                         (funcall 'chronometrist-details-display-tags tags)))
-                    ""))
+            ;; whether tags or key-values are actually displayed is handled later
+            (tags       (chronometrist-details-rows-helper tags))
+            (key-values (chronometrist-details-rows-helper (chronometrist-plist-key-values plist)))
             ;; resetting seconds with `ts-apply' is necessary to
             ;; prevent situations like "1 hour  from 00:08 to 01:09"
             (start         (ts-apply :second 0
@@ -3044,6 +3072,7 @@ Return value is a list as specified by `tabulated-list-entries'."
                                    (ts-format chronometrist-details-time-format-string stop))))
       (--> (vconcat (vector index-string name)
                     (when chronometrist-details-display-tags (vector tags))
+                    (when chronometrist-details-display-key-values (vector key-values))
                     (vector duration timespan))
         (list index it)
         (chronometrist-run-transformers chronometrist-details-row-transformers it)))
