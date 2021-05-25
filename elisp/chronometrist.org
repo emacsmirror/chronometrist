@@ -1946,7 +1946,7 @@ Return the value returned by Fₙ."
                             (chronometrist-activity-indicator) "")))
       (--> (vector index task-button task-time indicator)
         (list task it)
-        (chronometrist-run-transformers chronometrist-entry-transformers it)))
+        (chronometrist-run-transformers chronometrist-row-transformers it)))
     do (cl-incf index)))
 #+END_SRC
 ***** task-at-point                                           :procedure:
@@ -2122,15 +2122,15 @@ This is called with `chronometrist-run-transformers' in `chronometrist-mode', wh
 Extensions using `chronometrist-list-format-transformers' to
 increase the number of columns will also need to modify the value
 of `tabulated-list-entries' by using
-`chronometrist-entry-transformers'.")
+`chronometrist-row-transformers'.")
 #+END_SRC
-***** entry-transformers                             :extension:variable:
+***** row-transformers                             :extension:variable:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-entry-transformers nil
-  "List of functions to transform each entry of `tabulated-list-entries'.
+(defvar chronometrist-row-transformers nil
+  "List of functions to transform each row of `tabulated-list-entries'.
 This is called with `chronometrist-run-transformers' in `chronometrist-rows', which see.
 
-Extensions using `chronometrist-entry-transformers' to increase
+Extensions using `chronometrist-row-transformers' to increase
 the number of columns will also need to modify the value of
 `tabulated-list-format' by using
 `chronometrist-list-format-transformers'.")
@@ -2996,7 +2996,7 @@ This is passed to `chronometrist-run-transformers', which see.
 
 Extensions adding to this list to increase the number of columns
 will also need to modify the value of `tabulated-list-entries' by
-using `chronometrist-details-entry-transformers'.")
+using `chronometrist-details-row-transformers'.")
 #+END_SRC
 
 ***** rows                                                     :function:
@@ -3044,10 +3044,10 @@ Return value is a list as specified by `tabulated-list-entries'."
     do (cl-incf index)))
 #+END_SRC
 
-***** entry-transformers                             :extension:variable:
+***** row-transformers                             :extension:variable:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-details-entry-transformers nil
-  "List of functions to transform each entry of `chronometrist-details-rows'.
+(defvar chronometrist-details-row-transformers nil
+  "List of functions to transform each row of `chronometrist-details-rows'.
 This is passed to `chronometrist-run-transformers', which see.
 
 Extensions adding to this list to increase the number of columns
@@ -3063,7 +3063,7 @@ using `chronometrist-details-schema-transformers'.")
   (--> (chronometrist-run-transformers chronometrist-details-schema-transformers chronometrist-details-schema)
     (setq tabulated-list-format it))
   (make-local-variable 'tabulated-list-entries)
-  (--> (chronometrist-run-transformers chronometrist-details-entry-transformers chronometrist-details-rows)
+  (--> (chronometrist-run-transformers chronometrist-details-row-transformers chronometrist-details-rows)
     (setq tabulated-list-entries it))
   (make-local-variable 'tabulated-list-sort-key)
   (tabulated-list-init-header)
