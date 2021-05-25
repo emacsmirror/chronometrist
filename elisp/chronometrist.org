@@ -3063,14 +3063,13 @@ using `chronometrist-details-schema-transformers'.")
   (--> (chronometrist-run-transformers chronometrist-details-schema-transformers chronometrist-details-schema)
     (setq tabulated-list-format it))
   (make-local-variable 'tabulated-list-entries)
-  (--> (chronometrist-run-transformers chronometrist-details-row-transformers chronometrist-details-rows)
-    (setq tabulated-list-entries it))
+  (setq tabulated-list-entries #'chronometrist-details-rows)
   (make-local-variable 'tabulated-list-sort-key)
   (tabulated-list-init-header)
   (run-hooks 'chronometrist-mode-hook))
 #+END_SRC
 
-***** chronometrist-details                                     :command:
+***** chronometrist-details                                                 :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details ()
   (interactive)
