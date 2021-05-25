@@ -837,25 +837,6 @@ considers it an alist."
   (when (listp list)
     (cl-loop for elt in list thereis (chronometrist-plist-pp-pair-p elt))))
 #+END_SRC
-**** plist-p                                                    :function:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-plist-p (list)
-  "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
-  (while (consp list)
-    (setq list (if (and (keywordp (car list))
-                        (consp (cdr list)))
-                   (cddr list)
-                 'not-plist)))
-  (null list))
-#+END_SRC
-***** tests
-#+BEGIN_SRC emacs-lisp :load test
-(ert-deftest plist-p ()
-  (should (eq t   (chronometrist-plist-pp-plist-p '(:a 1 :b 2))))
-  (should (eq nil (chronometrist-plist-pp-plist-p '(0 :a 1 :b 2))))
-  (should (eq nil (chronometrist-plist-pp-plist-p '(:a 1 :b 2 3)))))
-
-#+END_SRC
 **** longest-keyword-length                                       :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-pp-longest-keyword-length ()
@@ -886,7 +867,7 @@ The list must be on a single line, as emitted by `prin1'."
       (progn
         (setq sexp (save-excursion (read (current-buffer))))
         (cond
-         ((chronometrist-plist-pp-plist-p sexp)
+         ((chronometrist-plist-p sexp)
           (chronometrist-plist-pp-buffer-plist inside-sublist-p)
           (chronometrist-plist-pp-buffer inside-sublist-p))
          ((chronometrist-plist-pp-alist-p sexp)
@@ -1025,7 +1006,7 @@ The list must be on a single line, as emitted by `prin1'."
                        (make-string left-indent ?\ ))
                      (chronometrist-plist-pp-indent-sexp sexp right-indent)))
             ;; not a keyword = a value
-            ((chronometrist-plist-pp-plist-p sexp)
+            ((chronometrist-plist-p sexp)
              (chronometrist-plist-pp-buffer-plist))
             ((and (listp sexp)
                   (not (chronometrist-plist-pp-pair-p sexp)))
@@ -1597,6 +1578,25 @@ TS must be a ts struct (see `ts.el')."
 (defun chronometrist-plist-key-values (plist)
   "Return user key-values from PLIST."
   (chronometrist-plist-remove plist :name :tags :start :stop))
+#+END_SRC
+**** plist-p                                                    :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-plist-p (list)
+  "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
+  (while (consp list)
+    (setq list (if (and (keywordp (car list))
+                        (consp (cdr list)))
+                   (cddr list)
+                 'not-plist)))
+  (null list))
+#+END_SRC
+***** tests
+#+BEGIN_SRC emacs-lisp :load test
+(ert-deftest plist-p ()
+  (should (eq t   (chronometrist-plist-p '(:a 1 :b 2))))
+  (should (eq nil (chronometrist-plist-p '(0 :a 1 :b 2))))
+  (should (eq nil (chronometrist-plist-p '(:a 1 :b 2 3)))))
+
 #+END_SRC
 *** Time functions
 **** iso-timestamp-to-ts                                        :function:
