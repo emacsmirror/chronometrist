@@ -347,7 +347,7 @@ The reasons I like this format are -
 1. [ ] add newline after last expression and save => nil
 2. [ ] remove newline after last expession and save => nil
 
-**** FIXME tests
+**** tests
 #+BEGIN_SRC emacs-lisp :load test
 (defvar chronometrist-test-file
   (make-temp-file
@@ -1082,6 +1082,8 @@ The list must be on a single line, as emitted by `prin1'."
 #+END_SRC
 *** TODO Migration
 1. [ ] Use EIEIO to make a =chronometrist-migrate= command which calls a generic function.
+2. [ ] Write importer for Org time tracking.
+
 **** table                                                      :variable:
 :PROPERTIES:
 :VALUE:    hash table
@@ -1197,7 +1199,7 @@ file names respectively."
 :PROPERTIES:
 :CUSTOM_ID: program-data-structures
 :END:
-Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The function =chronometrist-events-populate= is currently responsible for ensuring all [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]] are stored in =chronometrist-events= after being split.
+Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
 
 The data from =chronometrist-events= is used by most (all?) interval-consuming functions, but is never written to the user's file itself.
 
@@ -1796,9 +1798,9 @@ ARG should be the new update interval, in seconds."
   (chronometrist-maybe-start-timer))
 #+END_SRC
 *** Frontends
-All three of these use =(info "(elisp)Tabulated List Mode")=. Each of them also contains a "-print-non-tabular" function, which prints the non-tabular parts of the buffer.
+All four of these use [[info:elisp#Tabulated List Mode][=(info "(elisp)Tabulated List Mode")=]]. Each of them also contains a "-print-non-tabular" function, which prints the non-tabular parts of the buffer.
 
-1. [ ] There is some duplication between the three frontend commands, e.g. all three act as toggles for their respective buffers, point preservation, etc.
+1. [ ] There is some duplication between the four frontend commands, e.g. all four act as toggles for their respective buffers, point preservation, etc.
 **** Chronometrist
 :PROPERTIES:
 :CUSTOM_ID: program-frontend-chronometrist
