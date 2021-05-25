@@ -2949,7 +2949,7 @@ a format string consuming a single argument passed to `format', or
 a function of one argument (the tags, as a list of symbols),
 which must return the string to be displayed.
 
-To disable display of tags, customize `chronometrist-details-table-format'.")
+To disable display of tags, customize `chronometrist-details-schema'.")
 #+END_SRC
 
 ***** display-key-values                                :custom:variable:
@@ -2962,7 +2962,7 @@ a format string consuming a single argument passed to `format', or
 a function of one argument (the key-values as a plist),
 which must return the string to be displayed.
 
-To disable display of key-values, customize `chronometrist-details-table-format'.")
+To disable display of key-values, customize `chronometrist-details-schema'.")
 #+END_SRC
 
 ***** time-format-string                                :custom:variable:
@@ -2972,11 +2972,13 @@ To disable display of key-values, customize `chronometrist-details-table-format'
 See `format-time-string'.")
 #+END_SRC
 
-***** FIXME table-format                                :custom:variable:
-1. Index column does not sort correctly - see =tabulated-list-format=
+***** FIXME schema                                :custom:variable:
+This was originally called =chronometrist-details-table-format=, but "schema" is both shorter and a term I'm more familiar with.
+
+1. Index column does not sort correctly with 10 or more rows - see =tabulated-list-format=
 
 #+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-details-table-format
+(defcustom chronometrist-details-schema
   [("#" 3 t)
    ("Task" 20 t)
    ("Tags" 20 t)
@@ -3036,7 +3038,7 @@ Return value is a list as specified by `tabulated-list-entries'."
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
   (make-local-variable 'tabulated-list-format)
-  (setq tabulated-list-format chronometrist-details-table-format)
+  (setq tabulated-list-format chronometrist-details-schema)
   (make-local-variable 'tabulated-list-entries)
   (setq tabulated-list-entries 'chronometrist-details-entries)
   (make-local-variable 'tabulated-list-sort-key)
