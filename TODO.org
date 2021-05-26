@@ -161,6 +161,8 @@ Some options and ideas -
    7. [ ] Just why are we reading the whole file? ~chronometrist~ should not read more than a day; ~chronometrist-report~ should not read more than a week at a time, and so on. Make a branch which works on this logic, see if it is faster.
 
 * Certain [0%]
+1. [X] "Day summary" - for users who use the "reason" feature to note the specifics of their actual work. Combine the reasons together to create a descriptive overview of the work done in the day. (=chronometrist-details=)
+
 ** plist-pp [66%]
 pp.el doesn't align plist keys along the same column.
 ppp.el doesn't align plist values along the same column. It's also GPL, and I'm trying to cut down GPL dependencies.
@@ -244,11 +246,12 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 15. [ ] Ask existing users if they'd like to have a prop line added to =chronometrist-file=
     * check if =chronometrist-sexp-mode= is active in the buffer
     * offer to never ask again
+16. Show details for time spent on a project when clicking on a non-zero "time spent" field (in both Chronometrist and Chronometrist-Report buffers).
 
 ** chronometrist-report [0%]
 1. [ ] Show week counter and max weeks; don't scroll past first/last weeks
 2. [ ] Highlight column of current day
-3. [ ] Command to narrow report to specific project(s)
+3. [ ] narrow to specific project(s)
 4. [ ] Jump to beginning/end of data (keys B/F)
 5. [ ] "Explain" command - show tag-combination-based breakdown
 
@@ -345,7 +348,6 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
    * Maybe generate the completion hash table when the plist is created, since this is likely to be less-used.
 4. [ ] Create a debug mode
 5. [ ] Create a verification command to test =chronometrist-file= for errors.
-
 ** plist-pp
 1. Represent sublists by depth (integer) instead of a boolean.
 ** UX [0%]
@@ -361,10 +363,15 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 4. [ ] Tag-sensitive key suggestions, tag-sensitive value suggestions...?
    * Might complicate things quite a bit.
    * Lack of task-sensitive value suggestions (#3) is an inconsistency, because tags and keys are already task-sensitive. From that perspective, tag-sensitive key and value suggestions are a whole new can of worms.
-6. Change precision of timestamps from seconds to minutes. (like Org)
+5. Change precision of timestamps from seconds to minutes. (like Org)
+6. Use =make-thread= in v26 or the emacs-async library for =chronometrist-entries=/=chronometrist-report-entries=
+7. Some way to update buffers every second without making Emacs unusable. (impossible?)
 
 ** chronometrist-report [0%]
 1. [ ] Add support for other locale weeks/weekday names
+2. narrow to specific task - average time spent in $TIMEPERIOD, average days worked on in $TIMEPERIOD, current/longest/last streak, % of $TIMEPERIOD, % of active (tracked) time in $TIMEPERIOD, ...
+3. general - most productive $TIMEPERIOD, GitHub-style work heatmap calendar, ...
+4. press 1 for weekly stats, 2 for monthly, 3 for yearly
 
 ** chronometrist-goals [0%]
 1. [ ] Colorize times in Chronometrist buffer

@@ -248,49 +248,16 @@ Return nil (and run `magit-status') if the user answers no."
 (setq chronometrist-activity-indicator #'my-activity-indicator)
 #+END_SRC
 
-** Roadmap/Ideas
-:PROPERTIES:
-:CUSTOM_ID: roadmapideas
-:END:
-
-- Show details for time spent on a project when clicking on a non-zero "time spent" field (in both Chronometrist and Chronometrist-Report buffers).
-
-*** chronometrist
-:PROPERTIES:
-:CUSTOM_ID: chronometrist-2
-:END:
-
-1. Use =make-thread= in v26 or the emacs-async library for =chronometrist-entries=/=chronometrist-report-entries=
-2. Some way to update buffers every second without making Emacs unusable. (impossible?)
-3. "Day summary" - for users who use the "reason" feature to note the specifics of their actual work. Combine the reasons together to create a descriptive overview of the work done in the day.
-
-*** chronometrist-statistics
-:PROPERTIES:
-:CUSTOM_ID: chronometrist-statistics-1
-:END:
-
-1. Show range counter and max ranges; don't scroll past first/last time ranges
-2. activity-specific - average time spent in $TIMEPERIOD, average days worked on in $TIMEPERIOD, current/longest/last streak, % of $TIMEPERIOD, % of active (tracked) time in $TIMEPERIOD, ...
-3. general - most productive $TIMEPERIOD, GitHub-style work heatmap calendar, ...
-4. press 1 for weekly stats, 2 for monthly, 3 for yearly
-
-*** Miscellaneous
-:PROPERTIES:
-:CUSTOM_ID: miscellaneous
-:END:
-
-1. README - add images
-2. [-] Create test timelog file and UI behaviour tests
-3. Use for =chronometrist-report-weekday-number-alist= whatever variables like =initial-frame-alist= use to get that fancy Custom UI for alists.
-4. Multi-timelog-file support?
-5. [[https://github.com/MichaelMure/git-bug/#planned-features][inflatable raptor]]
+** User's reference
 
 ** Contributions and contact
 :PROPERTIES:
 :CUSTOM_ID: contributions-and-contact
 :END:
 
-Feedback and MRs are very welcome. 🙂 * [[file:TODO.org]] has a long list of tasks * [[file:doc/manual.org]] contains an overview of the codebase, explains various mechanisms and decisions, and has a reference of definitions.
+Feedback and MRs are very welcome. 🙂
++ [[file:TODO.org]] has a long list of tasks
++ [[file:doc/manual.org]] contains an overview of the codebase, explains various mechanisms and decisions, and has a reference of definitions.
 
 If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [[https://conversations.im/j/emacs@salas.suchat.org][xmpp:emacs@salas.suchat.org?join]] ([[https://inverse.chat/#converse/room?jid=emacs@salas.suchat.org][web chat]])
 
