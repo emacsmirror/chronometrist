@@ -7,6 +7,10 @@
 * v0.3.0 [100%]
   1. [X] +Release or+ bundle plist-pp.el
   2. [X] -report - error opening when clocked in
+* MELPA, hosting [0%]
+1. [ ] merge =chronometrist-goal= into this repository
+2. [X] move project to codeberg.org or tildegit.org
+3. [X] ...and then, update the MELPA recipes.
 * Chronometrist
 1. implement point restore for =chronometrist=/=chronometrist-report=/=chronometrist-statistics= in a kill-buffer-hook, so it works whenever the buffer is killed, not just when we call the command.
 
