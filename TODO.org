@@ -118,8 +118,7 @@ Some options and ideas -
      + Tags and keys are already task-sensitive; just don't make values task-sensitive.
 2. [X] Compare partial hashes of file to know what has changed - only update memory when necessary.
 3. [ ] In-memory cache - don't store entire file into memory; instead, split midnight-spanning intervals just for the requested data.
-   * Will increase load time for the first time =chronometrist=, =chronometrist-report=, or =chronometrist-statistics= are run (including forward/backward commands in the latter two)
-     + Can try pre-emptively loading data for the latter two
+   * Will increase load time for each forward/backward command in =chronometrist-report= and =chronometrist-statistics=
    * Will reduce memory used by =chronometrist-events=.
      + Further reductions can take place, if we automatically discard cache entries past a certain limit. (perhaps excluding data for the current day, week, or month)
 4. [ ] Mix of 2 and 3 - in-memory cache with partial updates
@@ -145,6 +144,16 @@ Some options and ideas -
     ...)
    #+END_SRC
 9. [ ] Change file timestamp format to =("<iso-date>" "<iso-time>")=
+10. [ ] Change file schema to be date-aware -
+    #+BEGIN_SRC emacs-lisp
+(:date "YYYY-MM-DD"
+       (:name "task 1"
+              ...
+              :start "HH:MM:SSZ"
+              :stop "HH:MM:SSZ")
+       ...)
+    #+END_SRC
+    1. Users will have to be disciplined while editing, and ensure that events are split on day boundaries. If not, we will have to check each time the file changes, defeating the entire optimization.
 ** Cache
    + Lessons from the parsimonious-reading branch - iterating =read= over the whole file is fast; splitting the intervals is not.
    + Things we need to read the whole file for - task list, tag/key/value history.
@@ -318,9 +327,10 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 
    Implementation ideas -
    * A list of keys whose values are to be edited in a user-specified major mode.
-     + Multiple windows - instead of a single key-value buffer, we'll have multiple buffers in multiple visible windows. The =accept= command will use the data from all involved buffers.
-       - The buffer and window will be created when a key associated with that mode is selected at the prompt.
+     + Multiple windows - instead of a single key-value buffer, we'll have multiple buffers in multiple visible windows, somewhat like =ediff=. The =accept= command will use the data from all involved buffers.
+       - The buffer and window will be created when a keyword associated with that mode is selected at the prompt.
      + Alternatively, the whole plist goes into a single buffer of the markup's major mode - the markup bits as markup, the rest of the plist in a code block 🤷‍
+     + poly-mode to mix different modes
    * "Input frontends" - a way to represent s-expressions as Markdown, Org, etc, so the entire plist can be edited in that mode. As a side-effect, this will permit use of Markdown, Org, etc in keyword-values - e.g. to use markup in comments or notes.
    * A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
 2. [ ] A custom variable containing a list of tasks
@@ -350,8 +360,6 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 4. [ ] Create a debug mode
 5. [ ] Create a verification command to test =chronometrist-file= for errors.
 
-** plist-pp
-1. Represent sublists by depth (integer) instead of a boolean.
 ** UX [0%]
 1. [ ] Provide a command which tries to auto-configure Chronometrist keys in a way which is consistent with the user's other keymaps.
 2. [ ] Do basic checks on values of all customizable variables when they are changed by the user, and provide meaningful errors if they can't be used by the program.
