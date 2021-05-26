@@ -1,4 +1,4 @@
-[[https://melpa.org/#/chronometrist][[[https://melpa.org/packages/chronometrist-badge.svg]]]]
+[[https://melpa.org/#/chronometrist][file:https://melpa.org/packages/chronometrist-badge.svg]]
 
 * chronometrist
 :PROPERTIES:
