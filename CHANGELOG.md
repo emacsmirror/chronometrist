@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Added
 1. `chronometrist-details`, to display time intervals in a tabular format.
+### Fixed
+2. error when launching `chronometrist-statistics`
 
 ## [0.7.2] - 2021-05-18
 ### Changed

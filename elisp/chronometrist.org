@@ -2698,11 +2698,13 @@ displayed. They must be ts structs (see `ts.el').")
 TABLE should be a hash table - if not supplied,
 `chronometrist-events' is used."
   (cl-loop with days = 0
-    for date being the hash-keys of table collect
-    (let ((events-in-day (chronometrist-task-events-in-day task (chronometrist-iso-date-to-ts date))))
-      (when events-in-day
-        (cl-incf days)
-        (-reduce #'+ (chronometrist-events-to-durations events-in-day))))
+    with events-in-day
+    for date being the hash-keys of table
+    when (setq events-in-day
+               (chronometrist-task-events-in-day task (chronometrist-iso-date-to-ts date)))
+    do (cl-incf days) and
+    collect
+    (-reduce #'+ (chronometrist-events-to-durations events-in-day))
     into per-day-time-list
     finally return
     (if per-day-time-list
