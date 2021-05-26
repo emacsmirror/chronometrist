@@ -323,7 +323,7 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 
 * Maybe [0%]
 ** New features [0%]
-1. [ ] Some way to use markup (Markdown, Org, etc) for certain plist values.
+1. Some way to use markup (Markdown, Org, etc) for certain plist values.
 
    Implementation ideas -
    * A list of keys whose values are to be edited in a user-specified major mode.
@@ -333,8 +333,8 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
      + poly-mode to mix different modes
    * "Input frontends" - a way to represent s-expressions as Markdown, Org, etc, so the entire plist can be edited in that mode. As a side-effect, this will permit use of Markdown, Org, etc in keyword-values - e.g. to use markup in comments or notes.
    * A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
-2. [ ] A custom variable containing a list of tasks
-   #+BEGIN_SRC
+2. A custom variable containing a list of tasks
+   #+BEGIN_SRC emacs-lisp
    ("A Task Name"
     ("Another Task Name" :key-prompt nil)
     ...)
@@ -355,10 +355,14 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
    Useful for
    1. Adding tasks without clocking into them (the list is stored in a separate file)
    2. Not asking for tags and/or key-values for a particular task, or having a special behaviour for a task. (e.g. some tasks I use follow certain patterns, which I'd like to automate away)
-3. [ ] Completion for sub-plists - if the value of a user keyword-value pair is a plist (heuristic - list with keyword as first element), can we reuse the keyword-value prompt for it? 🤔
+3. Completion for sub-plists - if the value of a user keyword-value pair is a plist (heuristic - list with keyword as first element), can we reuse the keyword-value prompt for it? 🤔
    * Maybe generate the completion hash table when the plist is created, since this is likely to be less-used.
-4. [ ] Create a debug mode
-5. [ ] Create a verification command to test =chronometrist-file= for errors.
+4. Create a debug mode
+5. Create a verification command to test =chronometrist-file= for errors.
+6. Display task's weekly progress using ASCII/sparklines
+   * Extension to add new column in =chronometrist= buffer
+   * without goals - show dashes for days on which task was not touched, x for days on which it was done
+   * with goals - use sparklines to show how much of goal was met
 
 ** UX [0%]
 1. [ ] Provide a command which tries to auto-configure Chronometrist keys in a way which is consistent with the user's other keymaps.
