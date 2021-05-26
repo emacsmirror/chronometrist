@@ -20,8 +20,6 @@ Largely modelled after the Android application, [[https://github.com/netmackan/A
 1. No support (yet) for adding a task without clocking into it.
 2. No support for concurrent tasks.
 
-   *IMPORTANT: with version v0.3, chronometrist no longer uses timeclock as a dependency and will use its own s-expression-based backend. A command to migrate the timeclock-file, =chronometrist-migrate-timelog-file->sexp-file=, is provided.*
-
 ** Comparisons
 :PROPERTIES:
 :CUSTOM_ID: comparisons
@@ -91,13 +89,11 @@ Add the "elisp/" subdirectory to your load-path, and =(require 'chronometrist)=.
 
 Run =M-x chronometrist= to see your projects, the time you spent on them today, which one is active, and the total time clocked today.
 
-Hit =RET= (=chronometrist-toggle-task=) on a project to start tracking time for it. If it's already clocked in, it will be clocked out. This command runs some [[#Hooks][hooks]], which are useful for a wide range of functionality (see [[#adding-more-information-experimental][Adding more information]] below). In some cases, you may want to skip running the hooks - use =M-RET= (=chronometrist-toggle-task-no-hooks=) to do that.
+Click or hit =RET= (=chronometrist-toggle-task=) on a project to start tracking time for it. If it's already clocked in, it will be clocked out.
 
 You can also hit =<numeric prefix> RET= anywhere in the buffer to toggle the corresponding project, e.g. =C-1 RET= will toggle the project with index 1.
 
 Press =r= to see a weekly report (see =chronometrist-report=)
-
-=chronometrist= keeps itself updated via an idle timer - no need to frequently press =g= to update.
 
 *** chronometrist-report
 :PROPERTIES:
@@ -107,8 +103,6 @@ Press =r= to see a weekly report (see =chronometrist-report=)
 Run =M-x chronometrist-report= (or =chronometrist= with a prefix argument of 1, or press =r= in the =chronometrist= buffer) to see a weekly report.
 
 Press =b= to look at past weeks, and =f= for future weeks.
-
-=chronometrist-report= keeps itself updated via an idle timer - no pressing =g= to update.
 
 *** chronometrist-statistics
 :PROPERTIES:
@@ -125,6 +119,8 @@ Press =b= to look at past time ranges, and =f= for future ones.
 In the buffers created by the previous three commands, you can press =l= (=chronometrist-open-log=) to view/edit your =chronometrist-file=, which by default is =~/.emacs.d/chronometrist.sexp=.
 
 All of these commands will kill their buffer when run again with the buffer visible, so the keys you bind them to behave as a toggle.
+
+All buffers keep themselves updated via an idle timer - no need to frequently press =g= to update.
 
 *** Attaching tags and key values
 :PROPERTIES:
@@ -163,7 +159,7 @@ If you wish to be prompted when you exit Emacs while tracking time, you can use 
 
 If you wish you could define time goals for some tasks, and have Chronometrist notify you when you're approaching the goal, completing it, or exceeding it, check out the extension [[https://github.com/contrapunctus-1/chronometrist-goal/][chronometrist-goal.el]].
 
-** Customization
+** How-to
 :PROPERTIES:
 :CUSTOM_ID: customization
 :END:
@@ -189,9 +185,11 @@ The hooks whose names end with =-functions= are abnormal hooks - each function m
 
 =chronometrist-before-out-functions= is different from the other three, in that it runs until failure - the task will be clocked out only if all functions in this hook return =t=.
 
-*** Opening certain files when you start a task
+Sometimes you may want to skip running the hooks - use =M-RET= (=chronometrist-toggle-task-no-hooks=) to do that.
+
+*** How to open certain files when you start a task
 :PROPERTIES:
-:CUSTOM_ID: opening-certain-files-when-you-start-a-task
+:CUSTOM_ID: open-certain-files-when-you-start-a-task
 :END:
 
 An idea from the author's own init -
@@ -207,9 +205,9 @@ An idea from the author's own init -
 (add-hook 'chronometrist-before-in-functions 'my-start-project)
 #+END_SRC
 
-*** Reminding you to commit your changes
+*** How to warn yourself about uncommitted changes
 :PROPERTIES:
-:CUSTOM_ID: reminding-you-to-commit-your-changes
+:CUSTOM_ID: uncommitted-changes
 :END:
 
 Another one, prompting the user if they have uncommitted changes in a git repository (assuming they use [[https://magit.vc/][Magit]]) -
@@ -232,9 +230,9 @@ Return nil (and run `magit-status') if the user answers no."
 (add-hook 'chronometrist-before-out-functions 'my-commit-prompt)
 #+END_SRC
 
-*** Displaying the current time interval in the activity indicator
+*** How to display the current time interval in the activity indicator
 :PROPERTIES:
-:CUSTOM_ID: displaying-the-current-time-interval-in-the-activity-indicator
+:CUSTOM_ID: current-time-interval-in-activity-indicator
 :END:
 
 #+BEGIN_SRC emacs-lisp
