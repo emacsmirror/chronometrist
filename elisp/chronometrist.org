@@ -358,9 +358,9 @@ The reasons I like this format are -
         ;; to use this, we'd have to move `chronometrist-plist-pp' before this
         ;; definition, and I'm perfectly content with where it is
         ;; right now
-        ;; (chronometrist-plist-pp plist)
-        (print plist)
-        (princ "\n\n"))
+        (chronometrist-plist-pp plist) (princ "\n\n")
+        ;; (print plist) (princ "\n")
+        )
       '((:name "Programming"
                :start "2018-01-01T00:00:00+0530"
                :stop  "2018-01-01T01:00:00+0530")
@@ -408,7 +408,9 @@ The reasons I like this format are -
                :start "2020-05-10T16:33:17+0530"
                :stop  "2020-05-10T17:10:48+0530"))))))
 #+END_SRC
-1. [X] =buffer-file-name= returns nil when Emacs is run in batch mode; I've tried using =(concat (or (ignore-errors (file-name-directory (buffer-file-name))) default-directory) "test.sexp")=, but that resulted in ="~/.emacs.d/test.sexp"= being used instead, for some reason.
+
+1. [X] finding the test input file
+   * =buffer-file-name= returns nil when Emacs is run in batch mode; I've tried using =(concat (or (ignore-errors (file-name-directory (buffer-file-name))) default-directory) "test.sexp")=, but that resulted in ="~/.emacs.d/test.sexp"= being used instead, for some reason.
    * maybe we can store the test file contents in a string instead, and create a temporary test file using =make-temp-file=?
 
 Boilerplate for updating state between file operations in tests.
@@ -661,7 +663,7 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                (list start end it))
         (list start end)))))
 #+END_SRC
-
+***** tests
 #+BEGIN_SRC emacs-lisp :load test
 (ert-deftest file-hash ()
   (-let* ((chronometrist-file chronometrist-test-file)
@@ -669,11 +671,12 @@ in `chronometrist-file' describing the region for which HASH was calculated."
            (chronometrist-file-hash :before-last nil))
           ((rest-start rest-end rest-hash)
            (chronometrist-file-hash nil :before-last t)))
-    (message "chronometrist - file-hash test - file path is %s" chronometrist-test-file)
+    (message "chronometrist - file-hash test - file path is %s"
+             chronometrist-test-file)
     (should (= 1 rest-start))
-    (should (= 1247 rest-end))
-    (should (= 1249 last-start))
-    (should (= 1419 last-end))))
+    (should (= 1254 rest-end))
+    (should (= 1256 last-start))
+    (should (= 1426 last-end))))
 #+END_SRC
 **** read-from                                                    :reader:
 #+BEGIN_SRC emacs-lisp
@@ -737,7 +740,7 @@ Return
 #+END_SRC
 ***** tests
 #+BEGIN_SRC emacs-lisp :load test
-(ert-deftest file-change-type ()
+(ert-deftest chronometrist-file-change-type ()
   (let* ((chronometrist-file            chronometrist-test-file)
          (test-contents    (with-current-buffer (find-file-noselect chronometrist-file)
                              (buffer-substring (point-min) (point-max))))
