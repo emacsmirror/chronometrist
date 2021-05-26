@@ -68,7 +68,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 :CUSTOM_ID: from-git
 :END:
 
-You can get =chronometrist= from https://github.com/contrapunctus-1/chronometrist
+You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometrist
 
 =chronometrist= requires
 + Emacs v25 or higher
