@@ -675,7 +675,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
         ())))
 #+END_SRC
 **** WIP unified-prompt                                      :hook:writer:
-1. [ ] Improve appearance
+1. [ ] Improve appearance - is there an easy way to syntax highlight the plists?
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-key-values-unified-prompt (task)
   "Query user for tags and key-values to be added for TASK.
