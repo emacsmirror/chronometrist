@@ -2963,7 +2963,7 @@ To disable display of tags, customize `chronometrist-details-schema'.")
 
 ***** display-key-values                                :custom:variable:
 #+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-details-display-key-values nil
+(defcustom chronometrist-details-display-key-values "%s"
   "How to display tags in `chronometrist-details' buffers.
 Value can be
 nil, meaning do not display key-values, or
@@ -2992,7 +2992,7 @@ This was originally called =chronometrist-details-table-format=, but "schema" is
   [("#" 3 t)
    ("Task" 20 t)
    ("Tags" 20 t)
-   ("Details" 20 t)
+   ("Details" 45 t)
    ("Duration" 20 t :right-align t :pad-right 3)
    ("Time" 10 t)]
   "Vector specifying format of `chronometrist-details' buffer.
@@ -3015,18 +3015,20 @@ using `chronometrist-details-row-transformers'.")
 (defun chronometrist-details-rows-helper (list)
   "Return ARG as a string to be inserted in a `chronometrist-details' buffer.
 ARG must be either tags (a list of symbols) or a plist."
-  (let ((plist-p (chronometrist-plist-p list)) contents custom)
-    (if plist-p
+  (let (contents custom)
+    (if (chronometrist-plist-p list)
         (setq custom   chronometrist-details-display-key-values
               contents (chronometrist-plist-key-values list))
-        (setq custom   chronometrist-details-display-tags
-              contents list))
+      (setq custom   chronometrist-details-display-tags
+            contents list))
     (if (and contents custom)
         (pcase custom
-          ((pred stringp)   (mapconcat
-                             (lambda (elt) (format custom elt))
-                             list " "))
-          ((pred functionp) (funcall custom plist)))
+          ((pred stringp)
+           (mapconcat
+            (lambda (elt) (format custom elt))
+            list " "))
+          ((pred functionp)
+           (funcall custom list)))
       "")))
 #+END_SRC
 
