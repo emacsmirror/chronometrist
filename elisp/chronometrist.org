@@ -2950,6 +2950,8 @@ If ARG is a numeric argument, go forward that many times."
 #+END_SRC
 
 ***** display-tags                                      :custom:variable:
+If the value of this variable is a function and the string it returns contains a newline, the results may be undesirable...but hardly unrecoverable, so try it and see, if you wish.
+
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-details-display-tags "%s"
   "How to display tags in `chronometrist-details' buffers.
@@ -2963,6 +2965,8 @@ To disable display of tags, customize `chronometrist-details-schema'.")
 #+END_SRC
 
 ***** display-key-values                                :custom:variable:
+If the value of this variable is a function and the string it returns contains a newline, the results may be undesirable...but hardly unrecoverable, so try it and see, if you wish.
+
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-details-display-key-values "%s"
   "How to display tags in `chronometrist-details' buffers.
