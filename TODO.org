@@ -25,7 +25,7 @@
       * timer will only refresh when clocked in...
    7. [X] regression - no value history
    8. [ ] Possible to add the same key-value twice
-      * Clock in, clock out, add key-value and accept, delete :stop time and save, clock out again, accept the already-inserted key-value - duplicate!
+      * Clock in - clock out - add key-value and accept - delete =:stop= time and save - clock out again - accept the already-inserted key-value - duplicate!
 ** Features [25%]
    1. [ ] Create chronometrist-unused-projects-list + chronometrist-projects-list.
    2. [ ] New commands
@@ -222,7 +222,7 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
    #+END_SRC
    ...is displayed as 1:53:52 (rather than 00:54:52) after clocking out. :\
 
-** chronometrist [6%]
+** chronometrist [18%]
 1. [ ] Add =:stop= time when we call =chronometrist-kv-accept=, not when we quit the key-value prompt with a blank input.
    * It might be nice to be able to quit =chronometrist-kv-add= with C-g instead, actually.
      + =C-g= stops execution of =chronometrist-run-functions-and-clock-in=/=chronometrist-run-functions-and-clock-out=, so they can't reach the calls for =chronometrist-in=/=chronometrist-out=.
@@ -237,24 +237,24 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
    * It might be easier to just have a 'remove last interval' (the operation I use undo for most often), so we don't reimplement an undo for SQLite.
 3. [X] Enhanced tag/key-value prompt - before asking for tags/key-values, if the last occurence of task had tags/key-values, ask if they should be reused. y - yes, n - no (continue to usual prompts).
    * [X] Show what those tags/key-values are, so the user knows what will be added.
-4. [ ] "Explain" command - show intervals for task today
-   * [ ] Switch between intervals and tag-combination breakdown
-5. [ ] Magit/other VCS integration
+4. [X] "Explain" command - show intervals for task today
+5. [ ] Switch #4 between intervals and tag-combination breakdown
+6. [ ] Magit/other VCS integration
    * [ ] Add support for using key-values to point to a commit (commit hash + repo path?)
      + Need some way to extend the key-value prompt, so we can provide completion for commit hashes + commit messages...
    * [ ] Add command to open the commit associated with the interval in Magit
    * [ ] Make a user-customizable alist of project names and repo locations (local or remote), so shorter project names can be used instead of repo locations, saving space and reducing duplication.
-6. [ ] key-values - make detection of Lisp values more robust.
+7. [ ] key-values - make detection of Lisp values more robust.
    * If the input string can be read in a single call to =read=, treat it as an s-expression; else, use the current heuristics.
-7. [ ] key-values - create transformer for key-values, to be run before they are added to the file. This will allow users to do cool things like sorting the key-values.
-8. [ ] *Convert* current interval - change the =:name= of the currently clocked-in interval. Tags and key-values may be re-queried. Clock-in hook functions will be run again with the new task as the argument.
-9. [ ] *Rename* a project (updating all records)
-10. [ ] *Delete* a project (erasing all records)
-11. [ ] *Hide* a project (don't show it in any Chronometrist-* buffer, effectively deleting it non-destructively)
-12. [ ] *Reset* current interval - update the =:start= time to the current time.
-13. [ ] Alternative query function for tags and key-values - a single query. Either with tags and key-values as a single plist, or something like the multi-field query-replace prompt.
-14. [ ] Customizable field widths
-15. [ ] Ask existing users if they'd like to have a prop line added to =chronometrist-file=
+8. [ ] key-values - create transformer for key-values, to be run before they are added to the file. This will allow users to do cool things like sorting the key-values.
+9. [ ] *Convert* current interval - change the =:name= of the currently clocked-in interval. Tags and key-values may be re-queried. Clock-in hook functions will be run again with the new task as the argument.
+10. [ ] *Rename* a project (updating all records)
+11. [ ] *Delete* a project (erasing all records)
+12. [ ] *Hide* a project (don't show it in any Chronometrist-* buffer, effectively deleting it non-destructively)
+13. [ ] *Reset* current interval - update the =:start= time to the current time.
+14. [X] Alternative query function for tags and key-values - a single query. Either with tags and key-values as a single plist, or something like the multi-field query-replace prompt.
+15. [ ] Customizable field widths
+16. [ ] Ask existing users if they'd like to have a prop line added to =chronometrist-file=
     * check if =chronometrist-sexp-mode= is active in the buffer
     * offer to never ask again
 
@@ -323,7 +323,8 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 
 * Maybe [0%]
 ** New features [0%]
-1. Some way to use markup (Markdown, Org, etc) for certain plist values.
+1. Interact with Chronometrist from phone, tablet, or smart watches. (Help needed, I'm a total strange to mobile development and don't own any wearables.)
+2. Some way to use markup (Markdown, Org, etc) for certain plist values.
 
    Implementation ideas -
    * A list of keys whose values are to be edited in a user-specified major mode.
@@ -333,7 +334,7 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
      + poly-mode to mix different modes
    * "Input frontends" - a way to represent s-expressions as Markdown, Org, etc, so the entire plist can be edited in that mode. As a side-effect, this will permit use of Markdown, Org, etc in keyword-values - e.g. to use markup in comments or notes.
    * A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
-2. A custom variable containing a list of tasks
+3. A custom variable containing a list of tasks
    #+BEGIN_SRC emacs-lisp
    ("A Task Name"
     ("Another Task Name" :key-prompt nil)
@@ -355,14 +356,17 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
    Useful for
    1. Adding tasks without clocking into them (the list is stored in a separate file)
    2. Not asking for tags and/or key-values for a particular task, or having a special behaviour for a task. (e.g. some tasks I use follow certain patterns, which I'd like to automate away)
-3. Completion for sub-plists - if the value of a user keyword-value pair is a plist (heuristic - list with keyword as first element), can we reuse the keyword-value prompt for it? 🤔
+4. Completion for sub-plists - if the value of a user keyword-value pair is a plist (heuristic - list with keyword as first element), can we reuse the keyword-value prompt for it? 🤔
    * Maybe generate the completion hash table when the plist is created, since this is likely to be less-used.
-4. Create a debug mode
-5. Create a verification command to test =chronometrist-file= for errors.
-6. Display task's weekly progress using ASCII/sparklines
+5. Create a debug mode
+6. Create a verification command to test =chronometrist-file= for errors.
+7. Display task's weekly progress using ASCII/sparklines
    * Extension to add new column in =chronometrist= buffer
-   * without goals - show dashes for days on which task was not touched, x for days on which it was done
-   * with goals - use sparklines to show how much of goal was met
+   * without goals - show dashes for days on which task was not touched, x for days on which it was done. e.g.
+     + =- x x x - - *= means today is a Saturday, that I did the task on three days (Mo, Tu, We), and that I'm doing it right now.
+     + =- x -= shows that today is a Tuesday and I did it on Monday, but not Sunday or (so far) today.
+   * with goals - use sparklines to show how much of the goal was met
+     + or, without goals - use sparklines as percent of maximum time spent on that task this week
 
 ** UX [0%]
 1. [ ] Provide a command which tries to auto-configure Chronometrist keys in a way which is consistent with the user's other keymaps.
