@@ -1938,6 +1938,15 @@ Return the value returned by Fₙ."
         (setq arg (funcall fn arg)))
     arg))
 #+END_SRC
+***** TODO schema                                       :custom:variable:
+1. Define custom =:type=
+
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-schema
+  '[("#" 3 t) ("Task" 25 t) ("Time" 10 t) ("Active" 10 t)]
+  "Vector specifying schema of `chronometrist' buffer.
+See `tabulated-list-format'.")
+#+END_SRC
 ***** rows                                                    :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-rows ()
@@ -2122,7 +2131,7 @@ PREFIX is ignored."
 ***** schema-transformers                            :extension:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-schema-transformers nil
-  "List of functions to transform `tabulated-list-format' (which see).
+  "List of functions to transform `chronometrist-schema'.
 This is called with `chronometrist-run-transformers' in `chronometrist-mode', which see.
 
 Extensions using `chronometrist-schema-transformers' to
@@ -2220,9 +2229,8 @@ is the name of the task to be clocked out of.")
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
   (make-local-variable 'tabulated-list-format)
-  (--> [("#" 3 t) ("Task" 25 t) ("Time" 10 t) ("Active" 10 t)]
-        (chronometrist-run-transformers chronometrist-schema-transformers it)
-        (setq tabulated-list-format it))
+  (--> (chronometrist-run-transformers chronometrist-schema-transformers chronometrist-schema)
+    (setq tabulated-list-format it))
   (make-local-variable 'tabulated-list-entries)
   (setq tabulated-list-entries 'chronometrist-rows)
   (make-local-variable 'tabulated-list-sort-key)
