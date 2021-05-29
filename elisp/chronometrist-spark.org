@@ -1,0 +1,48 @@
+#+TITLE: chronometrist-spark
+
+* chronometrist-spark
+** Library headers and commentary
+#+BEGIN_SRC emacs-lisp
+;;; chronometrist-spark.el --- Add a sparklines column to Chronometrist -*- lexical-binding: t; -*-
+
+;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
+;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
+;; Keywords: calendar
+;; Homepage: https://tildegit.org/contrapunctus/chronometrist
+;; Package-Requires: ((chronometrist "0.7.2") (spark))
+;; Version: 0.1.0
+
+;; This is free and unencumbered software released into the public domain.
+;;
+;; Anyone is free to copy, modify, publish, use, compile, sell, or
+;; distribute this software, either in source code form or as a compiled
+;; binary, for any purpose, commercial or non-commercial, and by any
+;; means.
+;;
+;; For more information, please refer to <https://unlicense.org>
+#+END_SRC
+
+"Commentary" is displayed when the user clicks on the package's entry in =M-x list-packages=.
+#+BEGIN_SRC emacs-lisp
+;;; Commentary:
+;;
+;; This package adds a column to Chronometrist displaying sparklines for each task.
+#+END_SRC
+** Dependencies
+#+BEGIN_SRC emacs-lisp
+;;; Code:
+(require 'chronometrist)
+(require 'spark)
+#+END_SRC
+** Code
+** Provide
+#+BEGIN_SRC emacs-lisp
+(provide 'chronometrist-spark)
+;;; chronometrist-spark.el ends here
+#+END_SRC
+** Local Variables                                                :noexport:
+# Local Variables:
+# org-html-self-link-headlines: t
+# eval: (visual-fill-column-mode -1)
+# eval: (nameless-mode)
+# End:
