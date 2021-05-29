@@ -322,6 +322,8 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
    10. [ ] =chronometrist-timer= - if =chronometrist-file= is being edited (buffer exists and modified), don't refresh - this will (hopefully) prevent Emacs from going crazy with errors in trying to parse malformed data.
 
 * Maybe [0%]
+** Code
+1. There is some duplication among extensions - =*-setup= and =*-teardown= functions in =goal= and =sparkline= could be refactored into a common helper for all extensions.
 ** New features [0%]
 1. Interact with Chronometrist from phone, tablet, or smart watches. (Help needed, I'm a total strange to mobile development and don't own any wearables.)
 2. Some way to use markup (Markdown, Org, etc) for certain plist values.
