@@ -3,7 +3,7 @@
 * chronometrist-spark
 ** Library headers and commentary
 #+BEGIN_SRC emacs-lisp
-;;; chronometrist-spark.el --- Add a sparklines column to Chronometrist -*- lexical-binding: t; -*-
+;;; chronometrist-spark.el --- Show sparklines in Chronometrist -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
