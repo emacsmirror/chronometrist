@@ -1,3 +1,7 @@
+#+TITLE: Chronometrist
+#+SUBTITLE: An extensible time tracker for Emacs
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
+
 [[https://melpa.org/#/chronometrist][file:https://melpa.org/packages/chronometrist-badge.svg]]
 
 * chronometrist
@@ -32,7 +36,8 @@ Largely modelled after the Android application, [[https://github.com/netmackan/A
 Compared to timeclock.el, Chronometrist
 + stores data in an s-expression format rather than a line-based one
 + supports attaching tags and arbitrary key-values to time intervals
-+ has commands to shows useful summaries * has more hooks (see [[#Hooks][Hooks]])
++ has commands to shows useful summaries
++ has more hooks
 
 *** Org time tracking
 :PROPERTIES:
@@ -122,27 +127,6 @@ All of these commands will kill their buffer when run again with the buffer visi
 
 All buffers keep themselves updated via an idle timer - no need to frequently press =g= to update.
 
-*** Attaching tags and key values
-:PROPERTIES:
-:CUSTOM_ID: attaching-tags-and-key-values
-:END:
-
-Part of the reason Chronometrist stores time intervals as property lists is to allow you to add tags and arbitrary key-values to them.
-
-**** Tags
-:PROPERTIES:
-:CUSTOM_ID: tags
-:END:
-
-To be prompted for tags, add =chronometrist-tags-add= to any hook except =chronometrist-before-in-functions=, based on your preference (see [[#Hooks][Hooks]]). The prompt suggests past combinations you used for the current task, which you can browse with =M-p=/=M-n=. You can leave it blank by pressing =RET=, or skip the prompt just this once by pressing =M-RET= (=chronometrist-toggle-task-no-hooks=).
-
-**** Key-value pairs
-:PROPERTIES:
-:CUSTOM_ID: key-value-pairs
-:END:
-
-Similarly, to be prompted for key-values, add =chronometrist-kv-add= to any hook except =chronometrist-before-in-functions=. To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press =C-c C-c= to accept the key-values, or =C-c C-k= to cancel.
-
 *** Prompt when exiting Emacs
 :PROPERTIES:
 :CUSTOM_ID: prompt-when-exiting-emacs
@@ -166,26 +150,43 @@ If you wish you could define time goals for some tasks, and have Chronometrist n
 
 See the Customize groups =chronometrist= and =chronometrist-report= for variables intended to be user-customizable.
 
-*** Hooks
+*** How to attach tags to time intervals
 :PROPERTIES:
-:CUSTOM_ID: hooks
+:CUSTOM_ID: how-to-tags
 :END:
 
-Chronometrist currently has the following hooks -
-1. =chronometrist-mode-hook=
-2. =chronometrist-before-in-functions=
-3. =chronometrist-after-in-functions=
-4. =chronometrist-before-out-functions=
-5. =chronometrist-after-out-functions=
-6. =chronometrist-list-format-transformers=
-7. =chronometrist-entry-transformers=
-8. =chronometrist-file-change-hook=
+1. Add =chronometrist-tags-add= to one or more of these hooks [fn:1] -
 
-The hooks whose names end with =-functions= are abnormal hooks - each function must accept exactly one argument, which is the name of the project which is being started or stopped, as a string.
+   #+BEGIN_SRC emacs-lisp
+   (add-to-list 'chronometrist-after-in-functions 'chronometrist-tags-add)
+   (add-to-list 'chronometrist-before-out-functions 'chronometrist-tags-add)
+   (add-to-list 'chronometrist-after-out-functions 'chronometrist-tags-add)
+   #+END_SRC
+2. clock in/clock out to trigger the hook.
 
-=chronometrist-before-out-functions= is different from the other three, in that it runs until failure - the task will be clocked out only if all functions in this hook return =t=.
+   The prompt suggests past combinations you used for the current task, which you can browse with =M-p=/=M-n=. You can leave it blank by pressing =RET=.
 
-Sometimes you may want to skip running the hooks - use =M-RET= (=chronometrist-toggle-task-no-hooks=) to do that.
+[fn:1] but not =chronometrist-before-in-functions=
+
+*** How to attach key-values to time intervals
+:PROPERTIES:
+:CUSTOM_ID: how-to-key-value-pairs
+:END:
+
+1. Add =chronometrist-kv-add= to one or more of these hooks [fn:2] -
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
+(add-to-list 'chronometrist-before-out-functions 'chronometrist-kv-add)
+(add-to-list 'chronometrist-after-out-functions 'chronometrist-kv-add)
+#+END_SRC
+
+To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press =C-c C-c= to accept the key-values, or =C-c C-k= to cancel.
+
+[fn:2] but not =chronometrist-before-in-functions=
+
+*** How to skip running hooks/attaching tags and key values
+Use =M-RET= (=chronometrist-toggle-task-no-hooks=) to clock in/out.
 
 *** How to open certain files when you start a task
 :PROPERTIES:
@@ -249,6 +250,31 @@ Return nil (and run `magit-status') if the user answers no."
 #+END_SRC
 
 ** User's reference
+All variables intended for user customization are listed here. They serve as the public API for this project for the purpose of semantic versioning. Any changes to these which require a user to modify their configuration are considered breaking changes.
+
+1. =chronometrist-file=
+2. =chronometrist-buffer-name=
+3. =chronometrist-report-buffer-name=
+4. =chronometrist-details-buffer-name=
+5. =chronometrist-sexp-pretty-print-function=
+6. =chronometrist-hide-cursor=
+7. =chronometrist-update-interval=
+8. =chronometrist-activity-indicator=
+
+Buffer schemas
+1. =chronometrist-schema=
+2. =chronometrist-details-schema=
+
+Hooks
+1. =chronometrist-mode-hook=
+2. =chronometrist-schema-transformers=
+3. =chronometrist-row-transformers=
+4. =chronometrist-before-in-functions=
+5. =chronometrist-after-in-functions=
+6. =chronometrist-before-out-functions=
+7. =chronometrist-after-out-functions=
+8. =chronometrist-file-change-hook=
+9. =chronometrist-timer-hook=
 
 ** Contributions and contact
 :PROPERTIES:
