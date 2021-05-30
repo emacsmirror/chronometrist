@@ -2,6 +2,7 @@
 #+SUBTITLE: A Time Tracker For Emacs
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
 #+PROPERTY: header-args :tangle yes
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../style.css" />
 
 * Chronometrist
 ** Introduction
@@ -92,9 +93,9 @@ Challenges -
 2. Updating =chronometrist-task-list= and the Chronometrist buffer, when a new task is added or the last interval for a task is removed (v0.6.4)
 3. Handling changes made to an active interval after midnight
    * use the date from the plist's =:start= timestamp instead of the date today
-   * :append - normally, add to table; for spanning intervals, invalid operation
-   * :modify - normally, replace in table; for spanning intervals, split and replace
-   * :remove - normally, remove from table; for spanning intervals, split and remove
+   * =:append= - normally, add to table; for spanning intervals, invalid operation
+   * =:modify= - normally, replace in table; for spanning intervals, split and replace
+   * =:remove= - normally, remove from table; for spanning intervals, split and remove
 
 *** Midnight-spanning intervals
 :PROPERTIES:
@@ -3013,7 +3014,9 @@ This was originally called =chronometrist-details-table-format=, but "schema" is
 
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-details-schema
-  [("#" 3 t)
+  [("#" 3 (lambda (row-1 row-2)
+            (< (car row-1)
+               (car row-2))))
    ("Task" 20 t)
    ("Tags" 20 t)
    ("Details" 45 t)
