@@ -1,6 +1,6 @@
 #+TITLE: Chronometrist
 #+SUBTITLE: A Time Tracker For Emacs
-#+TODO: TODO WIP EXTEND CLEANUP FIXME REVIEW |
+#+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
 #+PROPERTY: header-args :tangle yes
 
 * Chronometrist
@@ -2764,7 +2764,7 @@ reduced to the desired range using
            (content        (vector task active-days active-percent average-time)))
       (list task content))))
 #+END_SRC
-***** rows                                                       :reader:
+***** TEST rows                                                  :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-rows ()
   "Return rows to be displayed in the buffer created by `chronometrist-statistics'."
