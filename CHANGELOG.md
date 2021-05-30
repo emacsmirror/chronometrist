@@ -4,11 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [0.8.0] - 2021-05-31
 ### Added
-1. `chronometrist-details`, to display time intervals in a tabular format.
+1. New frontend `chronometrist-details`, to display time intervals in a tabular format.
+2. New extension `chronometrist-spark`, to display sparklines in the chronometrist buffer.
+3. `chronometrist-schema`, custom variable used to define `tabulated-list-format`
+### Changed
+4. Renames -
+   * `chronometrist-list-format-transformers` → `chronometrist-schema-transformers`
+   * `chronometrist-entry-transformers` → `chronometrist-row-transformers` 
+5. Hooks now use `defcustom` instead of `defvar`.
 ### Fixed
-2. error when launching `chronometrist-statistics`
+6. error when launching `chronometrist-statistics`
 
 ## [0.7.2] - 2021-05-18
 ### Changed
