@@ -40,7 +40,7 @@ Quite recently, after around two years of Chronometrist developement and use, I 
 5. Have a useful, informative, interactive interface
 6. Support mouse and keyboard use equally
 
-[1] I still have doubts about this. Having SQL as a query language would be very useful in perusing the stored data. Maybe we should have tried to create a companion mode to edit SQL databases interactively?
+[fn:1] I still have doubts about this. Having SQL as a query language would be very useful in perusing the stored data. Maybe we should have tried to create a companion mode to edit SQL databases interactively?
 
 *** Terminology
 :PROPERTIES:
@@ -68,7 +68,7 @@ One of the earliest 'optimizations' of great importance turned out to simply be 
 **** Preserve hash table state for some commands
 NOTE - this has been replaced with a more general optimization - see next section.
 
-The next one was released in v0.5. Till then, any time the [[* chronometrist-file][=chronometrist-file=]] was modified, we'd clear the [[* chronometrist-events][=chronometrist-events=]] hash table and read data into it again. The reading itself is nearly-instant, even with ~2 years' worth of data [fn:1] (it uses Emacs' [[elisp:(describe-function 'read)][=read=]], after all), but the splitting of [[#explanation-midnight-spanning-intervals][midnight-spanning events]] is the real performance killer.
+The next one was released in v0.5. Till then, any time the [[* chronometrist-file][=chronometrist-file=]] was modified, we'd clear the [[* chronometrist-events][=chronometrist-events=]] hash table and read data into it again. The reading itself is nearly-instant, even with ~2 years' worth of data [fn:2] (it uses Emacs' [[elisp:(describe-function 'read)][=read=]], after all), but the splitting of [[#explanation-midnight-spanning-intervals][midnight-spanning events]] is the real performance killer.
 
 After the optimization...
 1. Two backend functions ([[* new][=chronometrist-sexp-new=]] and [[* replace-last][=chronometrist-sexp-replace-last=]]) were modified to set a flag (=chronometrist--inhibit-read-p=) before saving the file.
@@ -80,7 +80,7 @@ After the optimization...
 
 There are still some operations which [[* refresh-file][=chronometrist-refresh-file=]] runs unconditionally - which is to say there is scope for further optimization, if or when required.
 
-[fn:1] As indicated by exploratory work in the =parsimonious-reading= branch, where I made a loop to only =read= and collect s-expressions from the file. It was near-instant...until I added event splitting to it.
+[fn:2] As indicated by exploratory work in the =parsimonious-reading= branch, where I made a loop to only =read= and collect s-expressions from the file. It was near-instant...until I added event splitting to it.
 
 **** Determine type of change made to file
 Most changes, whether made through user-editing or by Chronometrist commands, happen at the end of the file. We try to detect the kind of change made - whether the last expression was modified, removed, or whether a new expression was added to the end - and make the corresponding change to =chronometrist-events=, instead of doing a full parse again (=chronometrist-events-populate=). The increase in responsiveness has been significant.
@@ -758,7 +758,7 @@ The list must be on a single line, as emitted by `prin1'."
   (princ (chronometrist-plist-pp-to-string object)
          (or stream standard-output)))
 #+END_SRC
-*** TODO Backend
+*** Backend
 :PROPERTIES:
 :CUSTOM_ID: program-backend
 :END:
@@ -781,10 +781,6 @@ The reasons I like this format are -
 2. It is trivial to parse using the =read= built-in to Emacs.
    * =chronometrist-loop-file= is provided as an additional convenience, to iterate through each expression in the file.
 3. It is easy to diff and version control.
-
-**** TODO
-1. [ ] add newline after last expression and save => nil
-2. [ ] remove newline after last expession and save => nil
 
 **** tests
 #+BEGIN_SRC emacs-lisp :load test
@@ -1118,10 +1114,14 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                  (funcall position)))
     (ignore-errors (read (current-buffer)))))
 #+END_SRC
-**** file-change-type                                             :reader:
-The initial idea was to use two hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
+**** TODO file-change-type                                        :reader:
+1. [ ] add newline after last expression and save => nil
+2. [ ] remove newline after last expession and save => nil
+
+The initial idea was to use two pairs of hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
 + the expression may shrink, and if we try to compute the hash of the previously-known region again, we will get an args-out-of-range error.
 + false negatives for whitespace/indentation differences.
+Thus, we use =read= for the last expression.
 
 Possible states
 : <rest-start> <rest-end> <last-start> <last-end>
@@ -1347,10 +1347,11 @@ file names respectively."
 :PROPERTIES:
 :CUSTOM_ID: program-data-structures
 :END:
-Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
+Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" [fn:3] - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
 
 The data from =chronometrist-events= is used by most (all?) interval-consuming functions, but is never written to the user's file itself.
 
+[fn:3] it might be the case that the [[#program-backend][file format]] is not suited to our most frequent operation...
 **** reset-state                                                 :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset ()
@@ -1419,6 +1420,7 @@ Return a list of two events if EVENT was split, else nil."
                     (plist-put :stop  second-stop))))))))
 #+END_SRC
 
+***** tests
 #+BEGIN_SRC emacs-lisp :load test
 (ert-deftest chronometrist-events-maybe-split ()
   (should
@@ -1585,20 +1587,26 @@ which span midnights."
 **** remove-from-task-list                                        :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-remove-from-task-list (task)
-  (let ((count (cl-loop with count = 0
-                 for intervals being the hash-values of chronometrist-events
-                 do (cl-loop for interval in intervals
-                      do (cl-incf count))
-                 finally return count))
-        (position (cl-loop with count = 0
-                    for intervals being the hash-values of chronometrist-events
-                    when (cl-loop for interval in intervals
-                           do (cl-incf count)
-                           when (equal task (plist-get interval :name))
-                           return t)
-                    return count)))
-    (when (or (not position)
-              (= position count))
+  "Check if we want TASK to be removed from `chronometrist-task-list', and remove it.
+TASK is removed if it does not occur in `chronometrist-events',
+or if it only occurs in the newest plist of the same.
+
+Return new value of `chronometrist-task-list', or nil if
+unchanged."
+  (let ((ht-plist-count (cl-loop with count = 0
+                          for intervals being the hash-values of chronometrist-events
+                          do (cl-loop for interval in intervals
+                               do (cl-incf count))
+                          finally return count))
+        (ht-task-first-result (cl-loop with count = 0
+                                for intervals being the hash-values of chronometrist-events
+                                when (cl-loop for interval in intervals
+                                       do (cl-incf count)
+                                       when (equal task (plist-get interval :name))
+                                       return t)
+                                return count)))
+    (when (or (not ht-task-first-result)
+              (= ht-task-first-result ht-plist-count))
       ;; The only interval for TASK is the last expression
       (setq chronometrist-task-list (remove task chronometrist-task-list)))))
 #+END_SRC
@@ -2047,42 +2055,49 @@ value of `revert-buffer-function'."
         (set-window-point window point)))))
 #+END_SRC
 ***** refresh-file                                               :writer:
+=chronometrist-file-change-type= must be run /before/ we update =chronometrist--file-state= (the latter represents the old state of the file, which =chronometrist-file-change-type= compares with the newer current state).
+
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-refresh-file (fs-event)
-  "Re-read `chronometrist-file' and refresh the `chronometrist' buffer.
-Argument _FS-EVENT is ignored."
+  "Procedure run when `chronometrist-file' changes.
+Re-read `chronometrist-file', update `chronometrist-events', and
+refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
-  ;; `chronometrist-file-change-type' must be run /before/ we update `chronometrist--file-state'
-  ;; (the latter represents the old state of the file, which
-  ;; `chronometrist-file-change-type' compares with the newer current state)
   (-let* (((descriptor action file ...) fs-event)
           (change      (when chronometrist--file-state
                          (chronometrist-file-change-type chronometrist--file-state)))
           (reset-watch (or (eq action 'deleted) (eq action 'renamed))))
     ;; (message "chronometrist - file change type is %s" change)
-    ;; if only the last plist changed, update `chronometrist-events'
-    ;; and `chronometrist-task-list'
-    (cond ((or reset-watch (not chronometrist--file-state) (eq change t))
+    ;; If only the last plist was changed, update `chronometrist-events' and
+    ;; `chronometrist-task-list', otherwise clear and repopulate
+    ;; `chronometrist-events'.
+    (cond ((or reset-watch
+               (not chronometrist--file-state) ;; why?
+               (eq change t))
+           ;; Don't keep a watch for a nonexistent file.
            (when reset-watch
              (file-notify-rm-watch chronometrist--fs-watch)
              (setq chronometrist--fs-watch nil chronometrist--file-state nil))
            (chronometrist-events-populate)
            (chronometrist-reset-task-list))
           (chronometrist--file-state
-           (let* ((old-plist (chronometrist-events-last))
-                  (old-task  (plist-get old-plist :name))
-                  (new-task  (plist-get (chronometrist-sexp-last) :name)))
+           (-let* (((&plist :name old-task)  (chronometrist-events-last))
+                   ((&plist :name new-task)  (chronometrist-sexp-last)))
              (pcase change
-               (:append
+               (:append ;; a new plist was added at the end of the file
                 (chronometrist-events-update (chronometrist-sexp-last))
                 (chronometrist-add-to-task-list new-task))
-               (:modify
+               (:modify ;; the last plist in the file was changed
                 (chronometrist-events-update (chronometrist-sexp-last) t)
                 (chronometrist-remove-from-task-list old-task)
                 (chronometrist-add-to-task-list new-task))
-               (:remove
+               (:remove ;; the last plist in the file was removed
                 (let ((date (chronometrist-events-last-date)))
+                   ;; `chronometrist-remove-from-task-list' checks `chronometrist-events' to
+                   ;; determine if `chronometrist-task-list' is to be updated.
+                   ;; Thus, the update of the latter must occur before
+                   ;; the update of the former.
                   (chronometrist-remove-from-task-list old-task)
                   (--> (gethash date chronometrist-events)
                     (-drop-last 1 it)
@@ -2732,26 +2747,22 @@ It simply operates on the entire hash table TABLE (see
 `chronometrist-events' for table format), so ensure that TABLE is
 reduced to the desired range using
 `chronometrist-events-subset'."
-  (mapcar (lambda (task)
-            (let* ((active-days    (chronometrist-statistics-count-active-days task table))
-                   (active-percent (cl-case (plist-get chronometrist-statistics--ui-state :mode)
-                                     ('week (* 100 (/ active-days 7.0)))))
-                   (active-percent (if (zerop active-days)
-                                       (format "    % 6s" "-")
-                                     (format "    %05.2f%%" active-percent)))
-                   (active-days    (format "% 5s"
-                                           (if (zerop active-days)
-                                               "-"
-                                             active-days)))
-                   (average-time   (->> (chronometrist-statistics-count-average-time-spent task table)
-                                        (chronometrist-format-duration)
-                                        (format "% 5s")))
-                   (content        (vector task
-                                           active-days
-                                           active-percent
-                                           average-time)))
-              (list task content)))
-          chronometrist-task-list))
+  (cl-loop for task in chronometrist-task-list collect
+    (let* ((active-days    (chronometrist-statistics-count-active-days task table))
+           (active-percent (cl-case (plist-get chronometrist-statistics--ui-state :mode)
+                             ('week (* 100 (/ active-days 7.0)))))
+           (active-percent (if (zerop active-days)
+                               (format "    % 6s" "-")
+                             (format "    %05.2f%%" active-percent)))
+           (active-days    (format "% 5s"
+                                   (if (zerop active-days)
+                                       "-"
+                                     active-days)))
+           (average-time   (->> (chronometrist-statistics-count-average-time-spent task table)
+                             (chronometrist-format-duration)
+                             (format "% 5s")))
+           (content        (vector task active-days active-percent average-time)))
+      (list task content))))
 #+END_SRC
 ***** rows                                                       :reader:
 #+BEGIN_SRC emacs-lisp
