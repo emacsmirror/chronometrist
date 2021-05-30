@@ -1,4 +1,6 @@
 #+TITLE: chronometrist-spark
+#+SUBTITLE: Show sparklines in Chronometrist
+#+PROPERTY: header-args :tangle yes
 
 * chronometrist-spark
 ** Library headers and commentary
