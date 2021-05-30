@@ -2747,26 +2747,22 @@ It simply operates on the entire hash table TABLE (see
 `chronometrist-events' for table format), so ensure that TABLE is
 reduced to the desired range using
 `chronometrist-events-subset'."
-  (mapcar (lambda (task)
-            (let* ((active-days    (chronometrist-statistics-count-active-days task table))
-                   (active-percent (cl-case (plist-get chronometrist-statistics--ui-state :mode)
-                                     ('week (* 100 (/ active-days 7.0)))))
-                   (active-percent (if (zerop active-days)
-                                       (format "    % 6s" "-")
-                                     (format "    %05.2f%%" active-percent)))
-                   (active-days    (format "% 5s"
-                                           (if (zerop active-days)
-                                               "-"
-                                             active-days)))
-                   (average-time   (->> (chronometrist-statistics-count-average-time-spent task table)
-                                        (chronometrist-format-duration)
-                                        (format "% 5s")))
-                   (content        (vector task
-                                           active-days
-                                           active-percent
-                                           average-time)))
-              (list task content)))
-          chronometrist-task-list))
+  (cl-loop for task in chronometrist-task-list collect
+    (let* ((active-days    (chronometrist-statistics-count-active-days task table))
+           (active-percent (cl-case (plist-get chronometrist-statistics--ui-state :mode)
+                             ('week (* 100 (/ active-days 7.0)))))
+           (active-percent (if (zerop active-days)
+                               (format "    % 6s" "-")
+                             (format "    %05.2f%%" active-percent)))
+           (active-days    (format "% 5s"
+                                   (if (zerop active-days)
+                                       "-"
+                                     active-days)))
+           (average-time   (->> (chronometrist-statistics-count-average-time-spent task table)
+                             (chronometrist-format-duration)
+                             (format "% 5s")))
+           (content        (vector task active-days active-percent average-time)))
+      (list task content))))
 #+END_SRC
 ***** rows                                                       :reader:
 #+BEGIN_SRC emacs-lisp
