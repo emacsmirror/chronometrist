@@ -40,7 +40,7 @@ Quite recently, after around two years of Chronometrist developement and use, I 
 5. Have a useful, informative, interactive interface
 6. Support mouse and keyboard use equally
 
-[1] I still have doubts about this. Having SQL as a query language would be very useful in perusing the stored data. Maybe we should have tried to create a companion mode to edit SQL databases interactively?
+[fn:1] I still have doubts about this. Having SQL as a query language would be very useful in perusing the stored data. Maybe we should have tried to create a companion mode to edit SQL databases interactively?
 
 *** Terminology
 :PROPERTIES:
@@ -68,7 +68,7 @@ One of the earliest 'optimizations' of great importance turned out to simply be 
 **** Preserve hash table state for some commands
 NOTE - this has been replaced with a more general optimization - see next section.
 
-The next one was released in v0.5. Till then, any time the [[* chronometrist-file][=chronometrist-file=]] was modified, we'd clear the [[* chronometrist-events][=chronometrist-events=]] hash table and read data into it again. The reading itself is nearly-instant, even with ~2 years' worth of data [fn:1] (it uses Emacs' [[elisp:(describe-function 'read)][=read=]], after all), but the splitting of [[#explanation-midnight-spanning-intervals][midnight-spanning events]] is the real performance killer.
+The next one was released in v0.5. Till then, any time the [[* chronometrist-file][=chronometrist-file=]] was modified, we'd clear the [[* chronometrist-events][=chronometrist-events=]] hash table and read data into it again. The reading itself is nearly-instant, even with ~2 years' worth of data [fn:2] (it uses Emacs' [[elisp:(describe-function 'read)][=read=]], after all), but the splitting of [[#explanation-midnight-spanning-intervals][midnight-spanning events]] is the real performance killer.
 
 After the optimization...
 1. Two backend functions ([[* new][=chronometrist-sexp-new=]] and [[* replace-last][=chronometrist-sexp-replace-last=]]) were modified to set a flag (=chronometrist--inhibit-read-p=) before saving the file.
@@ -80,7 +80,7 @@ After the optimization...
 
 There are still some operations which [[* refresh-file][=chronometrist-refresh-file=]] runs unconditionally - which is to say there is scope for further optimization, if or when required.
 
-[fn:1] As indicated by exploratory work in the =parsimonious-reading= branch, where I made a loop to only =read= and collect s-expressions from the file. It was near-instant...until I added event splitting to it.
+[fn:2] As indicated by exploratory work in the =parsimonious-reading= branch, where I made a loop to only =read= and collect s-expressions from the file. It was near-instant...until I added event splitting to it.
 
 **** Determine type of change made to file
 Most changes, whether made through user-editing or by Chronometrist commands, happen at the end of the file. We try to detect the kind of change made - whether the last expression was modified, removed, or whether a new expression was added to the end - and make the corresponding change to =chronometrist-events=, instead of doing a full parse again (=chronometrist-events-populate=). The increase in responsiveness has been significant.
@@ -758,7 +758,7 @@ The list must be on a single line, as emitted by `prin1'."
   (princ (chronometrist-plist-pp-to-string object)
          (or stream standard-output)))
 #+END_SRC
-*** TODO Backend
+*** Backend
 :PROPERTIES:
 :CUSTOM_ID: program-backend
 :END:
@@ -783,8 +783,8 @@ The reasons I like this format are -
 3. It is easy to diff and version control.
 
 **** TODO
-1. [ ] add newline after last expression and save => nil
-2. [ ] remove newline after last expession and save => nil
+1. add newline after last expression and save => nil
+2. remove newline after last expession and save => nil
 
 **** tests
 #+BEGIN_SRC emacs-lisp :load test
@@ -1347,10 +1347,11 @@ file names respectively."
 :PROPERTIES:
 :CUSTOM_ID: program-data-structures
 :END:
-Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
+Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" [fn:3] - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
 
 The data from =chronometrist-events= is used by most (all?) interval-consuming functions, but is never written to the user's file itself.
 
+[fn:3] it might be the case that the [[#program-backend][file format]] is not suited to our most frequent operation...
 **** reset-state                                                 :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset ()
@@ -1419,6 +1420,7 @@ Return a list of two events if EVENT was split, else nil."
                     (plist-put :stop  second-stop))))))))
 #+END_SRC
 
+***** tests
 #+BEGIN_SRC emacs-lisp :load test
 (ert-deftest chronometrist-events-maybe-split ()
   (should
