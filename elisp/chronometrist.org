@@ -782,10 +782,6 @@ The reasons I like this format are -
    * =chronometrist-loop-file= is provided as an additional convenience, to iterate through each expression in the file.
 3. It is easy to diff and version control.
 
-**** TODO
-1. add newline after last expression and save => nil
-2. remove newline after last expession and save => nil
-
 **** tests
 #+BEGIN_SRC emacs-lisp :load test
 (defvar chronometrist-test-file
@@ -1118,10 +1114,14 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                  (funcall position)))
     (ignore-errors (read (current-buffer)))))
 #+END_SRC
-**** file-change-type                                             :reader:
-The initial idea was to use two hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
+**** TODO file-change-type                                        :reader:
+1. [ ] add newline after last expression and save => nil
+2. [ ] remove newline after last expession and save => nil
+
+The initial idea was to use two pairs of hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
 + the expression may shrink, and if we try to compute the hash of the previously-known region again, we will get an args-out-of-range error.
 + false negatives for whitespace/indentation differences.
+Thus, we use =read= for the last expression.
 
 Possible states
 : <rest-start> <rest-end> <last-start> <last-end>
