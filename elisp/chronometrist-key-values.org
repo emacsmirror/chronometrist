@@ -1,5 +1,8 @@
-#+TODO: TODO WIP | REVIEW
+#+TITLE: chronometrist-key-values
+#+SUBTITLE: Key-value support for Chronometrist
+#+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
 #+PROPERTY: header-args :tangle yes :load yes
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../style.css" />
 
 * chronometrist-key-values
 ** TODO [50%]
@@ -704,7 +707,9 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 ;;; chronometrist-key-values.el ends here
 #+END_SRC
 
+** Local Variables                                                :noexport:
 # Local Variables:
+# org-html-self-link-headlines: t
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
 # End:
