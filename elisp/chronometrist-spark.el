@@ -3,7 +3,7 @@
 ;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Keywords: calendar
-;; Homepage: gemini://tilde.team/~contrapunctus/software.gmi
+;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((chronometrist "0.7.0") (literate-elisp "0.1") (spark "0.1"))
 ;; Version: 0.1.0
 

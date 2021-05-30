@@ -3,7 +3,7 @@
 ;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Keywords: calendar
-;; Homepage: https://github.com/contrapunctus-1/chronometrist
+;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "25.1") (literate-elisp "0.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
 ;; Version: 0.7.2
 
