@@ -1585,20 +1585,26 @@ which span midnights."
 **** remove-from-task-list                                        :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-remove-from-task-list (task)
-  (let ((count (cl-loop with count = 0
-                 for intervals being the hash-values of chronometrist-events
-                 do (cl-loop for interval in intervals
-                      do (cl-incf count))
-                 finally return count))
-        (position (cl-loop with count = 0
-                    for intervals being the hash-values of chronometrist-events
-                    when (cl-loop for interval in intervals
-                           do (cl-incf count)
-                           when (equal task (plist-get interval :name))
-                           return t)
-                    return count)))
-    (when (or (not position)
-              (= position count))
+  "Check if we want TASK to be removed from `chronometrist-task-list', and remove it.
+TASK is removed if it does not occur in `chronometrist-events',
+or if it only occurs in the newest plist of the same.
+
+Return new value of `chronometrist-task-list', or nil if
+unchanged."
+  (let ((ht-plist-count (cl-loop with count = 0
+                          for intervals being the hash-values of chronometrist-events
+                          do (cl-loop for interval in intervals
+                               do (cl-incf count))
+                          finally return count))
+        (ht-task-first-result (cl-loop with count = 0
+                                for intervals being the hash-values of chronometrist-events
+                                when (cl-loop for interval in intervals
+                                       do (cl-incf count)
+                                       when (equal task (plist-get interval :name))
+                                       return t)
+                                return count)))
+    (when (or (not ht-task-first-result)
+              (= ht-task-first-result ht-plist-count))
       ;; The only interval for TASK is the last expression
       (setq chronometrist-task-list (remove task chronometrist-task-list)))))
 #+END_SRC
