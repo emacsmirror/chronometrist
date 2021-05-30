@@ -235,7 +235,9 @@ Some options and ideas -
    * It might be easier to just have a 'remove last interval' (the operation I use undo for most often), so we don't reimplement an undo for SQLite.
 3. [X] Enhanced tag/key-value prompt - before asking for tags/key-values, if the last occurence of task had tags/key-values, ask if they should be reused. y - yes, n - no (continue to usual prompts).
    * [X] Show what those tags/key-values are, so the user knows what will be added.
-4. [X] "Explain" command - show intervals for task today
+4. [X] =chronometrist-details=
+   * "Explain" command - show intervals for task today
+   * "Day summary" - for users who use the "reason" feature to note the specifics of their actual work. Combine the reasons together to create a descriptive overview of the work done in the day.
 5. [ ] Switch #4 between intervals and tag-combination breakdown
 6. [ ] Magit/other VCS integration
    * [ ] Add support for using key-values to point to a commit (commit hash + repo path?)
@@ -255,11 +257,12 @@ Some options and ideas -
 16. [ ] Ask existing users if they'd like to have a prop line added to =chronometrist-file=
     * check if =chronometrist-sexp-mode= is active in the buffer
     * offer to never ask again
+16. Show details for time spent on a project when clicking on a non-zero "time spent" field (in both Chronometrist and Chronometrist-Report buffers).
 
 ** chronometrist-report [0%]
 1. [ ] Show week counter and max weeks; don't scroll past first/last weeks
 2. [ ] Highlight column of current day
-3. [ ] Command to narrow report to specific project(s)
+3. [ ] narrow to specific project(s)
 4. [ ] Jump to beginning/end of data (keys B/F)
 5. [ ] "Explain" command - show tag-combination-based breakdown
 
@@ -384,10 +387,15 @@ Some options and ideas -
 4. [ ] Tag-sensitive key suggestions, tag-sensitive value suggestions...?
    * Might complicate things quite a bit.
    * Lack of task-sensitive value suggestions (#3) is an inconsistency, because tags and keys are already task-sensitive. From that perspective, tag-sensitive key and value suggestions are a whole new can of worms.
-6. Change precision of timestamps from seconds to minutes. (like Org)
+5. Change precision of timestamps from seconds to minutes. (like Org)
+6. Use =make-thread= in v26 or the emacs-async library for =chronometrist-entries=/=chronometrist-report-entries=
+7. Some way to update buffers every second without making Emacs unusable. (impossible?)
 
 ** chronometrist-report [0%]
 1. [ ] Add support for other locale weeks/weekday names
+2. narrow to specific task - average time spent in $TIMEPERIOD, average days worked on in $TIMEPERIOD, current/longest/last streak, % of $TIMEPERIOD, % of active (tracked) time in $TIMEPERIOD, ...
+3. general - most productive $TIMEPERIOD, GitHub-style work heatmap calendar, ...
+4. press 1 for weekly stats, 2 for monthly, 3 for yearly
 
 ** chronometrist-goals [0%]
 1. [ ] Colorize times in Chronometrist buffer
