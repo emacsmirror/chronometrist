@@ -704,7 +704,9 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 ;;; chronometrist-key-values.el ends here
 #+END_SRC
 
+** Local Variables                                                :noexport:
 # Local Variables:
+# org-html-self-link-headlines: t
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
 # End:
