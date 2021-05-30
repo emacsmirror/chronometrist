@@ -175,8 +175,6 @@ Some options and ideas -
 
 * Certain [0%]
 ** plist-pp [66%]
-pp.el doesn't align plist keys along the same column.
-ppp.el doesn't align plist values along the same column. It's also GPL, and I'm trying to cut down GPL dependencies.
 1. [X] plist-pp - work recursively for plist/alist values
 2. [ ] Fix alignment of alist dots
    * While also handling alist members which are proper lists
@@ -269,7 +267,7 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
 1. [ ] Remove duplication between =chronometrist-toggle-task= and =chronometrist-toggle-task-button=
 2. [ ] Make functions more test-friendly. Quite a few can get away with returning values instead of writing to a file - this will make it easier to test them. Other functions can handle the file operations for them.
 3. [ ] Rewrite using cl-loop
-   1. [ ] =chronometrist-statistics-entries-internal=
+   1. [ ] =chronometrist-statistics-rows-internal=
    2. [ ] =chronometrist-statistics-count-active-days=
 4. [ ] Write integration tests using ecukes.
    1. Some feature definitions already exist in features/, write step definitions for them.
@@ -351,7 +349,7 @@ ppp.el doesn't align plist values along the same column. It's also GPL, and I'm 
         + Well, even with this style of configuration, Chronometrist doesn't necessarily have to...it could use the fields it knows about, ignoring the rest; the extensions could check for the fields they know about.
       * Instead of setting the prompt function, set hooks (=chronometrist-before-in-functions=/=chronometrist-after-in-functions=/=chronometrist-before-out-functions=/=chronometrist-after-out-functions=) per-task. This is preferable, because if you define a custom prompt function, you probably also want to remove certain functions coming earlier in the hook, such as =chronometrist-skip-query-prompt=, for that task.
    2. =:hide= - values can be nil (the default) or t - if t, hide this task from being displayed in =chronometrist=/=chronometrist-report=/=chronometrist-statistics= buffers. (effectively a non-destructive deletion of all intervals of the task)
-   ...
+   3. =:goal=
 
    Useful for
    1. Adding tasks without clocking into them (the list is stored in a separate file)
