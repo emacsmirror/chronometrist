@@ -1746,7 +1746,8 @@ Note - sometimes, when hacking or dealing with errors, timers may result in subt
 **** timer-hook                                     :hook:custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-timer-hook nil
-  "Functions run by `chronometrist-timer'.")
+  "Functions run by `chronometrist-timer'."
+  :type '(repeat function))
 #+END_SRC
 **** FIXME timer                                               :procedure:
 1. [ ] Making this conditional upon =chronometrist-current-task= is, for some reason, currently resulting in no refresh at midnight.
@@ -1818,8 +1819,8 @@ All four of these use [[info:elisp#Tabulated List Mode][=(info "(elisp)Tabulated
 :CUSTOM_ID: program-frontend-chronometrist
 :END:
 
-***** TODO [%0]
-1. [ ] Define hooks with defcustom instead of defvar
+***** TODO [33%]
+1. [X] Define hooks with defcustom instead of defvar
 2. [ ] Change abnormal hooks to normal hooks
 3. [ ] midnight-spanning plist not displayed (may have to do with partial updates)
 ***** custom group                                         :custom:group:
@@ -2167,47 +2168,52 @@ the number of columns will also need to modify the value of
 #+END_SRC
 ***** before-in-functions                                 :hook:abnormal:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-before-in-functions nil
+(defcustom chronometrist-before-in-functions nil
   "Functions to run before a task is clocked in.
 Each function in this hook must accept a single argument, which
 is the name of the task to be clocked-in.
 
 The commands `chronometrist-toggle-task-button',
 `chronometrist-add-new-task-button', `chronometrist-toggle-task',
-and `chronometrist-add-new-task' will run this hook.")
+and `chronometrist-add-new-task' will run this hook."
+  :type '(repeat function))
 #+END_SRC
 ***** after-in-functions                                  :hook:abnormal:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-after-in-functions nil
+(defcustom chronometrist-after-in-functions nil
   "Functions to run after a task is clocked in.
 Each function in this hook must accept a single argument, which
 is the name of the task to be clocked-in.
 
 The commands `chronometrist-toggle-task-button',
 `chronometrist-add-new-task-button', `chronometrist-toggle-task',
-and `chronometrist-add-new-task' will run this hook.")
+and `chronometrist-add-new-task' will run this hook."
+  :type '(repeat function))
 #+END_SRC
 ***** before-out-functions                                :hook:abnormal:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-before-out-functions nil
+(defcustom chronometrist-before-out-functions nil
   "Functions to run before a task is clocked out.
 Each function in this hook must accept a single argument, which
 is the name of the task to be clocked out of.
 
 The task will be stopped only if all functions in this list
-return a non-nil value.")
+return a non-nil value."
+  :type '(repeat function))
 #+END_SRC
 ***** after-out-functions                                 :hook:abnormal:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-after-out-functions nil
+(defcustom chronometrist-after-out-functions nil
   "Functions to run after a task is clocked out.
 Each function in this hook must accept a single argument, which
-is the name of the task to be clocked out of.")
+is the name of the task to be clocked out of."
+  :type '(repeat function))
 #+END_SRC
 ***** file-change-hook                                      :hook:normal:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-file-change-hook nil
-  "Functions to be run after `chronometrist-file' is changed on disk.")
+(defcustom chronometrist-file-change-hook nil
+  "Functions to be run after `chronometrist-file' is changed on disk."
+  :type '(repeat function))
 #+END_SRC
 ***** run-functions-and-clock-in                                 :writer:
 #+BEGIN_SRC emacs-lisp
