@@ -2055,42 +2055,49 @@ value of `revert-buffer-function'."
         (set-window-point window point)))))
 #+END_SRC
 ***** refresh-file                                               :writer:
+=chronometrist-file-change-type= must be run /before/ we update =chronometrist--file-state= (the latter represents the old state of the file, which =chronometrist-file-change-type= compares with the newer current state).
+
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-refresh-file (fs-event)
-  "Re-read `chronometrist-file' and refresh the `chronometrist' buffer.
-Argument _FS-EVENT is ignored."
+  "Procedure run when `chronometrist-file' changes.
+Re-read `chronometrist-file', update `chronometrist-events', and
+refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
-  ;; `chronometrist-file-change-type' must be run /before/ we update `chronometrist--file-state'
-  ;; (the latter represents the old state of the file, which
-  ;; `chronometrist-file-change-type' compares with the newer current state)
   (-let* (((descriptor action file ...) fs-event)
           (change      (when chronometrist--file-state
                          (chronometrist-file-change-type chronometrist--file-state)))
           (reset-watch (or (eq action 'deleted) (eq action 'renamed))))
     ;; (message "chronometrist - file change type is %s" change)
-    ;; if only the last plist changed, update `chronometrist-events'
-    ;; and `chronometrist-task-list'
-    (cond ((or reset-watch (not chronometrist--file-state) (eq change t))
+    ;; If only the last plist was changed, update `chronometrist-events' and
+    ;; `chronometrist-task-list', otherwise clear and repopulate
+    ;; `chronometrist-events'.
+    (cond ((or reset-watch
+               (not chronometrist--file-state) ;; why?
+               (eq change t))
+           ;; Don't keep a watch for a nonexistent file.
            (when reset-watch
              (file-notify-rm-watch chronometrist--fs-watch)
              (setq chronometrist--fs-watch nil chronometrist--file-state nil))
            (chronometrist-events-populate)
            (chronometrist-reset-task-list))
           (chronometrist--file-state
-           (let* ((old-plist (chronometrist-events-last))
-                  (old-task  (plist-get old-plist :name))
-                  (new-task  (plist-get (chronometrist-sexp-last) :name)))
+           (-let* (((&plist :name old-task)  (chronometrist-events-last))
+                   ((&plist :name new-task)  (chronometrist-sexp-last)))
              (pcase change
-               (:append
+               (:append ;; a new plist was added at the end of the file
                 (chronometrist-events-update (chronometrist-sexp-last))
                 (chronometrist-add-to-task-list new-task))
-               (:modify
+               (:modify ;; the last plist in the file was changed
                 (chronometrist-events-update (chronometrist-sexp-last) t)
                 (chronometrist-remove-from-task-list old-task)
                 (chronometrist-add-to-task-list new-task))
-               (:remove
+               (:remove ;; the last plist in the file was removed
                 (let ((date (chronometrist-events-last-date)))
+                   ;; `chronometrist-remove-from-task-list' checks `chronometrist-events' to
+                   ;; determine if `chronometrist-task-list' is to be updated.
+                   ;; Thus, the update of the latter must occur before
+                   ;; the update of the former.
                   (chronometrist-remove-from-task-list old-task)
                   (--> (gethash date chronometrist-events)
                     (-drop-last 1 it)
