@@ -2,7 +2,7 @@
 #+SUBTITLE: Key-value support for Chronometrist
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
 #+PROPERTY: header-args :tangle yes :load yes
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../style.css" />
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../org-doom-molokai.css" />
 
 * chronometrist-key-values
 ** TODO [50%]
