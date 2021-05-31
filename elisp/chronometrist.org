@@ -196,15 +196,16 @@ Further details are stored in properties -
 2. :VALUE: list|hash table|...
    * for functions, this is the return value
 3. :STATE: <external file or data structure read or written to>
-**** TODO Issues
-1. When opening this file, Emacs may freeze at the prompt for file-local variable values; if so, C-g will quit the prompt, and permanently marking them as safe will make the freezing stop.
+**** TODO Issues [40%]
+1. [X] When opening this file, Emacs may freeze at the prompt for file-local variable values; if so, C-g will quit the prompt, and permanently marking them as safe will make the freezing stop. [fn:3]
 2. [ ] I like =visual-fill-column-mode= for natural language, but I don't want it applied to code blocks. =polymode.el= may hold answers.
-3. [ ] Is there a tangling solution which requires only one command (e.g. currently we use two =sed= s) but is equally fast?
+3. [X] Is there a tangling solution which requires only one command (e.g. currently we use two =sed= s) but is equally fast? [fn:3]
    * Perhaps we can get rid of the requirement of adding newlines after each source block, and add the newlines ourselves. That gives us control, and also makes it possible to insert Org text in the middle of a definition without unnecessary newlines.
-4. [ ] =nameless-mode= does not have any effect in =org-src-mode= buffers.
-   * It is activated, but it has no way to know the name.
+4. [ ] =nameless-insert-name= does not work in source blocks.
 5. [ ] Some source blocks don't get syntax highlighted.
    * A workaround is to press =M-o M-o=
+
+[fn:3] No longer a problem since we switched to =literate-elisp=
 *** Currently-Used Time Formats
 :PROPERTIES:
 :CUSTOM_ID: explanation-time-formats
@@ -1348,11 +1349,11 @@ file names respectively."
 :PROPERTIES:
 :CUSTOM_ID: program-data-structures
 :END:
-Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" [fn:3] - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
+Reading directly from the file could be difficult, especially when your most common query is "get all intervals recorded on <date>" [fn:4] - and so, we maintain the hash table =chronometrist-events=, where each key is a date in the ISO-8601 format. The plists in this hash table are free of [[#explanation-midnight-spanning-intervals][midnight-spanning intervals]], making code which consumes it easier to write.
 
 The data from =chronometrist-events= is used by most (all?) interval-consuming functions, but is never written to the user's file itself.
 
-[fn:3] it might be the case that the [[#program-backend][file format]] is not suited to our most frequent operation...
+[fn:4] it might be the case that the [[#program-backend][file format]] is not suited to our most frequent operation...
 **** reset-state                                                 :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset ()
