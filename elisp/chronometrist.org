@@ -1,7 +1,7 @@
 #+TITLE: Chronometrist
 #+SUBTITLE: An extensible time tracker for Emacs
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
-#+PROPERTY: header-args :tangle yes
+#+PROPERTY: header-args :tangle yes :load yes
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../org-doom-molokai.css" />
 
 * Chronometrist
@@ -233,6 +233,10 @@ Further details are stored in properties -
 **** list-duration
   =(hours minute seconds)=
   * Only returned by =chronometrist-seconds-to-hms=, called by =chronometrist-format-time=
+
+** How-to guides for maintainers
+*** How to tangle this file
+If you must tangle it, use =org-babel= 's tangle commands, /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc= 's comment conventions.
 
 ** The Program
 *** Library headers and commentary
