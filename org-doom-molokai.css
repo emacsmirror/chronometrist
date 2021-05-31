@@ -566,42 +566,37 @@ code {
     /* org-hide */
     color: #232629;
 }
-h1 {
-    /* org-level-1 */
-    color: #fb2874;
-    font-weight: bold;
-}
-h2 {
-    /* org-level-2 */
-    color: #fd971f;
-    font-weight: bold;
-}
-h3 {
-    /* org-level-3 */
-    color: #9c91e4;
-    font-weight: bold;
-}
-h4 {
-    /* org-level-4 */
-    color: #5ca8dd;
-    font-weight: bold;
-}
-h5 {
-    /* org-level-5 */
-    color: #fb5d96;
-    font-weight: bold;
-}
-h6 {
-    /* org-level-6 */
-    color: #92c4e8;
-    font-weight: bold;
-}
+/* I want URLs in headings to be colored using the heading colors */
 a {
-    /* org-link */
     color: #fd971f;
     font-weight: bold;
     text-decoration: underline;
 }
+h1 {
+    color: #fb2874;
+    font-weight: bold;
+}
+h2 {
+    color: #fd971f;
+    font-weight: bold;
+}
+h3 {
+    color: #9c91e4;
+    font-weight: bold;
+}
+h4 {
+    color: #5ca8dd;
+    font-weight: bold;
+}
+h5 {
+    color: #fb5d96;
+    font-weight: bold;
+}
+h6 {
+    color: #92c4e8;
+    font-weight: bold;
+}
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a, h7 a { color: inherit; }
 .org-meta-line {
     /* org-meta-line */
     color: #7f7f80;
