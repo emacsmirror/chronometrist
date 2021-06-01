@@ -1,9 +1,3 @@
-#!/bin/sh
-emacs -q -Q --batch \
-      --eval="(require 'ob-tangle)" \
-      --eval='(progn (cd "elisp/") (org-babel-tangle-file "chronometrist.org" "chronometrist.el"))' \
-    && git add elisp/chronometrist.el
-
 ;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>

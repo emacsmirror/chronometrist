@@ -1,7 +1,7 @@
 #+TITLE: Chronometrist - an extensible time tracker for Emacs
 #+SUBTITLE: Developer manual and program source
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
-#+PROPERTY: header-args :load yes
+#+PROPERTY: header-args :tangle yes :load yes
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../org-doom-molokai.css" />
 #+INFOJS_OPT: view:info toc:nil
 
@@ -175,7 +175,7 @@ Later, we switched from tangling to using the =literate-elisp= package to loadin
  (format "%schronometrist.org" (file-name-directory load-file-name)))
 #+END_SRC
 
-This way, source links (e.g. help buffers, stack traces) would lead to this Org file, and this documentation was available to each user, within the comfort of their Emacs.
+This way, source links (e.g. help buffers, stack traces) would lead to this Org file, and this documentation was available to each user, within the comfort of their Emacs. The presence of the =.el= file meant that users of =use-package= did not need to make any changes to their configuration.
 
 *** Reject modernity, return to tangling
 For all its benefits, the previous approach broke autoloads and no sane way could be devised to make them work, so back we came to tangling. =org-babel-tangle-file= seems to be quicker when run as a Git pre-commit hook - a few seconds' delay before I write a commit message.
@@ -257,13 +257,16 @@ Further details are stored in properties -
   (mapcar #'package-install '(nameless adaptive-wrap literate-elisp))
 #+END_SRC
 2. Set up automatic tangling by creating a Git pre-commit hook. In =.git/hooks/=, create a file called =pre-commit= containing the following -
-      #+BEGIN_SRC sh
-      #!/bin/sh
-      emacs -q -Q --batch \
-            --eval="(require 'ob-tangle)" \
-            --eval='(progn (cd "elisp/") (org-babel-tangle-file "chronometrist.org" "chronometrist.el"))' \
-          && git add elisp/chronometrist.el
+
+
+   #+BEGIN_SRC sh :tangle no :load no
+        #!/bin/sh
+        emacs -q -Q --batch \
+              --eval="(require 'ob-tangle)" \
+              --eval='(progn (cd "elisp/") (org-babel-tangle-file "chronometrist.org" "chronometrist.el"))' \
+            && git add elisp/chronometrist.el
       #+END_SRC
+
 ** How to tangle this file
 Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc='s comment conventions.
 
@@ -3211,4 +3214,5 @@ Return value is a list as specified by `tabulated-list-entries'."
 # eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
+# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist.org\" \"chronometrist.el\")"))))
 # End:
