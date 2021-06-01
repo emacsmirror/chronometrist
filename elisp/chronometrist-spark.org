@@ -1,17 +1,17 @@
 #+TITLE: chronometrist-spark
 #+SUBTITLE: Show sparklines in Chronometrist
-#+PROPERTY: header-args :tangle yes
+#+PROPERTY: header-args :tangle yes :load yes
 
 * chronometrist-spark
 ** Library headers and commentary
 #+BEGIN_SRC emacs-lisp
 ;;; chronometrist-spark.el --- Show sparklines in Chronometrist -*- lexical-binding: t; -*-
 
-;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
-;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
+;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
+;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
-;; Package-Requires: ((chronometrist "0.7.2") (spark "20160412.1606") (emacs "24.3"))
+;; Package-Requires: ((chronometrist "0.7.0") (spark "0.1"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.
@@ -22,6 +22,7 @@
 ;; means.
 ;;
 ;; For more information, please refer to <https://unlicense.org>
+
 #+END_SRC
 
 "Commentary" is displayed when the user clicks on the package's entry in =M-x list-packages=.
@@ -55,13 +56,13 @@ Used to add a sparkline column to `chronometrist-rows'.
 
 ROW must be a valid element of the list specified by
 `tabulated-list-entries'."
-  (-let (((task vector) row)
-         (sparkline (cl-loop with today = (ts-now)
-                      for day from (- (- chronometrist-spark-length 1)) to 0
-                      collect (chronometrist-task-time-one-day
-                               task (ts-adjust 'day day today))
-                      into durations
-                      finally return (spark durations))))
+  (-let* (((task vector) row)
+          (sparkline (cl-loop with today = (ts-now)
+                       for day from (- (- chronometrist-spark-length 1)) to 0
+                       collect (chronometrist-task-time-one-day
+                                task (ts-adjust 'day day today))
+                       into durations
+                       finally return (spark durations))))
     (list task (vconcat vector `[,sparkline]))))
 
 #+END_SRC
@@ -111,6 +112,8 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
 ** Local Variables                                                :noexport:
 # Local Variables:
 # org-html-self-link-headlines: t
+# eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
+# eval: (progn (make-local-variable (quote before-save-hook)) (add-hook (quote before-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-spark.org\" \"chronometrist-spark.el\")"))))
 # End:
