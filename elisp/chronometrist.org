@@ -3,6 +3,7 @@
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
 #+PROPERTY: header-args :load yes
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../org-doom-molokai.css" />
+#+INFOJS_OPT: view:info toc:nil
 
 * Introduction
 This is a book about Chronometrist, a time tracker for Emacs, written by a humble hobbyist hacker. It also happens to contain the canonical copy of the source code, and can be loaded as an Emacs Lisp program using the =literate-elisp= library.
