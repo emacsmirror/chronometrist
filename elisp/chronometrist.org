@@ -53,7 +53,7 @@ See also [[#explanation-time-formats][Currently-Used Time Formats]]
 ** Overview
 At its most basic, we read data from a [[#program-backend][plain text file]] containing Lisp plists, store it in a [[#program-data-structures][hash table]], and [[#program-frontend-chronometrist][display it]] as a [[elisp:(find-library "tabulated-list-mode")][=tabulated-list-mode=]] buffer. When the file is changed—whether by the program or the user—we [[refresh-file][update the hash table]] and the buffer.
 
-In addition, we implement a [[#program-pretty-printer][plist pretty-printer]] and some migration commands. This repository also contains an extension for [[file:chronometrist-key-values.org][attaching arbitrary metadata]] to time intervals, and there is a extension for [[https://www.github.com/contrapunctus-1/chronometrist-goal][time goals and alerts]] in a separate repository.
+In addition, we implement a [[#program-pretty-printer][plist pretty-printer]] and some migration commands. This repository also contains an extension for [[file:chronometrist-key-values.org][attaching arbitrary metadata]] to time intervals, and there is a extension for [[https://tildegit.org/contrapunctus/chronometrist-goal][time goals and alerts]] in a separate repository.
 
 ** Optimization
 It is of great importance that Chronometrist be responsive -
@@ -159,14 +159,27 @@ A quick description, starting from the first time [[* chronometrist-report][=chr
 :CUSTOM_ID: explanation-literate-programming
 :END:
 The shift from a bunch of Elisp files to a single Org literate program was born out of frustration with programs stored as text files, which are expensive to restructure (especially in the presence of a VCS). While some dissatisfactions remain, I generally prefer the outcome - tree and source-block folding, tags, properties, and =org-match= have made it trivial to get different views of the program, and literate programming may allow me to express the "explanation" documentation in the same context as the program, without having to try to link between documentation and source.
-
+*** Tangling
 At first, I tried tangling. Back when I used =benchmark.el= to test it, =org-babel-tangle= took about 30 seconds to tangle this file. Thus, I wrote a little sed one-liner (in the file-local variables) to do the tangling, which was nearly instant. It emitted anything between lines matching the exact strings ="#+BEGIN_SRC emacs-lisp"= and ="#+END_SRC"= -
 
 #+BEGIN_SRC org :tangle no
 # eval: (progn (make-local-variable 'after-save-hook) (add-hook 'after-save-hook (lambda () (start-process-shell-command "chronometrist-sed-tangle" "chronometrist-sed-tangle" "sed -n -e '/#+BEGIN_SRC emacs-lisp$/,/#+END_SRC$/{//!p;};/#+END_SRC/i\\ ' chronometrist.org | sed -E 's/^ +$//' > chronometrist.el"))))
 #+END_SRC
 
-These days, rather than fiddling with tangling, we use the =literate-elisp= package to load this Org file directly. This way, source links (e.g. help buffers, stack traces) lead to this Org file, and this documentation is available to each user, within the comfort of Emacs. The only issue is that certain tools, like =checkdoc=, are currently a pain to use.
+*** literate-elisp-load
+Later, we switched from tangling to using the =literate-elisp= package to loading this Org file directly - a file =chronometrist.el= would be used to load =chronometrist.org=.
+
+#+BEGIN_SRC emacs-lisp :tangle no :load no
+(literate-elisp-load
+ (format "%schronometrist.org" (file-name-directory load-file-name)))
+#+END_SRC
+
+This way, source links (e.g. help buffers, stack traces) would lead to this Org file, and this documentation was available to each user, within the comfort of their Emacs.
+
+*** Reject modernity, return to tangling
+For all its benefits, the previous approach broke autoloads and no sane way could be devised to make them work, so back we came to tangling. =org-babel-tangle-file= seems to be quicker when run as a Git pre-commit hook - a few seconds' delay before I write a commit message.
+
+Certain tools like =checkdoc= remain a pain to use with any kind of literate program. This will probably continue to be the case until these tools are fixed or extended.
 
 *** Definition metadata
 Each definition has its own heading. The type of definition is stored in tags -
@@ -228,24 +241,30 @@ Further details are stored in properties -
   * Used for update intervals (chronometrist-update-interval, chronometrist-change-update-interval)
 *** minutes
   integer minutes as duration
-  * Used by [[https://www.github.com/contrapunctus-1/chronometrist-goal][chronometrist-goal]] (chronometrist-goals-list, chronometrist-get-goal) - minutes seems like the ideal unit for users to enter
+  * Used by [[https://tildegit.org/contrapunctus/chronometrist-goal][chronometrist-goal]] (chronometrist-goals-list, chronometrist-get-goal) - minutes seems like the ideal unit for users to enter
 *** list-duration
   =(hours minute seconds)=
   * Only returned by =chronometrist-seconds-to-hms=, called by =chronometrist-format-time=
 
 * How-to guides for maintainers
 ** How to set up Emacs to contribute
-All of these are optional, but recommended for the best experience.
-1. Use [[https://github.com/Malabarba/Nameless][nameless-mode]] for easier reading of Emacs Lisp code, and
-2. Use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column-mode]] to soft-wrap lines in Org/Markdown files.
-   =org-indent-mode= (for Org files) and [[https://elpa.gnu.org/packages/adaptive-wrap.html][adaptive-prefix-mode]] (for Markdown and other files) will further enhance the experience.
-3. Get the sources from [[https://tildegit.org/contrapunctus/chronometrist]] and read this manual in the Org format (doc/manual.org), so links to identifiers can take you to their location in the source.
-4. Install [[https://github.com/cask/cask][Cask]] to easily byte-compile and test the project.
-   From the project root, you can now run
-   1. =cask= to install the project dependencies in a sandbox
-   2. =cask exec buttercup -L . --traceback pretty= to run tests.
+1. Install
+   * [[https://github.com/Malabarba/Nameless][nameless-mode]] for easier reading of Emacs Lisp code,
+   * [[https://elpa.gnu.org/packages/adaptive-wrap.html][adaptive-prefix-mode]], and
+   * [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] to load this file directly without tangling.
+#+BEGIN_SRC emacs-lisp :tangle no :load no
+  (mapcar #'package-install '(nameless adaptive-wrap literate-elisp))
+#+END_SRC
+2. Set up automatic tangling by creating a Git pre-commit hook. In =.git/hooks/=, create a file called =pre-commit= containing the following -
+      #+BEGIN_SRC sh
+      #!/bin/sh
+      emacs -q -Q --batch \
+            --eval="(require 'ob-tangle)" \
+            --eval='(progn (cd "elisp/") (org-babel-tangle-file "chronometrist.org" "chronometrist.el"))' \
+          && git add elisp/chronometrist.el
+      #+END_SRC
 ** How to tangle this file
-[[#explanation-literate-programming][Tangling is not necessary]] - use =literate-elisp-load= instead. But if you must tangle, use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc='s comment conventions.
+Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc='s comment conventions.
 
 * The Program
 ** Library headers and commentary
@@ -264,10 +283,10 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 #+BEGIN_SRC emacs-lisp
 ;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
 
-;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
-;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
+;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
+;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
-;; Homepage: https://github.com/contrapunctus-1/chronometrist
+;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "25.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
 ;; Version: 0.7.2
 
@@ -314,7 +333,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 ;; * Chronometrist's UI is cleaner, since the storage is separate from the display. It doesn't show tasks as trees like Org, but it uses tags and key-values to achieve that. Additionally, navigating a flat list takes fewer user operations than navigating a tree.
 ;; * Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
 
-;; For information on usage and customization, see https://github.com/contrapunctus-1/chronometrist/blob/master/README.md
+;; For information on usage and customization, see https://tildegit.org/contrapunctus/chronometrist or the included manual.org
 #+END_SRC
 
 ** Dependencies
@@ -3188,6 +3207,7 @@ Return value is a list as specified by `tabulated-list-entries'."
 * Local Variables                                                  :noexport:
 # Local Variables:
 # org-html-self-link-headlines: t
+# eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
 # End:
