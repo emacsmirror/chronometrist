@@ -2,8 +2,7 @@
 #+SUBTITLE: Show sparklines in Chronometrist
 #+PROPERTY: header-args :tangle yes :load yes
 
-* chronometrist-spark
-** Library headers and commentary
+* Library headers and commentary
 #+BEGIN_SRC emacs-lisp
 ;;; chronometrist-spark.el --- Show sparklines in Chronometrist -*- lexical-binding: t; -*-
 
@@ -31,20 +30,20 @@
 ;;
 ;; This package adds a column to Chronometrist displaying sparklines for each task.
 #+END_SRC
-** Dependencies
+* Dependencies
 #+BEGIN_SRC emacs-lisp
 ;;; Code:
 (require 'chronometrist)
 (require 'spark)
 #+END_SRC
-** Code
-*** length                                                :custom:variable:
+* Code
+** length                                                  :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-spark-length 7
   "Length of each sparkline in number of days.")
 #+END_SRC
 
-*** TODO row-transformer                                         :function:
+** TODO row-transformer                                           :function:
 if larger than 7
 add space after (% length 7)th element
 then add space after every 7 elements
@@ -67,7 +66,7 @@ ROW must be a valid element of the list specified by
 
 #+END_SRC
 
-*** TODO schema-transformer                                      :function:
+** TODO schema-transformer                                        :function:
 calculate length while accounting for space
 
 #+BEGIN_SRC emacs-lisp
@@ -78,7 +77,7 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
   (vconcat schema `[("Graph" ,chronometrist-spark-length t)]))
 #+END_SRC
 
-*** setup                                                          :writer:
+** setup                                                            :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-spark-setup ()
   "Add `chronometrist-sparkline' functions to `chronometrist' hooks."
@@ -86,7 +85,7 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
   (add-to-list 'chronometrist-schema-transformers  #'chronometrist-spark-schema-transformer))
 #+END_SRC
 
-*** teardown                                                       :writer:
+** teardown                                                         :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-spark-teardown ()
   "Remove `chronometrist-sparkline' functions from `chronometrist' hooks."
@@ -96,7 +95,7 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
         (remove #'chronometrist-spark-schema-transformer chronometrist-schema-transformers)))
 #+END_SRC
 
-*** minor-mode                                                 :minor:mode:
+** minor-mode                                                   :minor:mode:
 #+BEGIN_SRC emacs-lisp
 (define-minor-mode chronometrist-spark-minor-mode
   nil nil nil nil
@@ -104,16 +103,16 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
   (if chronometrist-spark-minor-mode (chronometrist-spark-setup) (chronometrist-spark-teardown)))
 #+END_SRC
 
-** Provide
+* Provide
 #+BEGIN_SRC emacs-lisp
 (provide 'chronometrist-spark)
 ;;; chronometrist-spark.el ends here
 #+END_SRC
-** Local Variables                                                :noexport:
+* Local Variables                                                  :noexport:
 # Local Variables:
 # org-html-self-link-headlines: t
 # eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote before-save-hook)) (add-hook (quote before-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-spark.org\" \"chronometrist-spark.el\")"))))
+# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-spark.org\" \"chronometrist-spark.el\")"))))
 # End:

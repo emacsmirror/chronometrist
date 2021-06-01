@@ -707,6 +707,715 @@ in `chronometrist-file' describing the region for which HASH was calculated."
     (should (= 1256 last-start))
     (should (= 1426 last-end))))
 
+;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
+
+;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
+;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
+;; Keywords: calendar
+;; Homepage: https://tildegit.org/contrapunctus/chronometrist
+;; Package-Requires: ((emacs "25.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
+;; Version: 0.7.2
+
+;; This is free and unencumbered software released into the public domain.
+;;
+;; Anyone is free to copy, modify, publish, use, compile, sell, or
+;; distribute this software, either in source code form or as a compiled
+;; binary, for any purpose, commercial or non-commercial, and by any
+;; means.
+;;
+;; For more information, please refer to <https://unlicense.org>
+
+;;; Commentary:
+;;
+;; A time tracker in Emacs with a nice interface
+
+;; Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
+
+;; * Benefits
+;;   1. Extremely simple and efficient to use
+;;   2. Displays useful information about your time usage
+;;   3. Support for both mouse and keyboard
+;;   4. Human errors in tracking are easily fixed by editing a plain text file
+;;   5. Hooks to let you perform arbitrary actions when starting/stopping tasks
+
+;; * Limitations
+;;   1. No support (yet) for adding a task without clocking into it.
+;;   2. No support for concurrent tasks.
+
+;; ## Comparisons
+;; ### timeclock.el
+;; Compared to timeclock.el, Chronometrist
+;; * stores data in an s-expression format rather than a line-based one
+;; * supports attaching tags and arbitrary key-values to time intervals
+;; * has commands to shows useful summaries
+;; * has more hooks
+
+;; ### Org time tracking
+;; Chronometrist and Org time tracking seem to be equivalent in terms of capabilities, approaching the same ends through different means.
+;; * Chronometrist doesn't have a mode line indicator at the moment. (planned)
+;; * Chronometrist doesn't have Org's sophisticated querying facilities. (an SQLite backend is planned)
+;; * Org does so many things that keybindings seem to necessarily get longer. Chronometrist has far fewer commands than Org, so most of the keybindings are single keys, without modifiers.
+;; * Chronometrist's UI makes keybindings discoverable - they are displayed in the buffers themselves.
+;; * Chronometrist's UI is cleaner, since the storage is separate from the display. It doesn't show tasks as trees like Org, but it uses tags and key-values to achieve that. Additionally, navigating a flat list takes fewer user operations than navigating a tree.
+;; * Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
+
+;; For information on usage and customization, see https://tildegit.org/contrapunctus/chronometrist or the included manual.org
+
+;;; Code:
+;; This file was automatically generated from chronometrist.org
+(require 'dash)
+(require 'ts)
+
+(require 'cl-lib)
+(require 'seq)
+(require 'filenotify)
+(require 'subr-x)
+(require 'parse-time)
+
+(eval-when-compile
+  (defvar chronometrist-mode-map)
+  (require 'subr-x))
+
+(defvar chronometrist--fs-watch nil
+  "Filesystem watch object.
+Used to prevent more than one watch being added for the same
+file.")
+
+(defun chronometrist-current-task ()
+  "Return the name of the currently clocked-in task, or nil if not clocked in."
+  (chronometrist-sexp-current-task))
+
+(cl-defun chronometrist-format-duration (seconds &optional (blank (make-string 3 ?\s)))
+  "Format SECONDS as a string suitable for display in Chronometrist buffers.
+SECONDS must be a positive integer.
+
+BLANK is a string to display in place of blank values. If not
+supplied, 3 spaces are used."
+  (-let [(h m s) (chronometrist-seconds-to-hms seconds)]
+    (if (and (zerop h) (zerop m) (zerop s))
+        (concat (make-string 7 ?\s) "-")
+      (let ((h (if (zerop h) blank (format "%2d:" h)))
+            (m (cond ((and (zerop h) (zerop m))  blank)
+                     ((zerop h)  (format "%2d:" m))
+                     (t  (format "%02d:" m))))
+            (s (if (and (zerop h) (zerop m))
+                   (format "%2d" s)
+                 (format "%02d" s))))
+        (concat h m s)))))
+
+(defun chronometrist-common-file-empty-p (file)
+  "Return t if FILE is empty."
+  (zerop (nth 7 (file-attributes file))))
+
+(defun chronometrist-format-keybinds (command map &optional firstonly)
+  "Return the keybindings for COMMAND in MAP as a string.
+If FIRSTONLY is non-nil, return only the first keybinding found."
+  (if firstonly
+      (key-description
+       (where-is-internal command map firstonly))
+    (->> (where-is-internal command map)
+         (mapcar #'key-description)
+         (-take 2)
+         (-interpose ", ")
+         (apply #'concat))))
+
+(defun chronometrist-events-to-durations (events)
+  "Convert EVENTS into a list of durations in seconds.
+EVENTS must be a list of valid Chronometrist property lists (see
+`chronometrist-file').
+
+Return 0 if EVENTS is nil."
+  (if events
+      (cl-loop for plist in events collect
+        (let* ((start-ts (chronometrist-iso-timestamp-to-ts
+                          (plist-get plist :start)))
+               (stop-iso (plist-get plist :stop))
+               ;; Add a stop time if it does not exist.
+               (stop-ts  (if stop-iso
+                             (chronometrist-iso-timestamp-to-ts stop-iso)
+                           (ts-now))))
+          (ts-diff stop-ts start-ts)))
+    0))
+
+(defun chronometrist-previous-week-start (ts)
+  "Find the previous `chronometrist-report-week-start-day' from TS.
+Return a ts struct for said day's beginning.
+
+If the day of TS is the same as the
+`chronometrist-report-week-start-day', return TS.
+
+TS must be a ts struct (see `ts.el')."
+  (cl-loop with week-start = (alist-get chronometrist-report-week-start-day
+                                        chronometrist-report-weekday-number-alist
+                                        nil nil #'equal)
+    until (= week-start (ts-dow ts))
+    do (ts-decf (ts-day ts))
+    finally return ts))
+
+(defun chronometrist-plist-remove (plist &rest keys)
+  "Return PLIST with KEYS and their associated values removed."
+  (let ((keys (--filter (plist-member plist it) keys)))
+    (mapc (lambda (key)
+            (let ((pos (seq-position plist key)))
+              (setq plist (append (seq-take plist pos)
+                                  (seq-drop plist (+ 2 pos))))))
+          keys)
+    plist))
+
+(ert-deftest chronometrist-plist-remove ()
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a)
+          '(:b 2 :c 3 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :b)
+          '(:a 1 :c 3 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :c)
+          '(:a 1 :b 2 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :d)
+          '(:a 1 :b 2 :c 3)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :b)
+          '(:c 3 :d 4)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :d)
+          '(:b 2 :c 3)))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :c :d)
+          '(:a 1 :b 2)))
+  (should (equal
+           (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a :b :c :d)
+           nil))
+  (should
+   (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :d :a)
+          '(:b 2 :c 3))))
+
+(defun chronometrist-plist-key-values (plist)
+  "Return user key-values from PLIST."
+  (chronometrist-plist-remove plist :name :tags :start :stop))
+
+(defun chronometrist-plist-p (list)
+  "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
+  (while (consp list)
+    (setq list (if (and (keywordp (car list))
+                        (consp (cdr list)))
+                   (cddr list)
+                 'not-plist)))
+  (null list))
+
+(ert-deftest plist-p ()
+  (should (eq t   (chronometrist-plist-p '(:a 1 :b 2))))
+  (should (eq nil (chronometrist-plist-p '(0 :a 1 :b 2))))
+  (should (eq nil (chronometrist-plist-p '(:a 1 :b 2 3)))))
+
+(defun chronometrist-sexp-delete-list (&optional arg)
+  "Delete ARG lists after point."
+  (let ((point-1 (point)))
+    (forward-sexp (or arg 1))
+    (delete-region point-1 (point))))
+
+(defun chronometrist-plist-pp-normalize-whitespace ()
+  "Remove whitespace following point, and insert a space.
+Point is placed at the end of the space."
+  (when (looking-at "[[:blank:]]+")
+    (delete-region (match-beginning 0) (match-end 0))
+    (insert " ")))
+
+(defun chronometrist-plist-pp-column ()
+  "Return column point is on, as an integer.
+0 means point is at the beginning of the line."
+  (- (point) (point-at-bol)))
+
+(defun chronometrist-plist-pp-pair-p (cons)
+  "Return non-nil if CONS is a pair, i.e. (CAR . CDR)."
+  (and (listp cons) (not (listp (cdr cons)))))
+
+(defun chronometrist-plist-pp-alist-p (list)
+  "Return non-nil if LIST is an association list.
+If even a single element of LIST is a pure cons cell (as
+determined by `chronometrist-plist-pp-pair-p'), this function
+considers it an alist."
+  (when (listp list)
+    (cl-loop for elt in list thereis (chronometrist-plist-pp-pair-p elt))))
+
+(defun chronometrist-plist-pp-longest-keyword-length ()
+  "Find the length of the longest keyword in a plist.
+This assumes there is a single plist in the current buffer, and
+that point is after the first opening parenthesis."
+  (save-excursion
+    (cl-loop with sexp
+      while (setq sexp (ignore-errors (read (current-buffer))))
+      when (keywordp sexp)
+      maximize (length (symbol-name sexp)))))
+
+(cl-defun chronometrist-plist-pp-indent-sexp (sexp &optional (right-indent 0))
+  "Return a string indenting SEXP by RIGHT-INDENT spaces."
+  (format (concat "% -" (number-to-string right-indent) "s")
+          sexp))
+
+(cl-defun chronometrist-plist-pp-buffer (&optional inside-sublist-p)
+  "Recursively indent the alist, plist, or a list of plists after point.
+The list must be on a single line, as emitted by `prin1'."
+  (if (not (looking-at-p (rx (or ")" line-end))))
+      (progn
+        (setq sexp (save-excursion (read (current-buffer))))
+        (cond
+         ((chronometrist-plist-p sexp)
+          (chronometrist-plist-pp-buffer-plist inside-sublist-p)
+          (chronometrist-plist-pp-buffer inside-sublist-p))
+         ((chronometrist-plist-pp-alist-p sexp)
+          (chronometrist-plist-pp-buffer-alist)
+          (unless inside-sublist-p (chronometrist-plist-pp-buffer)))
+         ((chronometrist-plist-pp-pair-p sexp)
+          (forward-sexp)
+          (chronometrist-plist-pp-buffer inside-sublist-p))
+         ((listp sexp)
+          (down-list)
+          (chronometrist-plist-pp-buffer t))
+         (t (forward-sexp)
+            (chronometrist-plist-pp-buffer inside-sublist-p))))
+    ;; we're before a ) - is it a lone paren on its own line?
+    (let ((pos (point))
+          (bol (point-at-bol)))
+      (goto-char bol)
+      (if (string-match "^[[:blank:]]*$" (buffer-substring bol pos))
+          ;; join the ) to the previous line by deleting the newline and whitespace
+          (delete-region (1- bol) pos)
+        (goto-char pos))
+      (when (not (eobp))
+        (forward-char)))))
+
+(ert-deftest plist-pp-buffer ()
+  (should
+   (equal
+    (chronometrist-plist-pp-to-string
+     '(:name "Task"
+       :tags (foo bar)
+       :comment ((70 . "baz")
+                 "zot"
+                 (16 . "frob")
+                 (20 20 "quux"))
+       :start "2020-06-25T19:27:57+0530"
+       :stop "2020-06-25T19:43:30+0530"))
+    (concat
+     "(:name    \"Task\"\n"
+     " :tags    (foo bar)\n"
+     " :comment ((70 . \"baz\")\n"
+     "           \"zot\"\n"
+     "           (16 . \"frob\")\n"
+     "           (20 20 \"quux\"))\n"
+     " :start   \"2020-06-25T19:27:57+0530\"\n"
+     " :stop    \"2020-06-25T19:43:30+0530\")")))
+  (should
+   (equal
+    (chronometrist-plist-pp-to-string
+     '(:name  "Singing"
+       :tags  (classical solo)
+       :piece ((:composer "Gioachino Rossini"
+                :name     "Il barbiere di Siviglia"
+                :aria     ("All'idea di quel metallo" "Dunque io son"))
+               (:composer "Ralph Vaughan Williams"
+                :name     "Songs of Travel"
+                :movement ((4 . "Youth and Love")
+                           (5 . "In Dreams")
+                           (7 . "Wither Must I Wander?")))
+               (:composer "Ralph Vaughan Williams"
+                :name     "Merciless Beauty"
+                :movement 1)
+               (:composer "Franz Schubert"
+                :name     "Winterreise"
+                :movement ((1 . "Gute Nacht")
+                           (2 . "Die Wetterfahne")
+                           (4 . "Erstarrung"))))
+       :start "2020-11-01T12:01:20+0530"
+       :stop  "2020-11-01T13:08:32+0530"))
+    (concat
+     "(:name  \"Singing\"\n"
+     " :tags  (classical solo)\n"
+     " :piece ((:composer \"Gioachino Rossini\"\n"
+     "          :name     \"Il barbiere di Siviglia\"\n"
+     "          :aria     (\"All'idea di quel metallo\" \"Dunque io son\"))\n"
+     "         (:composer \"Ralph Vaughan Williams\"\n"
+     "          :name     \"Songs of Travel\"\n"
+     "          :movement ((4 . \"Youth and Love\")\n"
+     "                     (5 . \"In Dreams\")\n"
+     "                     (7 . \"Wither Must I Wander?\")))\n"
+     "         (:composer \"Ralph Vaughan Williams\"\n"
+     "          :name     \"Merciless Beauty\"\n"
+     "          :movement 1)\n"
+     "         (:composer \"Franz Schubert\"\n"
+     "          :name     \"Winterreise\"\n"
+     "          :movement ((1 . \"Gute Nacht\")\n"
+     "                     (2 . \"Die Wetterfahne\")\n"
+     "                     (4 . \"Erstarrung\"))))\n"
+     " :start \"2020-11-01T12:01:20+0530\"\n"
+     " :stop  \"2020-11-01T13:08:32+0530\")")))
+  (should (equal
+           (chronometrist-plist-pp-to-string
+            '(:name "Cooking"
+              :tags (lunch)
+              :recipe (:name "moong-masoor ki dal"
+                       :url "https://www.mirchitales.com/moong-masoor-dal-red-and-yellow-lentil-curry/")
+              :start "2020-09-23T15:22:39+0530"
+              :stop "2020-09-23T16:29:49+0530"))
+           (concat
+            "(:name   \"Cooking\"\n"
+            " :tags   (lunch)\n"
+            " :recipe (:name \"moong-masoor ki dal\"\n"
+            "          :url  \"https://www.mirchitales.com/moong-masoor-dal-red-and-yellow-lentil-curry/\")\n"
+            " :start  \"2020-09-23T15:22:39+0530\"\n"
+            " :stop   \"2020-09-23T16:29:49+0530\")")))
+  (should (equal
+           (chronometrist-plist-pp-to-string
+            '(:name    "Exercise"
+              :tags    (warm-up)
+              :start   "2018-11-21T15:35:04+0530"
+              :stop    "2018-11-21T15:38:41+0530"
+              :comment ("stretching" (25 10 "push-ups"))))
+           (concat
+            "(:name    \"Exercise\"\n"
+            " :tags    (warm-up)\n"
+            " :start   \"2018-11-21T15:35:04+0530\"\n"
+            " :stop    \"2018-11-21T15:38:41+0530\"\n"
+            " :comment (\"stretching\" (25 10 \"push-ups\")))"))))
+
+(defun chronometrist-plist-pp-buffer-plist (&optional inside-sublist-p)
+  "Indent a single plist after point."
+  (down-list)
+  (let ((left-indent  (1- (chronometrist-plist-pp-column)))
+        (right-indent (chronometrist-plist-pp-longest-keyword-length))
+        (first-p t) sexp)
+    (while (not (looking-at-p ")"))
+      (chronometrist-plist-pp-normalize-whitespace)
+      (setq sexp (save-excursion (read (current-buffer))))
+      (cond ((keywordp sexp)
+             (chronometrist-sexp-delete-list)
+             (insert (if first-p
+                         (progn (setq first-p nil) "")
+                       (make-string left-indent ?\ ))
+                     (chronometrist-plist-pp-indent-sexp sexp right-indent)))
+            ;; not a keyword = a value
+            ((chronometrist-plist-p sexp)
+             (chronometrist-plist-pp-buffer-plist))
+            ((and (listp sexp)
+                  (not (chronometrist-plist-pp-pair-p sexp)))
+             (chronometrist-plist-pp-buffer t)
+             (insert "\n"))
+            (t (forward-sexp)
+               (insert "\n"))))
+    (when (bolp) (delete-char -1))
+    (up-list)
+    ;; we have exited the plist, but might still be in a list with more plists
+    (unless (eolp) (insert "\n"))
+    (when inside-sublist-p
+      (insert (make-string (1- left-indent) ?\ )))))
+
+(defun chronometrist-plist-pp-buffer-alist ()
+  "Indent a single alist after point."
+  (down-list)
+  (let ((indent (chronometrist-plist-pp-column)) (first-p t) sexp)
+    (while (not (looking-at-p ")"))
+      (setq sexp (save-excursion (read (current-buffer))))
+      (chronometrist-sexp-delete-list)
+      (insert (if first-p
+                  (progn (setq first-p nil) "")
+                (make-string indent ?\ ))
+              (format "%S\n" sexp)))
+    (when (bolp) (delete-char -1))
+    (up-list)))
+
+(defun chronometrist-plist-pp-to-string (object)
+  "Convert OBJECT to a pretty-printed string."
+  (with-temp-buffer
+    (lisp-mode-variables nil)
+    (set-syntax-table emacs-lisp-mode-syntax-table)
+    (let ((print-quoted t))
+      (prin1 object (current-buffer)))
+    (goto-char (point-min))
+    (chronometrist-plist-pp-buffer)
+    (buffer-string)))
+
+(defun chronometrist-plist-pp (object &optional stream)
+  "Pretty-print OBJECT and output to STREAM (see `princ')."
+  (princ (chronometrist-plist-pp-to-string object)
+         (or stream standard-output)))
+
+(defvar chronometrist-test-file
+  (make-temp-file
+   "chronometrist-test-" nil ".sexp"
+   (with-output-to-string
+     (mapcar
+      (lambda (plist)
+        ;; to use this, we'd have to move `chronometrist-plist-pp' before this
+        ;; definition, and I'm perfectly content with where it is
+        ;; right now
+        (chronometrist-plist-pp plist) (princ "\n\n")
+        ;; (print plist) (princ "\n")
+        )
+      '((:name "Programming"
+               :start "2018-01-01T00:00:00+0530"
+               :stop  "2018-01-01T01:00:00+0530")
+        (:name "Swimming"
+               :start "2018-01-01T02:00:00+0530"
+               :stop  "2018-01-01T03:00:00+0530")
+        (:name "Cooking"
+               :start "2018-01-01T04:00:00+0530"
+               :stop  "2018-01-01T05:00:00+0530")
+        (:name "Guitar"
+               :start "2018-01-01T06:00:00+0530"
+               :stop  "2018-01-01T07:00:00+0530")
+        (:name "Cycling"
+               :start "2018-01-01T08:00:00+0530"
+               :stop  "2018-01-01T09:00:00+0530")
+        (:name "Programming"
+               :start "2018-01-02T23:00:00+0530"
+               :stop  "2018-01-03T01:00:00+0530")
+        (:name "Cooking"
+               :start "2018-01-03T23:00:00+0530"
+               :stop  "2018-01-04T01:00:00+0530")
+        (:name "Programming"
+               :tags      (bug-hunting)
+               :project   "Chronometrist"
+               :component "goals"
+               :start     "2020-05-09T20:03:25+0530"
+               :stop      "2020-05-09T20:05:55+0530")
+        (:name "Arrangement/new edition"
+               :tags     (new edition)
+               :song     "Songs of Travel"
+               :composer "Vaughan Williams, Ralph"
+               :start    "2020-05-10T00:04:14+0530"
+               :stop     "2020-05-10T00:25:48+0530")
+        (:name "Guitar"
+               :tags  (classical warm-up)
+               :start "2020-05-10T15:41:14+0530"
+               :stop  "2020-05-10T15:55:42+0530")
+        (:name "Guitar"
+               :tags  (classical solo)
+               :start "2020-05-10T16:00:00+0530"
+               :stop  "2020-05-10T16:30:00+0530")
+        (:name "Programming"
+               :tags  (reading)
+               :book  "Smalltalk-80: The Language and Its Implementation"
+               :start "2020-05-10T16:33:17+0530"
+               :stop  "2020-05-10T17:10:48+0530"))))))
+
+(defmacro chronometrist-tests--change-type-and-update (state)
+  `(prog1 (chronometrist-file-change-type ,state)
+     (setq ,state
+           (list :last (chronometrist-file-hash :before-last nil)
+                 :rest (chronometrist-file-hash nil :before-last t)))))
+
+(defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
+  "Function used to pretty print plists in `chronometrist-file'.
+Like `pp', it must accept an OBJECT and optionally a
+STREAM (which is the value of `current-buffer')."
+  :type 'function
+  :group 'chronometrist)
+
+(define-derived-mode chronometrist-sexp-mode
+  ;; fundamental-mode
+  emacs-lisp-mode
+  "chronometrist-sexp")
+
+(defmacro chronometrist-sexp-in-file (file &rest body)
+  "Run BODY in a buffer visiting FILE, restoring point afterwards."
+  (declare (indent defun) (debug t))
+  `(with-current-buffer (find-file-noselect ,file)
+     (save-excursion ,@body)))
+
+(defmacro chronometrist-loop-file (for expr in file &rest loop-clauses)
+  "`cl-loop' LOOP-CLAUSES over s-expressions in FILE, in reverse.
+VAR is bound to each s-expression."
+  (declare (indent defun)
+           (debug nil)
+           ;; FIXME
+           ;; (debug ("for" form "in" form &rest &or sexp form))
+           )
+  `(chronometrist-sexp-in-file ,file
+     (goto-char (point-max))
+     (cl-loop with ,expr
+       while (and (not (bobp))
+                  (backward-list)
+                  (or (not (bobp))
+                      (not (looking-at-p "^[[:blank:]]*;")))
+                  (setq ,expr (ignore-errors (read (current-buffer))))
+                  (backward-list))
+       ,@loop-clauses)))
+
+(defun chronometrist-sexp-open-log ()
+  "Open `chronometrist-file' in another window."
+  (find-file-other-window chronometrist-file)
+  (goto-char (point-max)))
+
+(defun chronometrist-sexp-last ()
+  "Return last s-expression from `chronometrist-file'."
+  (chronometrist-sexp-in-file chronometrist-file
+    (goto-char (point-max))
+    (backward-list)
+    (ignore-errors (read (current-buffer)))))
+
+(defun chronometrist-sexp-current-task ()
+  "Return the name of the currently clocked-in task, or nil if not clocked in."
+  (let ((last-event (chronometrist-sexp-last)))
+    (if (plist-member last-event :stop)
+        nil
+      (plist-get last-event :name))))
+
+(defun chronometrist-sexp-events-populate ()
+  "Populate hash table `chronometrist-events'.
+The data is acquired from `chronometrist-file'.
+
+Return final number of events read from file, or nil if there
+were none."
+  (chronometrist-sexp-in-file chronometrist-file
+    (goto-char (point-min))
+    (let ((index 0) expr pending-expr)
+      (while (or pending-expr
+                 (setq expr (ignore-errors (read (current-buffer)))))
+        ;; find and split midnight-spanning events during deserialization itself
+        (let* ((split-expr (chronometrist-events-maybe-split expr))
+               (new-value  (cond (pending-expr
+                                  (prog1 pending-expr
+                                    (setq pending-expr nil)))
+                                 (split-expr
+                                  (setq pending-expr (cl-second split-expr))
+                                  (cl-first split-expr))
+                                 (t expr)))
+               (new-value-date (--> (plist-get new-value :start)
+                                    (substring it 0 10)))
+               (existing-value (gethash new-value-date chronometrist-events)))
+          (unless pending-expr (cl-incf index))
+          (puthash new-value-date
+                   (if existing-value
+                       (append existing-value
+                               (list new-value))
+                     (list new-value))
+                   chronometrist-events)))
+      (unless (zerop index) index))))
+
+(defun chronometrist-sexp-create-file ()
+  "Create `chronometrist-file' if it doesn't already exist."
+  (unless (file-exists-p chronometrist-file)
+    (with-current-buffer (find-file-noselect chronometrist-file)
+      (goto-char (point-min))
+      (insert ";;; -*- mode: chronometrist-sexp; -*-")
+      (write-file chronometrist-file))))
+
+(cl-defun chronometrist-sexp-new (plist)
+  "Add new PLIST at the end of `chronometrist-file'."
+  (chronometrist-sexp-in-file chronometrist-file
+    (goto-char (point-max))
+    ;; If we're adding the first s-exp in the file, don't add a
+    ;; newline before it
+    (unless (bobp) (insert "\n"))
+    (unless (bolp) (insert "\n"))
+    (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+    (save-buffer)))
+
+(defun chronometrist-sexp-replace-last (plist)
+  "Replace the last s-expression in `chronometrist-file' with PLIST."
+  (chronometrist-sexp-in-file chronometrist-file
+    (goto-char (point-max))
+    (unless (and (bobp) (bolp)) (insert "\n"))
+    (backward-list 1)
+    (chronometrist-sexp-delete-list)
+    (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+    (save-buffer)))
+
+(defun chronometrist-sexp-reindent-buffer ()
+  "Reindent the current buffer.
+This is meant to be run in `chronometrist-file' when using the s-expression backend."
+  (interactive)
+  (let (expr)
+    (goto-char (point-min))
+    (while (setq expr (ignore-errors (read (current-buffer))))
+      (backward-list)
+      (chronometrist-sexp-delete-list)
+      (when (looking-at "\n*")
+        (delete-region (match-beginning 0) (match-end 0)))
+      (funcall chronometrist-sexp-pretty-print-function expr (current-buffer))
+      (insert "\n")
+      (unless (eobp) (insert "\n")))))
+
+(defun chronometrist-last ()
+  "Return the last entry from `chronometrist-file' as a plist."
+  (chronometrist-sexp-last))
+
+(defun chronometrist-task-list ()
+  "Return a list of tasks from `chronometrist-file'."
+  (--> (chronometrist-loop-file for plist in chronometrist-file collect (plist-get plist :name))
+       (cl-remove-duplicates it :test #'equal)
+       (sort it #'string-lessp)))
+
+(ert-deftest task-list ()
+  (let ((task-list (chronometrist-task-list)))
+    (should (listp task-list))
+    (should (seq-every-p #'stringp task-list))))
+
+(defvar chronometrist--file-state nil
+  "List containing the state of `chronometrist-file'.
+`chronometrist-refresh-file' sets this to a plist in the form
+
+\(:last (LAST-START LAST-END) :rest (REST-START REST-END HASH))
+
+\(see `chronometrist-file-hash')
+
+LAST-START and LAST-END represent the start and the end of the
+last s-expression.
+
+REST-START and REST-END represent the start of the file and the
+end of the second-last s-expression.")
+
+(defun chronometrist-file-hash (&optional start end hash)
+  "Calculate hash of `chronometrist-file' between START and END.
+START can be
+a number or marker,
+:before-last - the position at the start of the last s-expression
+nil or any other value - the value of `point-min'.
+
+END can be
+a number or marker,
+:before-last - the position at the end of the second-last s-expression,
+nil or any other value - the position at the end of the last s-expression.
+
+Return (START END) if HASH is nil, else (START END HASH).
+
+Return a list in the form (A B HASH), where A and B are markers
+in `chronometrist-file' describing the region for which HASH was calculated."
+  (chronometrist-sexp-in-file chronometrist-file
+    (let* ((start (cond ((number-or-marker-p start) start)
+                        ((eq :before-last start)
+                         (goto-char (point-max))
+                         (backward-list))
+                        (t (point-min))))
+           (end   (cond ((number-or-marker-p end) end)
+                        ((eq :before-last end)
+                         (goto-char (point-max))
+                         (backward-list 2)
+                         (forward-list))
+                        (t (goto-char (point-max))
+                           (backward-list)
+                           (forward-list)))))
+      (if hash
+          (--> (buffer-substring-no-properties start end)
+               (secure-hash 'sha1 it)
+               (list start end it))
+        (list start end)))))
+
+(ert-deftest file-hash ()
+  (-let* ((chronometrist-file chronometrist-test-file)
+          ((last-start last-end)
+           (chronometrist-file-hash :before-last nil))
+          ((rest-start rest-end rest-hash)
+           (chronometrist-file-hash nil :before-last t)))
+    (message "chronometrist - file-hash test - file path is %s"
+             chronometrist-test-file)
+    (should (= 1 rest-start))
+    (should (= 1254 rest-end))
+    (should (= 1256 last-start))
+    (should (= 1426 last-end))))
+
 (defun chronometrist-read-from (position)
   (chronometrist-sexp-in-file chronometrist-file
     (goto-char (if (number-or-marker-p position)
