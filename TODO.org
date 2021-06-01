@@ -174,6 +174,11 @@ Some options and ideas -
    7. [ ] Just why are we reading the whole file? ~chronometrist~ should not read more than a day; ~chronometrist-report~ should not read more than a week at a time, and so on. Make a branch which works on this logic, see if it is faster.
 
 * Certain
+1. [ ] statistics UI for arbitrary queries
+   * user provides a predicate
+   * we show buffer with
+     + matched unique tag groups, and sparklines for time spent on each
+     + matched key-values, and sparklines for time spent on each
 ** plist-pp [66%]
 1. [X] plist-pp - work recursively for plist/alist values
 2. [ ] Fix alignment of alist dots
