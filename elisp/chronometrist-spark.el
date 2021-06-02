@@ -4,7 +4,7 @@
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
-;; Package-Requires: ((chronometrist "0.7.0") (spark "0.1"))
+;; Package-Requires: ((emacs "24.3") (chronometrist "0.7.0") (spark "0.1"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.
