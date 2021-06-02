@@ -24,8 +24,13 @@
 (require 'chronometrist)
 (require 'spark)
 
+(defgroup chronometrist-spark nil
+  "Show sparklines in `chronometrist'."
+  :group 'applications)
+
 (defcustom chronometrist-spark-length 7
-  "Length of each sparkline in number of days.")
+  "Length of each sparkline in number of days."
+  :type 'integer)
 
 (defun chronometrist-spark-row-transformer (row)
   "Add a sparkline cell to ROW.

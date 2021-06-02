@@ -356,6 +356,39 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
   (require 'subr-x))
 #+END_SRC
 ** Common
+*** custom group                                             :custom:group:
+#+BEGIN_SRC emacs-lisp
+(defgroup chronometrist nil
+  "A time tracker with a nice UI."
+  :group 'applications)
+#+END_SRC
+*** chronometrist-file                                    :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-file
+  (locate-user-emacs-file "chronometrist.sexp")
+  "Default path and name of the Chronometrist database.
+
+It should be a text file containing plists in the form -
+\(:name \"task name\"
+ [:tags TAGS]
+ [:comment \"comment\"]
+ [KEY-VALUE-PAIR ...]
+ :start \"TIME\"
+ :stop \"TIME\"\)
+
+Where -
+
+TAGS is a list. It can contain any strings and symbols.
+
+KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
+Chronometrist ignores them.
+
+TIME must be an ISO-8601 time string.
+
+\(The square brackets here refer to optional elements, not
+vectors.\)"
+  :type 'file)
+#+END_SRC
 *** fs-watch                                            :internal:variable:
 :PROPERTIES:
 :VALUE:    file notify watch
@@ -432,18 +465,38 @@ Return 0 if EVENTS is nil."
           (ts-diff stop-ts start-ts)))
     0))
 #+END_SRC
+*** week-start-day                                        :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-week-start-day "Sunday"
+  "The day from which the week starts."
+  :type 'string)
+#+END_SRC
+*** weekday-number-alist                                  :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-weekday-number-alist
+  '(("Sunday"    . 0)
+    ("Monday"    . 1)
+    ("Tuesday"   . 2)
+    ("Wednesday" . 3)
+    ("Thursday"  . 4)
+    ("Friday"    . 5)
+    ("Saturday"  . 6))
+  "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
+  :type 'alist)
+#+END_SRC
+
 *** previous-week-start                                            :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-previous-week-start (ts)
-  "Find the previous `chronometrist-report-week-start-day' from TS.
+  "Find the previous `chronometrist-week-start-day' from TS.
 Return a ts struct for said day's beginning.
 
 If the day of TS is the same as the
-`chronometrist-report-week-start-day', return TS.
+`chronometrist-week-start-day', return TS.
 
 TS must be a ts struct (see `ts.el')."
-  (cl-loop with week-start = (alist-get chronometrist-report-week-start-day
-                                        chronometrist-report-weekday-number-alist
+  (cl-loop with week-start = (alist-get chronometrist-week-start-day
+                                        chronometrist-weekday-number-alist
                                         nil nil #'equal)
     until (= week-start (ts-dow ts))
     do (ts-decf (ts-day ts))
@@ -596,8 +649,7 @@ It might help to make =inside-sublist-p= an integer representing depth, instead 
   "Recursively indent the alist, plist, or a list of plists after point.
 The list must be on a single line, as emitted by `prin1'."
   (if (not (looking-at-p (rx (or ")" line-end))))
-      (progn
-        (setq sexp (save-excursion (read (current-buffer))))
+      (let ((sexp (save-excursion (read (current-buffer)))))
         (cond
          ((chronometrist-plist-p sexp)
           (chronometrist-plist-pp-buffer-plist inside-sublist-p)
@@ -1859,39 +1911,6 @@ All four of these use [[info:elisp#Tabulated List Mode][=(info "(elisp)Tabulated
 1. [X] Define hooks with defcustom instead of defvar
 2. [ ] Change abnormal hooks to normal hooks
 3. [ ] midnight-spanning plist not displayed (may have to do with partial updates)
-**** custom group                                           :custom:group:
-#+BEGIN_SRC emacs-lisp
-(defgroup chronometrist nil
-  "A time tracker with a nice UI."
-  :group 'applications)
-#+END_SRC
-**** chronometrist-file                                  :custom:variable:
-#+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist.sexp")
-  "Default path and name of the Chronometrist database.
-
-It should be a text file containing plists in the form -
-\(:name \"task name\"
- [:tags TAGS]
- [:comment \"comment\"]
- [KEY-VALUE-PAIR ...]
- :start \"TIME\"
- :stop \"TIME\"\)
-
-Where -
-
-TAGS is a list. It can contain any strings and symbols.
-
-KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
-Chronometrist ignores them.
-
-TIME must be an ISO-8601 time string.
-
-\(The square brackets here refer to optional elements, not
-vectors.\)"
-  :type 'file)
-#+END_SRC
 **** buffer-name                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-buffer-name "*Chronometrist*"
@@ -2452,25 +2471,6 @@ If numeric argument ARG is 2, run `chronometrist-statistics'."
   "The name of the buffer created by `chronometrist-report'."
   :type 'string)
 #+END_SRC
-**** week-start-day                                      :custom:variable:
-#+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-report-week-start-day "Sunday"
-  "The day used for start of week by `chronometrist-report'."
-  :type 'string)
-#+END_SRC
-**** weekday-number-alist                                :custom:variable:
-#+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-report-weekday-number-alist
-  '(("Sunday"    . 0)
-    ("Monday"    . 1)
-    ("Tuesday"   . 2)
-    ("Wednesday" . 3)
-    ("Thursday"  . 4)
-    ("Friday"    . 5)
-    ("Saturday"  . 6))
-  "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
-  :type 'alist)
-#+END_SRC
 **** ui-date                                           :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-report--ui-date nil
@@ -2505,7 +2505,7 @@ FIRST-DATE-IN-WEEK must be a ts struct representing the first date."
 Each element is a ts struct (see `ts.el').
 
 The first date is the first occurrence of
-`chronometrist-report-week-start-day' before the date specified in
+`chronometrist-week-start-day' before the date specified in
 `chronometrist-report--ui-date' (if non-nil) or the current date."
   (->> (or chronometrist-report--ui-date (chronometrist-date))
        (chronometrist-previous-week-start)
@@ -3212,5 +3212,5 @@ Return value is a list as specified by `tabulated-list-entries'."
 # eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote before-save-hook)) (add-hook (quote before-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist.org\" \"chronometrist.el\")"))))
+# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) #'contrapunctus-literate-elisp-tangle))
 # End:

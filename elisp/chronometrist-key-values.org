@@ -359,13 +359,13 @@ HISTORY-TABLE must be a hash table (see `chronometrist-key-history')."
   (puthash task nil history-table)
   (chronometrist-loop-file for plist in file do
     (catch 'quit
-      (let* ((name  (plist-get plist :name))
-             (check (unless (equal name task) (throw 'quit nil)))
-             (keys  (--> (chronometrist-plist-key-values plist)
+      (let* ((name     (plist-get plist :name))
+             (_check   (unless (equal name task) (throw 'quit nil)))
+             (keys     (--> (chronometrist-plist-key-values plist)
                          (seq-filter #'keywordp it)
                          (cl-loop for key in it collect
                            (chronometrist-keyword-to-string key))))
-             (check (unless keys (throw 'quit nil)))
+             (_check   (unless keys (throw 'quit nil)))
              (old-keys (gethash name history-table)))
         (puthash name
                  (if old-keys (append old-keys keys) keys)
@@ -416,7 +416,7 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-value-history')"
           (puthash key-string
                    (if old-values (append old-values value) value)
                    history-table)))))
-  (maphash (lambda (key values)
+  (maphash (lambda (key _values)
              (chronometrist-history-prep key history-table))
            history-table))
 #+END_SRC

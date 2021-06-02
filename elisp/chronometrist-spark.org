@@ -38,10 +38,18 @@
 (require 'spark)
 #+END_SRC
 ** Code
+*** custom group                                             :custom:group:
+#+BEGIN_SRC emacs-lisp
+(defgroup chronometrist-spark nil
+  "Show sparklines in `chronometrist'."
+  :group 'applications)
+#+END_SRC
+
 *** length                                                :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-spark-length 7
-  "Length of each sparkline in number of days.")
+  "Length of each sparkline in number of days."
+  :type 'integer)
 #+END_SRC
 
 *** TODO row-transformer                                         :function:
@@ -115,5 +123,5 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
 # eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote before-save-hook)) (add-hook (quote before-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-spark.org\" \"chronometrist-spark.el\")"))))
+# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-spark.org\" \"chronometrist-spark.el\")"))))
 # End:

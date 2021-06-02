@@ -67,6 +67,35 @@
   (defvar chronometrist-mode-map)
   (require 'subr-x))
 
+(defgroup chronometrist nil
+  "A time tracker with a nice UI."
+  :group 'applications)
+
+(defcustom chronometrist-file
+  (locate-user-emacs-file "chronometrist.sexp")
+  "Default path and name of the Chronometrist database.
+
+It should be a text file containing plists in the form -
+\(:name \"task name\"
+ [:tags TAGS]
+ [:comment \"comment\"]
+ [KEY-VALUE-PAIR ...]
+ :start \"TIME\"
+ :stop \"TIME\"\)
+
+Where -
+
+TAGS is a list. It can contain any strings and symbols.
+
+KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
+Chronometrist ignores them.
+
+TIME must be an ISO-8601 time string.
+
+\(The square brackets here refer to optional elements, not
+vectors.\)"
+  :type 'file)
+
 (defvar chronometrist--fs-watch nil
   "Filesystem watch object.
 Used to prevent more than one watch being added for the same
@@ -128,16 +157,31 @@ Return 0 if EVENTS is nil."
           (ts-diff stop-ts start-ts)))
     0))
 
+(defcustom chronometrist-week-start-day "Sunday"
+  "The day from which the week starts."
+  :type 'string)
+
+(defcustom chronometrist-weekday-number-alist
+  '(("Sunday"    . 0)
+    ("Monday"    . 1)
+    ("Tuesday"   . 2)
+    ("Wednesday" . 3)
+    ("Thursday"  . 4)
+    ("Friday"    . 5)
+    ("Saturday"  . 6))
+  "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
+  :type 'alist)
+
 (defun chronometrist-previous-week-start (ts)
-  "Find the previous `chronometrist-report-week-start-day' from TS.
+  "Find the previous `chronometrist-week-start-day' from TS.
 Return a ts struct for said day's beginning.
 
 If the day of TS is the same as the
-`chronometrist-report-week-start-day', return TS.
+`chronometrist-week-start-day', return TS.
 
 TS must be a ts struct (see `ts.el')."
-  (cl-loop with week-start = (alist-get chronometrist-report-week-start-day
-                                        chronometrist-report-weekday-number-alist
+  (cl-loop with week-start = (alist-get chronometrist-week-start-day
+                                        chronometrist-weekday-number-alist
                                         nil nil #'equal)
     until (= week-start (ts-dow ts))
     do (ts-decf (ts-day ts))
@@ -249,8 +293,7 @@ that point is after the first opening parenthesis."
   "Recursively indent the alist, plist, or a list of plists after point.
 The list must be on a single line, as emitted by `prin1'."
   (if (not (looking-at-p (rx (or ")" line-end))))
-      (progn
-        (setq sexp (save-excursion (read (current-buffer))))
+      (let ((sexp (save-excursion (read (current-buffer)))))
         (cond
          ((chronometrist-plist-p sexp)
           (chronometrist-plist-pp-buffer-plist inside-sublist-p)
@@ -1270,35 +1313,6 @@ ARG should be the new update interval, in seconds."
         chronometrist--timer-object nil)
   (chronometrist-maybe-start-timer))
 
-(defgroup chronometrist nil
-  "A time tracker with a nice UI."
-  :group 'applications)
-
-(defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist.sexp")
-  "Default path and name of the Chronometrist database.
-
-It should be a text file containing plists in the form -
-\(:name \"task name\"
- [:tags TAGS]
- [:comment \"comment\"]
- [KEY-VALUE-PAIR ...]
- :start \"TIME\"
- :stop \"TIME\"\)
-
-Where -
-
-TAGS is a list. It can contain any strings and symbols.
-
-KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
-Chronometrist ignores them.
-
-TIME must be an ISO-8601 time string.
-
-\(The square brackets here refer to optional elements, not
-vectors.\)"
-  :type 'file)
-
 (defcustom chronometrist-buffer-name "*Chronometrist*"
   "The name of the buffer created by `chronometrist'."
   :type 'string)
@@ -1762,21 +1776,6 @@ If numeric argument ARG is 2, run `chronometrist-statistics'."
   "The name of the buffer created by `chronometrist-report'."
   :type 'string)
 
-(defcustom chronometrist-report-week-start-day "Sunday"
-  "The day used for start of week by `chronometrist-report'."
-  :type 'string)
-
-(defcustom chronometrist-report-weekday-number-alist
-  '(("Sunday"    . 0)
-    ("Monday"    . 1)
-    ("Tuesday"   . 2)
-    ("Wednesday" . 3)
-    ("Thursday"  . 4)
-    ("Friday"    . 5)
-    ("Saturday"  . 6))
-  "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
-  :type 'alist)
-
 (defvar chronometrist-report--ui-date nil
   "The first date of the week displayed by `chronometrist-report'.
 A value of nil means the current week. Otherwise, it must be a
@@ -1801,7 +1800,7 @@ FIRST-DATE-IN-WEEK must be a ts struct representing the first date."
 Each element is a ts struct (see `ts.el').
 
 The first date is the first occurrence of
-`chronometrist-report-week-start-day' before the date specified in
+`chronometrist-week-start-day' before the date specified in
 `chronometrist-report--ui-date' (if non-nil) or the current date."
   (->> (or chronometrist-report--ui-date (chronometrist-date))
        (chronometrist-previous-week-start)
