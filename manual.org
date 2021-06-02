@@ -122,15 +122,6 @@ All of these commands will kill their buffer when run again with the buffer visi
 
 All buffers keep themselves updated via an idle timer - no need to frequently press =g= to update.
 
-** Prompt when exiting Emacs
-:PROPERTIES:
-:CUSTOM_ID: prompt-when-exiting-emacs
-:END:
-
-If you wish to be prompted when you exit Emacs while tracking time, you can use this -
-
-=(add-hook 'kill-emacs-query-functions 'chronometrist-query-stop)=
-
 ** Time goals/targets
 :PROPERTIES:
 :CUSTOM_ID: time-goalstargets
@@ -144,6 +135,26 @@ If you wish you could define time goals for some tasks, and have Chronometrist n
 :END:
 
 See the Customize groups =chronometrist= and =chronometrist-report= for variables intended to be user-customizable.
+
+** How to display a prompt when exiting with an active task
+:PROPERTIES:
+:CUSTOM_ID: prompt-when-exiting-emacs
+:END:
+
+Evaluate or add to your init.el the following -
+=(add-hook 'kill-emacs-query-functions 'chronometrist-query-stop)=
+
+** How to load the program using literate-elisp
+:PROPERTIES:
+:CUSTOM_ID: how-to-literate-elisp
+:END:
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "<directory containing chronometrist.org>")
+
+(require 'literate-elisp) ;; or autoload, use-package, ...
+(literate-elisp-load "chronometrist.org")
+#+END_SRC
 
 ** How to attach tags to time intervals
 :PROPERTIES:
@@ -243,6 +254,17 @@ Return nil (and run `magit-status') if the user answers no."
 
 (setq chronometrist-activity-indicator #'my-activity-indicator)
 #+END_SRC
+
+* Explanation
+** Literate Program
+:PROPERTIES:
+:CUSTOM_ID: explanation-literate-program
+:END:
+Chronometrist is a literate program, made using Org - the canonical source is the =chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file).
+
+The Org file can also be loaded directly using the   [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file, within the context of the concerned documentation. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
+
+=chronometrist.org= is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 * User's reference
 All variables intended for user customization are listed here. They serve as the public API for this project for the purpose of semantic versioning. Any changes to these which require a user to modify their configuration are considered breaking changes.
