@@ -109,24 +109,6 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-tags-history')"
                     history-table))))
   (chronometrist-history-prep task history-table))
 
-(ert-deftest chronometrist-tags-history ()
-  (progn
-    (clrhash chronometrist-tags-history)
-    (cl-loop for task in '("Guitar" "Programming") do
-      (chronometrist-tags-history-populate task chronometrist-tags-history "test.sexp")))
-  (should
-   (= (hash-table-count chronometrist-tags-history) 2))
-  (should
-   (cl-loop for task being the hash-keys of chronometrist-tags-history
-     always (stringp task)))
-  (should
-   (equal (gethash "Guitar" chronometrist-tags-history)
-          '((classical solo)
-            (classical warm-up))))
-  (should
-   (equal (gethash "Programming" chronometrist-tags-history)
-          '((reading) (bug-hunting)))))
-
 (defvar chronometrist--tag-suggestions nil
   "Suggestions for tags.
 Used as history by `chronometrist-tags-prompt'.")
@@ -243,15 +225,6 @@ HISTORY-TABLE must be a hash table (see `chronometrist-key-history')."
                  history-table))))
   (chronometrist-history-prep task history-table))
 
-(ert-deftest chronometrist-key-history ()
-  (progn
-    (clrhash chronometrist-key-history)
-    (cl-loop for task in '("Programming" "Arrangement/new edition") do
-      (chronometrist-key-history-populate task chronometrist-key-history "test.sexp")))
-  (should (= (hash-table-count chronometrist-key-history) 2))
-  (should (= (length (gethash "Programming" chronometrist-key-history)) 3))
-  (should (= (length (gethash "Arrangement/new edition" chronometrist-key-history)) 2)))
-
 (defvar chronometrist-value-history
   (make-hash-table :test #'equal)
   "Hash table to store previously-used values for user-keys.
@@ -280,15 +253,6 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-value-history')"
   (maphash (lambda (key _values)
              (chronometrist-history-prep key history-table))
            history-table))
-
-(ert-deftest chronometrist-value-history ()
-  (progn
-    (clrhash chronometrist-value-history)
-    (chronometrist-value-history-populate chronometrist-value-history "test.sexp"))
-  (should (= (hash-table-count chronometrist-value-history) 5))
-  (should
-   (cl-loop for task being the hash-keys of chronometrist-value-history
-     always (stringp task))))
 
 (defvar chronometrist--value-suggestions nil
   "Suggestions for values.

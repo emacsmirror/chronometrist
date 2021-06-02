@@ -211,7 +211,7 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-tags-history')"
   (chronometrist-history-prep task history-table))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-key-values-tests.el :load test
 (ert-deftest chronometrist-tags-history ()
   (progn
     (clrhash chronometrist-tags-history)
@@ -372,7 +372,7 @@ HISTORY-TABLE must be a hash table (see `chronometrist-key-history')."
   (chronometrist-history-prep task history-table))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-key-values-tests.el :load test
 (ert-deftest chronometrist-key-history ()
   (progn
     (clrhash chronometrist-key-history)
@@ -420,7 +420,7 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-value-history')"
            history-table))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-key-values-tests.el :load test
 (ert-deftest chronometrist-value-history ()
   (progn
     (clrhash chronometrist-value-history)
@@ -715,5 +715,5 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 # eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-key-values.org\" \"chronometrist-key-values.el\")"))))
+# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-key-values.org\")"))))
 # End:

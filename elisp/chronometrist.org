@@ -454,8 +454,8 @@ TS must be a ts struct (see `ts.el')."
           keys)
     plist))
 #+END_SRC
-
-#+BEGIN_SRC emacs-lisp :load test
+**** tests
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-plist-remove ()
   (should
    (equal (chronometrist-plist-remove '(:a 1 :b 2 :c 3 :d 4) :a)
@@ -504,7 +504,7 @@ TS must be a ts struct (see `ts.el')."
   (null list))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest plist-p ()
   (should (eq t   (chronometrist-plist-p '(:a 1 :b 2))))
   (should (eq nil (chronometrist-plist-p '(0 :a 1 :b 2))))
@@ -618,7 +618,7 @@ The list must be on a single line, as emitted by `prin1'."
         (forward-char)))))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest plist-pp-buffer ()
   (should
    (equal
@@ -812,6 +812,10 @@ The reasons I like this format are -
 3. It is easy to diff and version control.
 
 *** tests
+:PROPERTIES:
+:header-args:   :tangle chronometrist-tests.el
+:END:
+
 #+BEGIN_SRC emacs-lisp :load test
 (defvar chronometrist-test-file
   (make-temp-file
@@ -1055,8 +1059,8 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 #+END_SRC
-
-#+BEGIN_SRC emacs-lisp :load test
+**** tests
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest task-list ()
   (let ((task-list (chronometrist-task-list)))
     (should (listp task-list))
@@ -1120,7 +1124,7 @@ in `chronometrist-file' describing the region for which HASH was calculated."
         (list start end)))))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest file-hash ()
   (-let* ((chronometrist-file chronometrist-test-file)
           ((last-start last-end)
@@ -1199,7 +1203,7 @@ Return
            :modify))))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-file-change-type ()
   (let* ((chronometrist-file            chronometrist-test-file)
          (test-contents    (with-current-buffer (find-file-noselect chronometrist-file)
@@ -1415,8 +1419,8 @@ Return value is a ts struct (see `ts.el')."
     (ts-apply :hour h :minute m :second s
               (chronometrist-iso-timestamp-to-ts timestamp))))
 #+END_SRC
-
-#+BEGIN_SRC emacs-lisp :load test
+**** tests
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-apply-time ()
   (should
    (equal (ts-format "%FT%T%z" (chronometrist-apply-time "01:02:03" "2021-02-17T01:20:18+0530"))
@@ -1450,7 +1454,7 @@ Return a list of two events if EVENT was split, else nil."
 #+END_SRC
 
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-events-maybe-split ()
   (should
    (null (chronometrist-events-maybe-split
@@ -1715,7 +1719,7 @@ Return a list in the form
                      :stop  ,stop-time)))))
 #+END_SRC
 **** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-midnight-spanning-p ()
   (should
    (null
@@ -3094,7 +3098,7 @@ ARG must be either tags (a list of symbols) or a plist."
 #+END_SRC
 
 ***** tests
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-details-row-helper ()
   (let ((tags  '(a b c))
         (plist '(:a 1 :b 2 :c 3)))
@@ -3205,5 +3209,5 @@ Return value is a list as specified by `tabulated-list-entries'."
 # eval: (org-indent-mode)
 # eval: (visual-fill-column-mode -1)
 # eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist.org\" \"chronometrist.el\")"))))
+# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist.org\")"))))
 # End:
