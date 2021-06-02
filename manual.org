@@ -1,5 +1,5 @@
-#+TITLE: Chronometrist
-#+SUBTITLE: An extensible time tracker for Emacs
+#+TITLE: Chronometrist - an extensible time tracker for Emacs
+#+SUBTITLE: User Manual
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
 [[https://melpa.org/#/chronometrist][file:https://melpa.org/packages/chronometrist-badge.svg]]
