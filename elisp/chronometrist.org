@@ -253,19 +253,10 @@ Further details are stored in properties -
    * [[https://github.com/Malabarba/Nameless][nameless-mode]] for easier reading of Emacs Lisp code,
    * [[https://elpa.gnu.org/packages/adaptive-wrap.html][adaptive-prefix-mode]], and
    * [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] to load this file directly without tangling.
-#+BEGIN_SRC emacs-lisp :tangle no :load no
-  (mapcar #'package-install '(nameless adaptive-wrap literate-elisp))
-#+END_SRC
-2. Set up automatic tangling by creating a Git pre-commit hook. In =.git/hooks/=, create a file called =pre-commit= containing the following -
 
-
-   #+BEGIN_SRC sh :tangle no :load no
-        #!/bin/sh
-        emacs -q -Q --batch \
-              --eval="(require 'ob-tangle)" \
-              --eval='(progn (cd "elisp/") (org-babel-tangle-file "chronometrist.org" "chronometrist.el"))' \
-            && git add elisp/chronometrist.el
-      #+END_SRC
+   #+BEGIN_SRC emacs-lisp :tangle no :load no
+     (mapcar #'package-install '(nameless adaptive-wrap literate-elisp))
+   #+END_SRC
 
 ** How to tangle this file
 Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc='s comment conventions.
