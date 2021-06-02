@@ -53,7 +53,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 :END:
 ** from MELPA
 :PROPERTIES:
-:CUSTOM_ID: from-melpa
+:CUSTOM_ID: install-from-melpa
 :END:
 
 1. Set up MELPA - https://melpa.org/#/getting-started
@@ -63,7 +63,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 
 ** from Git
 :PROPERTIES:
-:CUSTOM_ID: from-git
+:CUSTOM_ID: install-from-git
 :END:
 
 You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometrist
