@@ -407,3 +407,17 @@ Some options and ideas -
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
+* documentation discoverability
+Ensure that the user manual is easily discoverable.
+
+#+BEGIN_QUOTE
+[2021-06-02 13:49:41] rnkn: contrapunctus: have a menu item that opens the org file
+[2021-06-02 13:50:49] contrapunctus: rnkn: hm, okay, I'll look into that...any others, for those who always have menus disabled?
+[2021-06-02 13:51:43] rgr: why are you shipping as an org and not an info? Not that I have any skin in the game. But just link it in your mode/function docstring maybe.
+[2021-06-02 13:52:15] rnkn: not the docstring
+[2021-06-02 13:52:24] rnkn: use the :link keyword for the defgroup
+[2021-06-02 13:53:22] rnkn: `:link '(file-link FILE)'
+[2021-06-02 13:53:35] contrapunctus: rgr: Org [...] can do a ton more stuff than [the] info [viewer]. To the point that even HTML export (even with infojs) would be a disgrace to the file ;)
+[2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file
+[2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it.
+#+END_QUOTE
