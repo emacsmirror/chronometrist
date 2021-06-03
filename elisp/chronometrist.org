@@ -287,15 +287,23 @@ Further details are stored in properties -
                             " ")))))))))
       #+END_SRC
 
-3. If you use Magit, you can run =makem.sh= after staging the files -
+3. Set up compiling, linting, and testing with =makem.sh=. First, define this command -
 
-   #+BEGIN_SRC emacs-lisp
+   #+BEGIN_SRC emacs-lisp :tangle no :load no
    (defun run-makem ()
      (interactive)
      (cd (locate-dominating-file default-directory "makem.sh"))
      (compile "./makem.sh compile lint test-ert"))
+   #+END_SRC
 
+   Then, run it after staging the files -
+   #+BEGIN_SRC emacs-lisp :tangle no :load no
    (add-hook 'magit-post-stage-hook #'run-makem)
+   #+END_SRC
+
+   Or after tangling ends -
+   #+BEGIN_SRC emacs-lisp :tangle no :load no
+     (add-hook 'org-babel-post-tangle-hook #'run-makem)
    #+END_SRC
 
 ** How to tangle this file
