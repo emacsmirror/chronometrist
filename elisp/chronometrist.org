@@ -249,14 +249,34 @@ Further details are stored in properties -
 
 * How-to guides for maintainers
 ** How to set up Emacs to contribute
-1. Install
-   * [[https://github.com/Malabarba/Nameless][nameless-mode]] for easier reading of Emacs Lisp code,
-   * [[https://elpa.gnu.org/packages/adaptive-wrap.html][adaptive-prefix-mode]], and
-   * [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] to load this file directly without tangling.
+1. Install [[https://github.com/Malabarba/Nameless][nameless-mode]] for easier reading of Emacs Lisp code, and [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] to load this file directly without tangling.
 
    #+BEGIN_SRC emacs-lisp :tangle no :load no
-     (mapcar #'package-install '(nameless adaptive-wrap literate-elisp))
+     (mapcar #'package-install '(nameless literate-elisp))
    #+END_SRC
+
+2. Create a =.dir-locals-2.el= in the project root, containing -
+
+      #+BEGIN_SRC emacs-lisp :tangle no :load no
+        ((org-mode
+          .
+          ((eval . (nameless-mode))
+           (eval . (progn
+             (make-local-variable 'after-save-hook)
+             ;; you can't `defun' in one `eval' and use the
+             ;; function in another `eval', apparently
+             (add-hook
+              'after-save-hook
+              (defun chronometrist-tangle ()
+                (interactive)
+                (compile
+                 (mapconcat #'shell-quote-argument
+                            `("emacs" "-q" "-Q" "--batch"
+                              "--eval=(require 'ob-tangle)"
+                              ,(format "--eval=(org-babel-tangle-file \"%s\")"
+                                       (buffer-file-name)))
+                            " ")))))))))
+      #+END_SRC
 
 ** How to tangle this file
 Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc='s comment conventions.
@@ -3203,11 +3223,3 @@ Return value is a list as specified by `tabulated-list-entries'."
 
 ;;; chronometrist.el ends here
 #+END_SRC
-* Local Variables                                                  :noexport:
-# Local Variables:
-# org-html-self-link-headlines: t
-# eval: (org-indent-mode)
-# eval: (visual-fill-column-mode -1)
-# eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist.org\")"))))
-# End:

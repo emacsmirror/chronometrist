@@ -10,7 +10,7 @@
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
-;; Package-Requires: ((chronometrist "0.7.0") (spark "0.1"))
+;; Package-Requires: ((emacs "24.3") (chronometrist "0.7.0") (spark "0.1"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.
@@ -116,11 +116,3 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
 (provide 'chronometrist-spark)
 ;;; chronometrist-spark.el ends here
 #+END_SRC
-* Local Variables                                                  :noexport:
-# Local Variables:
-# org-html-self-link-headlines: t
-# eval: (org-indent-mode)
-# eval: (visual-fill-column-mode -1)
-# eval: (nameless-mode)
-# eval: (progn (make-local-variable (quote after-save-hook)) (add-hook (quote after-save-hook) (lambda () (start-process "chronometrist-tangle" (generate-new-buffer-name "chronometrist-tangle") "emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" "--eval=(org-babel-tangle-file \"chronometrist-spark.org\" \"chronometrist-spark.el\")"))))
-# End:
