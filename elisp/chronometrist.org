@@ -250,6 +250,15 @@ Further details are stored in properties -
 
 * How-to guides for maintainers
 ** How to set up Emacs to contribute
+# Different approaches to this setup -
+# 1. Document it and let contributors do it voluntarily.
+#    * Downside - if a contributor does not do it, it can lead to inconsistency and an additional headache for the maintainer.
+# 2. Put it in file variables and/or =.dir-locals.el=.
+#    * Downside - if the contributor does not have a dependency installed (e.g. nameless), Emacs will create an error. That's not the UX I want for someone opening the file for the first time - it does not tell them that they need to install something.
+#      + Technically, a friendlier error message could be displayed. But you want to read/edit a document and it asks you to install something first...kind of a flow breaker.
+# 3. Use a tool which installs developement dependencies for you, e.g. Cask, Eldev.
+#    * May look into this in the future. But as of now I don't even foresee any contributors 😓
+
 1. Install [[https://github.com/Malabarba/Nameless][nameless-mode]] for easier reading of Emacs Lisp code, and [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] to load this file directly without tangling.
 
    #+BEGIN_SRC emacs-lisp :tangle no :load no
@@ -278,6 +287,17 @@ Further details are stored in properties -
                                        (buffer-file-name)))
                             " ")))))))))
       #+END_SRC
+
+3. If you use Magit, you can run =makem.sh= after staging the files -
+
+   #+BEGIN_SRC emacs-lisp
+   (defun run-makem ()
+     (interactive)
+     (cd (locate-dominating-file default-directory "makem.sh"))
+     (compile "./makem.sh compile lint test-ert"))
+
+   (add-hook 'magit-post-stage-hook #'run-makem)
+   #+END_SRC
 
 ** How to tangle this file
 Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-elisp-tangle=. The file emitted by the latter does not contain comments - thus, it does not contain library headers or abide by =checkdoc='s comment conventions.
