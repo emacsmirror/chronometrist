@@ -708,3 +708,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 (provide 'chronometrist-key-values)
 ;;; chronometrist-key-values.el ends here
 #+END_SRC
+* Local variables                                 :noexport:
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda nil (interactive) (compile (mapconcat #'shell-quote-argument `("emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" ,(format "--eval=(org-babel-tangle-file \"%s\")" (buffer-file-name))) " "))) nil t)
+# End:
