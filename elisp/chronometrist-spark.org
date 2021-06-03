@@ -1,4 +1,5 @@
 #+TITLE: chronometrist-spark
+#+AUTHOR: contrapunctus
 #+SUBTITLE: Show sparklines in Chronometrist
 #+PROPERTY: header-args :tangle yes :load yes
 
