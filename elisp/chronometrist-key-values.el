@@ -29,9 +29,8 @@
 (require 'chronometrist)
 
 (defun chronometrist-history-prep (key history-table)
-  "Prepare history hash tables for use in prompts.
-Each value in hash table TABLE must be a list. Each value will be
-reversed and will have duplicate elements removed."
+  "Prepare history of KEY in HISTORY-TABLE for use in prompts.
+Each value in hash table TABLE must be a list.  Each value will be reversed and will have duplicate elements removed."
   (--> (gethash key history-table)
        (cl-remove-duplicates it :test #'equal :from-end t)
        (puthash key it history-table)))

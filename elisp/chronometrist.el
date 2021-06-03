@@ -67,6 +67,10 @@
   (defvar chronometrist-mode-map)
   (require 'subr-x))
 
+(defgroup chronometrist nil
+  "An extensible time tracker."
+  :group 'applications)
+
 (defvar chronometrist--fs-watch nil
   "Filesystem watch object.
 Used to prevent more than one watch being added for the same
@@ -127,6 +131,27 @@ Return 0 if EVENTS is nil."
                            (ts-now))))
           (ts-diff stop-ts start-ts)))
     0))
+
+(defcustom chronometrist-day-start-time "00:00:00"
+  "The time at which a day is considered to start, in \"HH:MM:SS\".
+
+The default is midnight, i.e. \"00:00:00\"."
+  :type 'string)
+
+(defcustom chronometrist-report-week-start-day "Sunday"
+  "The day used for start of week by `chronometrist-report'."
+  :type 'string)
+
+(defcustom chronometrist-report-weekday-number-alist
+  '(("Sunday"    . 0)
+    ("Monday"    . 1)
+    ("Tuesday"   . 2)
+    ("Wednesday" . 3)
+    ("Thursday"  . 4)
+    ("Friday"    . 5)
+    ("Saturday"  . 6))
+  "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
+  :type 'alist)
 
 (defun chronometrist-previous-week-start (ts)
   "Find the previous `chronometrist-report-week-start-day' from TS.
@@ -215,23 +240,22 @@ that point is after the first opening parenthesis."
   "Recursively indent the alist, plist, or a list of plists after point.
 The list must be on a single line, as emitted by `prin1'."
   (if (not (looking-at-p (rx (or ")" line-end))))
-      (progn
-        (setq sexp (save-excursion (read (current-buffer))))
-        (cond
-         ((chronometrist-plist-p sexp)
-          (chronometrist-plist-pp-buffer-plist inside-sublist-p)
-          (chronometrist-plist-pp-buffer inside-sublist-p))
-         ((chronometrist-plist-pp-alist-p sexp)
-          (chronometrist-plist-pp-buffer-alist)
-          (unless inside-sublist-p (chronometrist-plist-pp-buffer)))
-         ((chronometrist-plist-pp-pair-p sexp)
-          (forward-sexp)
-          (chronometrist-plist-pp-buffer inside-sublist-p))
-         ((listp sexp)
-          (down-list)
-          (chronometrist-plist-pp-buffer t))
-         (t (forward-sexp)
-            (chronometrist-plist-pp-buffer inside-sublist-p))))
+      (let ((sexp (save-excursion (read (current-buffer)))))
+          (cond
+           ((chronometrist-plist-p sexp)
+            (chronometrist-plist-pp-buffer-plist inside-sublist-p)
+            (chronometrist-plist-pp-buffer inside-sublist-p))
+           ((chronometrist-plist-pp-alist-p sexp)
+            (chronometrist-plist-pp-buffer-alist)
+            (unless inside-sublist-p (chronometrist-plist-pp-buffer)))
+           ((chronometrist-plist-pp-pair-p sexp)
+            (forward-sexp)
+            (chronometrist-plist-pp-buffer inside-sublist-p))
+           ((listp sexp)
+            (down-list)
+            (chronometrist-plist-pp-buffer t))
+           (t (forward-sexp)
+              (chronometrist-plist-pp-buffer inside-sublist-p))))
     ;; we're before a ) - is it a lone paren on its own line?
     (let ((pos (point))
           (bol (point-at-bol)))
@@ -304,6 +328,31 @@ The list must be on a single line, as emitted by `prin1'."
   (princ (chronometrist-plist-pp-to-string object)
          (or stream standard-output)))
 
+(defcustom chronometrist-file
+  (locate-user-emacs-file "chronometrist.sexp")
+  "Default path and name of the Chronometrist database.
+
+It should be a text file containing plists in the form -
+\(:name \"task name\"
+ [:tags TAGS]
+ [:comment \"comment\"]
+ [KEY-VALUE-PAIR ...]
+ :start \"TIME\"
+ :stop \"TIME\"\)
+
+Where -
+
+TAGS is a list. It can contain any strings and symbols.
+
+KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
+Chronometrist ignores them.
+
+TIME must be an ISO-8601 time string.
+
+\(The square brackets here refer to optional elements, not
+vectors.\)"
+  :type 'file)
+
 (defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
   "Function used to pretty print plists in `chronometrist-file'.
 Like `pp', it must accept an OBJECT and optionally a
@@ -322,7 +371,7 @@ STREAM (which is the value of `current-buffer')."
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
 
-(defmacro chronometrist-loop-file (for expr in file &rest loop-clauses)
+(defmacro chronometrist-loop-file (_for expr _in file &rest loop-clauses)
   "`cl-loop' LOOP-CLAUSES over s-expressions in FILE, in reverse.
 VAR is bound to each s-expression."
   (declare (indent defun)
@@ -360,6 +409,7 @@ VAR is bound to each s-expression."
         nil
       (plist-get last-event :name))))
 
+(defvar chronometrist-events)
 (defun chronometrist-sexp-events-populate ()
   "Populate hash table `chronometrist-events'.
 The data is acquired from `chronometrist-file'.
@@ -761,6 +811,7 @@ The return value is seconds, as an integer."
       ;; no events for this task on TS, i.e. no time spent
       0)))
 
+(defvar chronometrist-task-list)
 (cl-defun chronometrist-active-time-one-day (&optional (ts (ts-now)))
   "Return the total active time on TS (if non-nil) or today.
 TS must be a ts struct (see `ts.el')
@@ -801,7 +852,7 @@ Return new value of `chronometrist-task-list', or nil if
 unchanged."
   (let ((ht-plist-count (cl-loop with count = 0
                           for intervals being the hash-values of chronometrist-events
-                          do (cl-loop for interval in intervals
+                          do (cl-loop for _interval in intervals
                                do (cl-incf count))
                           finally return count))
         (ht-task-first-result (cl-loop with count = 0
@@ -895,12 +946,19 @@ EVENT should be a plist (see `chronometrist-file')."
     (time-subtract (parse-iso8601-time-string stop)
                    (parse-iso8601-time-string start))))
 
+(defcustom chronometrist-update-interval 5
+  "How often the `chronometrist' buffer should be updated, in seconds.
+
+This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
+  :type 'integer)
+
 (defvar chronometrist--timer-object nil)
 
 (defcustom chronometrist-timer-hook nil
   "Functions run by `chronometrist-timer'."
   :type '(repeat function))
 
+(defvar chronometrist-buffer-name)
 (defun chronometrist-timer ()
   "Refresh Chronometrist and related buffers.
 Buffers will be refreshed only if they are visible and the user
@@ -951,35 +1009,6 @@ ARG should be the new update interval, in seconds."
         chronometrist--timer-object nil)
   (chronometrist-maybe-start-timer))
 
-(defgroup chronometrist nil
-  "A time tracker with a nice UI."
-  :group 'applications)
-
-(defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist.sexp")
-  "Default path and name of the Chronometrist database.
-
-It should be a text file containing plists in the form -
-\(:name \"task name\"
- [:tags TAGS]
- [:comment \"comment\"]
- [KEY-VALUE-PAIR ...]
- :start \"TIME\"
- :stop \"TIME\"\)
-
-Where -
-
-TAGS is a list. It can contain any strings and symbols.
-
-KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
-Chronometrist ignores them.
-
-TIME must be an ISO-8601 time string.
-
-\(The square brackets here refer to optional elements, not
-vectors.\)"
-  :type 'file)
-
 (defcustom chronometrist-buffer-name "*Chronometrist*"
   "The name of the buffer created by `chronometrist'."
   :type 'string)
@@ -988,23 +1017,11 @@ vectors.\)"
   "If non-nil, hide the cursor and only highlight the current line in the `chronometrist' buffer."
   :type 'boolean)
 
-(defcustom chronometrist-update-interval 5
-  "How often the `chronometrist' buffer should be updated, in seconds.
-
-This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
-  :type 'integer)
-
 (defcustom chronometrist-activity-indicator "*"
   "How to indicate that a task is active.
 Can be a string to be displayed, or a function which returns this string.
 The default is \"*\""
   :type '(choice string function))
-
-(defcustom chronometrist-day-start-time "00:00:00"
-  "The time at which a day is considered to start, in \"HH:MM:SS\".
-
-The default is midnight, i.e. \"00:00:00\"."
-  :type 'string)
 
 (defvar chronometrist--point nil)
 
@@ -1048,7 +1065,68 @@ Return the value returned by Fₙ."
 (defcustom chronometrist-schema
   '[("#" 3 t) ("Task" 25 t) ("Time" 10 t) ("Active" 10 t)]
   "Vector specifying schema of `chronometrist' buffer.
-See `tabulated-list-format'.")
+See `tabulated-list-format'."
+  :type '(vector))
+
+(defvar chronometrist-mode-hook nil
+  "Normal hook run at the very end of `chronometrist-mode'.")
+
+(defvar chronometrist-schema-transformers nil
+  "List of functions to transform `chronometrist-schema'.
+This is called with `chronometrist-run-transformers' in `chronometrist-mode', which see.
+
+Extensions using `chronometrist-schema-transformers' to
+increase the number of columns will also need to modify the value
+of `tabulated-list-entries' by using
+`chronometrist-row-transformers'.")
+
+(defvar chronometrist-row-transformers nil
+  "List of functions to transform each row of `tabulated-list-entries'.
+This is called with `chronometrist-run-transformers' in `chronometrist-rows', which see.
+
+Extensions using `chronometrist-row-transformers' to increase
+the number of columns will also need to modify the value of
+`tabulated-list-format' by using
+`chronometrist-schema-transformers'.")
+
+(defcustom chronometrist-before-in-functions nil
+  "Functions to run before a task is clocked in.
+Each function in this hook must accept a single argument, which
+is the name of the task to be clocked-in.
+
+The commands `chronometrist-toggle-task-button',
+`chronometrist-add-new-task-button', `chronometrist-toggle-task',
+and `chronometrist-add-new-task' will run this hook."
+  :type '(repeat function))
+
+(defcustom chronometrist-after-in-functions nil
+  "Functions to run after a task is clocked in.
+Each function in this hook must accept a single argument, which
+is the name of the task to be clocked-in.
+
+The commands `chronometrist-toggle-task-button',
+`chronometrist-add-new-task-button', `chronometrist-toggle-task',
+and `chronometrist-add-new-task' will run this hook."
+  :type '(repeat function))
+
+(defcustom chronometrist-before-out-functions nil
+  "Functions to run before a task is clocked out.
+Each function in this hook must accept a single argument, which
+is the name of the task to be clocked out of.
+
+The task will be stopped only if all functions in this list
+return a non-nil value."
+  :type '(repeat function))
+
+(defcustom chronometrist-after-out-functions nil
+  "Functions to run after a task is clocked out.
+Each function in this hook must accept a single argument, which
+is the name of the task to be clocked out of."
+  :type '(repeat function))
+
+(defcustom chronometrist-file-change-hook nil
+  "Functions to be run after `chronometrist-file' is changed on disk."
+  :type '(repeat function))
 
 (defun chronometrist-rows ()
   "Return rows to be displayed in the buffer created by `chronometrist', in the format specified by `tabulated-list-entries'."
@@ -1141,10 +1219,11 @@ Re-read `chronometrist-file', update `chronometrist-events', and
 refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
-  (-let* (((descriptor action file ...) fs-event)
+  (-let* (((descriptor action _ _) fs-event)
           (change      (when chronometrist--file-state
                          (chronometrist-file-change-type chronometrist--file-state)))
-          (reset-watch (or (eq action 'deleted) (eq action 'renamed))))
+          (reset-watch (or (eq action 'deleted)
+                           (eq action 'renamed))))
     ;; (message "chronometrist - file change type is %s" change)
     ;; If only the last plist was changed, update `chronometrist-events' and
     ;; `chronometrist-task-list', otherwise clear and repopulate
@@ -1208,66 +1287,6 @@ PREFIX is ignored."
   (interactive "P")
   (let ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601))))
     (chronometrist-sexp-replace-last plist)))
-
-(defvar chronometrist-mode-hook nil
-  "Normal hook run at the very end of `chronometrist-mode'.")
-
-(defvar chronometrist-schema-transformers nil
-  "List of functions to transform `chronometrist-schema'.
-This is called with `chronometrist-run-transformers' in `chronometrist-mode', which see.
-
-Extensions using `chronometrist-schema-transformers' to
-increase the number of columns will also need to modify the value
-of `tabulated-list-entries' by using
-`chronometrist-row-transformers'.")
-
-(defvar chronometrist-row-transformers nil
-  "List of functions to transform each row of `tabulated-list-entries'.
-This is called with `chronometrist-run-transformers' in `chronometrist-rows', which see.
-
-Extensions using `chronometrist-row-transformers' to increase
-the number of columns will also need to modify the value of
-`tabulated-list-format' by using
-`chronometrist-schema-transformers'.")
-
-(defcustom chronometrist-before-in-functions nil
-  "Functions to run before a task is clocked in.
-Each function in this hook must accept a single argument, which
-is the name of the task to be clocked-in.
-
-The commands `chronometrist-toggle-task-button',
-`chronometrist-add-new-task-button', `chronometrist-toggle-task',
-and `chronometrist-add-new-task' will run this hook."
-  :type '(repeat function))
-
-(defcustom chronometrist-after-in-functions nil
-  "Functions to run after a task is clocked in.
-Each function in this hook must accept a single argument, which
-is the name of the task to be clocked-in.
-
-The commands `chronometrist-toggle-task-button',
-`chronometrist-add-new-task-button', `chronometrist-toggle-task',
-and `chronometrist-add-new-task' will run this hook."
-  :type '(repeat function))
-
-(defcustom chronometrist-before-out-functions nil
-  "Functions to run before a task is clocked out.
-Each function in this hook must accept a single argument, which
-is the name of the task to be clocked out of.
-
-The task will be stopped only if all functions in this list
-return a non-nil value."
-  :type '(repeat function))
-
-(defcustom chronometrist-after-out-functions nil
-  "Functions to run after a task is clocked out.
-Each function in this hook must accept a single argument, which
-is the name of the task to be clocked out of."
-  :type '(repeat function))
-
-(defcustom chronometrist-file-change-hook nil
-  "Functions to be run after `chronometrist-file' is changed on disk."
-  :type '(repeat function))
 
 (defun chronometrist-run-functions-and-clock-in (task)
   "Run hooks and clock in to TASK."
@@ -1442,21 +1461,6 @@ If numeric argument ARG is 2, run `chronometrist-statistics'."
 (defcustom chronometrist-report-buffer-name "*Chronometrist-Report*"
   "The name of the buffer created by `chronometrist-report'."
   :type 'string)
-
-(defcustom chronometrist-report-week-start-day "Sunday"
-  "The day used for start of week by `chronometrist-report'."
-  :type 'string)
-
-(defcustom chronometrist-report-weekday-number-alist
-  '(("Sunday"    . 0)
-    ("Monday"    . 1)
-    ("Tuesday"   . 2)
-    ("Wednesday" . 3)
-    ("Thursday"  . 4)
-    ("Friday"    . 5)
-    ("Saturday"  . 6))
-  "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
-  :type 'alist)
 
 (defvar chronometrist-report--ui-date nil
   "The first date of the week displayed by `chronometrist-report'.
@@ -1913,7 +1917,8 @@ If ARG is a numeric argument, go forward that many times."
   :group 'chronometrist)
 
 (defcustom chronometrist-details-buffer-name "*chronometrist-details*"
-  "Name of buffer created by `chronometrist-details'.")
+  "Name of buffer created by `chronometrist-details'."
+  :type 'string)
 
 (defcustom chronometrist-details-display-tags "%s"
   "How to display tags in `chronometrist-details' buffers.
@@ -1923,7 +1928,8 @@ a format string consuming a single argument passed to `format', or
 a function of one argument (the tags, as a list of symbols),
 which must return the string to be displayed.
 
-To disable display of tags, customize `chronometrist-details-schema'.")
+To disable display of tags, customize `chronometrist-details-schema'."
+  :type '(choice nil string function))
 
 (defcustom chronometrist-details-display-key-values "%s"
   "How to display tags in `chronometrist-details' buffers.
@@ -1934,11 +1940,13 @@ a function of one argument (the full interval plist),
 which must return the string to be displayed.
 
 To disable display of key-values, set this to nil and customize
-`chronometrist-details-schema'.")
+`chronometrist-details-schema'."
+  :type '(choice nil string function))
 
 (defcustom chronometrist-details-time-format-string "%H:%M"
   "String specifying time format in `chronometrist-details' buffers.
-See `format-time-string'.")
+See `format-time-string'."
+  :type 'string)
 
 (defcustom chronometrist-details-schema
   [("#" 3 (lambda (row-1 row-2)
@@ -1950,7 +1958,8 @@ See `format-time-string'.")
    ("Duration" 20 t :right-align t :pad-right 3)
    ("Time" 10 t)]
   "Vector specifying format of `chronometrist-details' buffer.
-See `tabulated-list-format'.")
+See `tabulated-list-format'."
+  :type '(vector))
 
 (defvar chronometrist-details-schema-transformers nil
   "List of functions to transform `chronometrist-details-schema' (which see).
