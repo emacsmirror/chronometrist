@@ -1975,7 +1975,8 @@ ARG must be either tags (a list of symbols) or a plist."
   (let (contents custom)
     (if (chronometrist-plist-p list)
         (setq custom   chronometrist-details-display-key-values
-              contents (chronometrist-plist-key-values list))
+              contents (seq-remove #'keywordp
+                                   (chronometrist-plist-key-values list)))
       (setq custom   chronometrist-details-display-tags
             contents list))
     (if (and contents custom)
@@ -1983,7 +1984,7 @@ ARG must be either tags (a list of symbols) or a plist."
           ((pred stringp)
            (mapconcat
             (lambda (elt) (format custom elt))
-            list " "))
+            contents " "))
           ((pred functionp)
            (funcall custom list)))
       "")))
