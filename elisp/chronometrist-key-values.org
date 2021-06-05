@@ -3,7 +3,6 @@
 #+AUTHOR: contrapunctus
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
 #+PROPERTY: header-args :tangle yes :load yes
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../org-doom-molokai.css" />
 
 * TODO [50%]
 1. [X] Remove calls from =chronometrist.org= to make this an optional dependency.
@@ -115,9 +114,8 @@ Each of these has a corresponding function to clear it and fill it with values -
 *** history-prep                                                   :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-history-prep (key history-table)
-  "Prepare history hash tables for use in prompts.
-Each value in hash table TABLE must be a list. Each value will be
-reversed and will have duplicate elements removed."
+  "Prepare history of KEY in HISTORY-TABLE for use in prompts.
+Each value in hash table TABLE must be a list.  Each value will be reversed and will have duplicate elements removed."
   (--> (gethash key history-table)
        (cl-remove-duplicates it :test #'equal :from-end t)
        (puthash key it history-table)))
@@ -658,7 +656,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
       (chronometrist-tag-choice-prompt "Which tags?"))
     t))
 #+END_SRC
-*** WIP chronometrist-key-choice                                          :hook:writer:
+*** WIP chronometrist-key-choice                              :hook:writer:
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-key-choice (task)
   "Query user for keys to be added to TASK.
@@ -671,7 +669,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
       (chronometrist-key-choice-prompt "Which keys?"))
     t))
 #+END_SRC
-*** WIP chronometrist-kv-prompt-helper                                       :function:
+*** WIP chronometrist-kv-prompt-helper                           :function:
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-kv-prompt-helper (mode task)
   (let ((table (case mode
@@ -709,3 +707,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 (provide 'chronometrist-key-values)
 ;;; chronometrist-key-values.el ends here
 #+END_SRC
+* Local variables                                 :noexport:
+# Local Variables:
+# eval: (add-hook 'after-save-hook (lambda nil (interactive) (compile (mapconcat #'shell-quote-argument `("emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)" ,(format "--eval=(org-babel-tangle-file \"%s\")" (buffer-file-name))) " "))) nil t)
+# End:
