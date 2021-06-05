@@ -1961,8 +1961,8 @@ will also need to modify the value of `tabulated-list-entries' by
 using `chronometrist-details-row-transformers'.")
 
 (defun chronometrist-details-rows-helper (list)
-  "Return ARG as a string to be inserted in a `chronometrist-details' buffer.
-ARG must be either tags (a list of symbols) or a plist."
+  "Return LIST as a string to be inserted in a `chronometrist-details' buffer.
+LIST is either tags (a list of symbols) or a plist."
   (let (contents custom)
     (if (chronometrist-plist-p list)
         (setq custom   chronometrist-details-display-key-values
