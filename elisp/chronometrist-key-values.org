@@ -589,10 +589,13 @@ used in `chronometrist-before-out-functions'."
   (chronometrist-refresh))
 #+END_SRC
 ** WIP Single-key prompts [0%]
-This was initially implemented using Hydra. But, at the moment of reckoning, it turned out that Hydra does not pause Emacs until the user provides an input, and is thus unsuited for use in a hook. Thus, we created a new library called =choice.el= which functions similarly to Hydra (key-form-hint associations are passed to a macro which emits a prompt function) and used that.
+This was initially implemented using Hydra. But, at the moment of reckoning, it turned out that Hydra does not pause Emacs until the user provides an input, and is thus unsuited for use in a hook. Thus, we created a new library called =choice.el= which functions similarly to Hydra (associations of keys, Lisp forms, and hints are passed to a macro which emits a prompt function) and used that.
+
+Then I discovered that there's =rmc.el= which does about the same thing.
+1. [ ] Rewrite these using =rmc.el=
 
 Types of prompts planned (#1 and #2 are meant to be mixed and matched)
-1. [-] (tag|key-value)-combination-choice - select combinations of (tags|key-values)
+1. [-] =(tag|key-value)-combination-choice= - select combinations of (tags|key-values)
    * commands
      + 0-9     - use combination (and exit)
      + C-u 0-9 - edit combination (then exit)
@@ -600,7 +603,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
      + (b      - back [to previous prompt])
    * [X] tag-combination-prompt
    * [ ] key-value-combination-prompt
-2. [ ] (tag|key|value)-multiselect-choice - select individual (tags|keys|values)
+2. [ ] =(tag|key|value)-multiselect-choice= - select individual (tags|keys|values)
    * commands
      + 0-9 - select (toggles; save in var; doesn't exit)
      + u   - use selection (and exit)
@@ -609,13 +612,14 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
      + s   - skip (exit)
      + (b  - back [to previous prompt])
    Great for values; makes it easy to add multiple values, too, especially for users who don't know Lisp.
-3. [-] unified-choice - tag-key-value combinations, everything in one prompt
+3. [-] =unified-choice= - select tag-key-value combinations, all in one prompt
    * commands
      + 0-9     - use combination (and exit)
      + C-u 0-9 - edit combination (then exit)
      + s       - skip (exit)
    * [X] basic implementation
    * [ ] make it more aesthetically pleasing in case of long suggestion strings
+
 *** defchoice                                                    :function:
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-defchoice (name type list)
