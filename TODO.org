@@ -430,8 +430,8 @@ Extension writer specifies
 + extension name
 + the new schema entry (an element suitable for =tabulated-list-format=)
 + the position of your new column in the schema (but what if the user fiddles with the hooks?)
-+ +=:row-transformer= and =:schema-transformer= functions+ a function to emit a single cell of your column; it has access to a single row of table data
-+ (optional) =:setup= and =:teardown= forms.
++ a function to emit a single cell of your column; it is called with a single row of table data
++ (optional) =:setup= and =:teardown= forms, and (optionally) addendums to the docstrings created for the functions which will be created for them
 
 Macro creates
 + =EXTENSION-minor-mode=
