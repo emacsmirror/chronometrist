@@ -946,6 +946,23 @@ EVENT should be a plist (see `chronometrist-file')."
     (time-subtract (parse-iso8601-time-string stop)
                    (parse-iso8601-time-string start))))
 
+(defun chronometrist-format-duration-long (seconds)
+  "Return SECONDS as a human-friendly duration string.
+e.g. \"2 hours, 10 minutes\". SECONDS must be an integer. If
+SECONDS is less than 60, return a blank string."
+  (let* ((hours         (/ seconds 60 60))
+         (minutes       (% (/ seconds 60) 60))
+         (hour-string   (if (= 1 hours) "hour" "hours"))
+         (minute-string (if (= 1 minutes) "minute" "minutes")))
+    (cond ((and (zerop hours) (zerop minutes)) "")
+          ((zerop hours)
+           (format "%s %s" minutes minute-string))
+          ((zerop minutes)
+           (format "%s %s" hours hour-string))
+          (t (format "%s %s, %s %s"
+                     hours hour-string
+                     minutes minute-string)))))
+
 (defcustom chronometrist-update-interval 5
   "How often the `chronometrist' buffer should be updated, in seconds.
 
@@ -2015,18 +2032,8 @@ Return value is a list as specified by `tabulated-list-entries'."
                                          (chronometrist-iso-timestamp-to-ts stop)
                                        (ts-now))))
             (interval      (floor (ts-diff stop start)))
-            (hours         (/ interval 60 60))
-            (minutes       (% (/ interval 60) 60))
-            (hour-string   (if (= 1 hours) "hour" "hours"))
-            (minute-string (if (= 1 minutes) "minute" "minutes"))
             (index-string  (format "%s" index))
-            (duration      (cond ((zerop hours)
-                                  (format "%s %s" minutes minute-string))
-                                 ((zerop minutes)
-                                  (format "%s %s" hours hour-string))
-                                 (t (format "%s %s, %s %s"
-                                            hours hour-string
-                                            minutes minute-string))))
+            (duration      (chronometrist-format-duration-long interval))
             (timespan      (format "from %s to %s"
                                    (ts-format chronometrist-details-time-format-string start)
                                    (ts-format chronometrist-details-time-format-string stop))))

@@ -1877,6 +1877,40 @@ EVENT should be a plist (see `chronometrist-file')."
     (time-subtract (parse-iso8601-time-string stop)
                    (parse-iso8601-time-string start))))
 #+END_SRC
+*** format-duration-long                        :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-format-duration-long (seconds)
+  "Return SECONDS as a human-friendly duration string.
+e.g. \"2 hours, 10 minutes\". SECONDS must be an integer. If
+SECONDS is less than 60, return a blank string."
+  (let* ((hours         (/ seconds 60 60))
+         (minutes       (% (/ seconds 60) 60))
+         (hour-string   (if (= 1 hours) "hour" "hours"))
+         (minute-string (if (= 1 minutes) "minute" "minutes")))
+    (cond ((and (zerop hours) (zerop minutes)) "")
+          ((zerop hours)
+           (format "%s %s" minutes minute-string))
+          ((zerop minutes)
+           (format "%s %s" hours hour-string))
+          (t (format "%s %s, %s %s"
+                     hours hour-string
+                     minutes minute-string)))))
+#+END_SRC
+**** tests
+#+BEGIN_SRC emacs-lisp :tangle ../tests/chronometrist-tests.el :load test
+(ert-deftest chronometrist-format-duration-long ()
+  (should (equal (chronometrist-format-duration-long 5) ""))
+  (should (equal (chronometrist-format-duration-long 65) "1 minute"))
+  (should (equal (chronometrist-format-duration-long 125) "2 minutes"))
+
+  (should (equal (chronometrist-format-duration-long 3605) "1 hour"))
+  (should (equal (chronometrist-format-duration-long 3660) "1 hour, 1 minute"))
+  (should (equal (chronometrist-format-duration-long 3725) "1 hour, 2 minutes"))
+
+  (should (equal (chronometrist-format-duration-long 7200) "2 hours"))
+  (should (equal (chronometrist-format-duration-long 7260) "2 hours, 1 minute"))
+  (should (equal (chronometrist-format-duration-long 7320) "2 hours, 2 minutes")))
+#+END_SRC
 ** Timer
 Instead of the Emacs convention of pressing ~g~ to update, we keep buffers updated with a timer.
 
@@ -3205,18 +3239,8 @@ Return value is a list as specified by `tabulated-list-entries'."
                                          (chronometrist-iso-timestamp-to-ts stop)
                                        (ts-now))))
             (interval      (floor (ts-diff stop start)))
-            (hours         (/ interval 60 60))
-            (minutes       (% (/ interval 60) 60))
-            (hour-string   (if (= 1 hours) "hour" "hours"))
-            (minute-string (if (= 1 minutes) "minute" "minutes"))
             (index-string  (format "%s" index))
-            (duration      (cond ((zerop hours)
-                                  (format "%s %s" minutes minute-string))
-                                 ((zerop minutes)
-                                  (format "%s %s" hours hour-string))
-                                 (t (format "%s %s, %s %s"
-                                            hours hour-string
-                                            minutes minute-string))))
+            (duration      (chronometrist-format-duration-long interval))
             (timespan      (format "from %s to %s"
                                    (ts-format chronometrist-details-time-format-string start)
                                    (ts-format chronometrist-details-time-format-string stop))))
