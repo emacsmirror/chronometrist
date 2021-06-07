@@ -52,6 +52,13 @@
   :type 'integer)
 #+END_SRC
 
+** chronometrist-spark-show-range
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-spark-show-range t
+  "If non-nil, display range of each sparkline."
+  :type 'boolean)
+#+END_SRC
+
 ** TODO row-transformer                                           :function:
 if larger than 7
 add space after (% length 7)th element
@@ -65,12 +72,22 @@ Used to add a sparkline column to `chronometrist-rows'.
 ROW must be a valid element of the list specified by
 `tabulated-list-entries'."
   (-let* (((task vector) row)
-          (sparkline (cl-loop with today = (ts-now)
-                       for day from (- (- chronometrist-spark-length 1)) to 0
-                       collect (chronometrist-task-time-one-day
-                                task (ts-adjust 'day day today))
-                       into durations
-                       finally return (spark durations))))
+          (sparkline
+           (cl-loop with today = (ts-now)
+             for day from (- (- chronometrist-spark-length 1)) to 0
+             collect (chronometrist-task-time-one-day
+                      task (ts-adjust 'day day today))
+             into durations
+             finally return
+             (let ((duration-minutes (mapcar (lambda (sec)
+                                               (/ sec 60))
+                                             durations)))
+               (if chronometrist-spark-show-range
+                   (format "%s (min %s, max %s)"
+                           (spark durations)
+                           (apply #'min duration-minutes)
+                           (apply #'max duration-minutes))
+                 (format "%s" (spark durations)))))))
     (list task (vconcat vector `[,sparkline]))))
 
 #+END_SRC
@@ -83,7 +100,11 @@ calculate length while accounting for space
   "Add a sparkline column to SCHEMA.
 Used to add a sparkline column to `chronometrist-schema-transformers'.
 SCHEMA should be a vector as specified by `tabulated-list-format'."
-  (vconcat schema `[("Graph" ,chronometrist-spark-length t)]))
+  (vconcat schema `[("Graph"
+                     ,(if chronometrist-spark-show-range
+                          chronometrist-spark-length
+                        (+ chronometrist-spark-length 20))
+                     t)]))
 #+END_SRC
 
 ** setup                                                            :writer:
