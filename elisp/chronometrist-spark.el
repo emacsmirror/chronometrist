@@ -36,6 +36,20 @@
   "If non-nil, display range of each sparkline."
   :type 'boolean)
 
+(defun chronometrist-spark-range (durations active-p)
+  "Return range for DURATIONS as a string.
+"
+  (let* ((duration-minutes (--map (/ it 60) durations))
+         (durations-nonzero (seq-remove #'zerop
+                                        duration-minutes)))
+    (if (= 1 (length durations-nonzero))
+        ;; This task only had activity on one day in the given range
+        ;; of days - these durations, then, cannot really have a
+        ;; minimum and maximum range
+        (format "(%sm)" (apply #'max duration-minutes))
+      (format "(%sm~%sm)" (apply #'min durations-nonzero)
+              (apply #'max duration-minutes)))))
+
 (defun chronometrist-spark-row-transformer (row)
   "Add a sparkline cell to ROW.
 Used to add a sparkline column to `chronometrist-rows'.
@@ -45,24 +59,19 @@ ROW must be a valid element of the list specified by
   (-let* (((task vector) row)
           (sparkline
            (cl-loop with today = (ts-now)
-             with duration
-             with active
+             with duration with active-p
              for day from (- (- chronometrist-spark-length 1)) to 0
              collect (setq duration
                            (chronometrist-task-time-one-day
                             task (ts-adjust 'day day today)))
              into durations
              if (not (zerop duration))
-             do (setq active t)
+             do (setq active-p t)
              finally return
-             (let ((duration-minutes (--map (/ it 60) durations)))
-               (if (and active chronometrist-spark-show-range)
-                   (let ((durations-nonzero (seq-remove #'zerop duration-minutes)))
-                     (format "%s (%sm~%sm)"
-                             (spark durations)
-                             (apply #'min durations-nonzero)
-                             (apply #'max duration-minutes)))
-                 (format "%s" (spark durations)))))))
+             (if (and active-p chronometrist-spark-show-range)
+                 (format "%s %s" (spark durations)
+                         (chronometrist-spark-range durations active-p))
+                 (format "%s" (spark durations))))))
     (list task (vconcat vector `[,sparkline]))))
 
 (defun chronometrist-spark-schema-transformer (schema)
@@ -71,7 +80,7 @@ Used to add a sparkline column to `chronometrist-schema-transformers'.
 SCHEMA should be a vector as specified by `tabulated-list-format'."
   (vconcat schema `[("Graph"
                      ,(if chronometrist-spark-show-range
-                        (+ chronometrist-spark-length 20)
+                        (+ chronometrist-spark-length 12)
                         chronometrist-spark-length)
                      t)]))
 
