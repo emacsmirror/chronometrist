@@ -421,3 +421,21 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it.
 #+END_QUOTE
+* extension macro
+<2021-06-07T16:33:54+0530>
+
+A macro to create new columns for Chronometrist.
+
+Extension writer specifies
++ extension name
++ the new schema entry (an element suitable for =tabulated-list-format=)
++ the position of your new column in the schema (but what if the user fiddles with the hooks?)
++ +=:row-transformer= and =:schema-transformer= functions+ a function to emit a single cell of your column; it has access to a single row of table data
++ (optional) =:setup= and =:teardown= forms.
+
+Macro creates
++ =EXTENSION-minor-mode=
++ the appropriate =EXTENSION-row-transformer= and =EXTENSION-schema-transformer= functions;
++ =EXTENSION-setup= and =EXTENSION-teardown= functions, which
+  - add/remove the generated =EXTENSION-row-transformer= and =EXTENSION-schema-transformer= functions to =chronometrist-row-transformers= and =chronometrist-schema-transformers=, and
+  - run the =:setup= and =:teardown= forms if supplied.
