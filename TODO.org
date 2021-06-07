@@ -435,7 +435,13 @@ Extension writer specifies
 
 Macro creates
 + =EXTENSION-minor-mode=
-+ the appropriate =EXTENSION-row-transformer= and =EXTENSION-schema-transformer= functions;
++ =EXTENSION= custom group and =EXTENSION-cell-function= custom variable (with your provided function as the default value)
++ the appropriate =EXTENSION-row-transformer= and =EXTENSION-schema-transformer= functions; the former calls =EXTENSION-cell-function= and inserts the string into the specified position in each row
 + =EXTENSION-setup= and =EXTENSION-teardown= functions, which
   - add/remove the generated =EXTENSION-row-transformer= and =EXTENSION-schema-transformer= functions to =chronometrist-row-transformers= and =chronometrist-schema-transformers=, and
   - run the =:setup= and =:teardown= forms if supplied.
+
+Benefits -
++ reduced duplication
++ easier creation of such extensions
++ users can easily replace the function used to generate the cells, without having to deal with how the string is inserted into the row specifier.
