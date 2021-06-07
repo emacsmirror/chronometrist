@@ -38,14 +38,14 @@
 (require 'spark)
 #+END_SRC
 * Code
-** custom group                                               :custom:group:
+** custom group                              :custom:group:
 #+BEGIN_SRC emacs-lisp
 (defgroup chronometrist-spark nil
   "Show sparklines in `chronometrist'."
   :group 'applications)
 #+END_SRC
 
-** length                                                  :custom:variable:
+** length                                 :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-spark-length 7
   "Length of each sparkline in number of days."
@@ -59,7 +59,7 @@
   :type 'boolean)
 #+END_SRC
 
-** TODO row-transformer                                           :function:
+** TODO row-transformer                          :function:
 if larger than 7
 add space after (% length 7)th element
 then add space after every 7 elements
@@ -92,7 +92,7 @@ ROW must be a valid element of the list specified by
 
 #+END_SRC
 
-** TODO schema-transformer                                        :function:
+** TODO schema-transformer                       :function:
 calculate length while accounting for space
 
 #+BEGIN_SRC emacs-lisp
@@ -107,7 +107,7 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
                      t)]))
 #+END_SRC
 
-** setup                                                            :writer:
+** setup                                           :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-spark-setup ()
   "Add `chronometrist-sparkline' functions to `chronometrist' hooks."
@@ -115,7 +115,7 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
   (add-to-list 'chronometrist-schema-transformers  #'chronometrist-spark-schema-transformer))
 #+END_SRC
 
-** teardown                                                         :writer:
+** teardown                                        :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-spark-teardown ()
   "Remove `chronometrist-sparkline' functions from `chronometrist' hooks."
@@ -125,7 +125,7 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
         (remove #'chronometrist-spark-schema-transformer chronometrist-schema-transformers)))
 #+END_SRC
 
-** minor-mode                                                   :minor:mode:
+** minor-mode                                  :minor:mode:
 #+BEGIN_SRC emacs-lisp
 (define-minor-mode chronometrist-spark-minor-mode
   nil nil nil nil
