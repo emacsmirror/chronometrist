@@ -311,7 +311,7 @@ Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-
 
 * The Program
 ** Library headers and commentary
-Library headers are not strictly necessary since we don't tangle anymore and the new =chronometrist.el= already has them, but they're left here just in case someone does decide to tangle this file.
+Library headers are necessary once more, since we're back to tangling instead of =literate-elisp-load=.
 
 Once, for sake of neatness, I made the value of =Package-Requires:= multiline -
 #+BEGIN_SRC emacs-lisp :tangle no :load no
@@ -3169,8 +3169,8 @@ using `chronometrist-details-row-transformers'.")
 **** rows-helper                                 :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-rows-helper (list)
-  "Return ARG as a string to be inserted in a `chronometrist-details' buffer.
-ARG must be either tags (a list of symbols) or a plist."
+  "Return LIST as a string to be inserted in a `chronometrist-details' buffer.
+LIST is either tags (a list of symbols) or a plist."
   (let (contents custom)
     (if (chronometrist-plist-p list)
         (setq custom   chronometrist-details-display-key-values
