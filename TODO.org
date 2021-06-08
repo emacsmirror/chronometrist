@@ -449,26 +449,26 @@ Benefits -
 * unified format-duration function
 <2021-06-08T11:17:54+0530>
 
-Currently we have at least three ways of displaying durations - ="HH:MM:SS"= , ="XhYm"= , and =X hour(s), Y minutes(s)= . Make a single function similar to =format-time-string=, but for durations. =ts-human-format-duration= from =ts.el= is not nearly as flexible as I'd like. When completed, we can have a single custom variable accepting a format string, which can be used to customize display of durations for the entire application at once.
+Currently we have at least three ways of displaying durations - ="HH:MM:SS"= , ="XhYm"= , and =X hour(s), Y minutes(s)"= . Make a single function similar to =format-time-string=, but for durations. =ts-human-format-duration= from =ts.el= is not nearly as flexible as I'd like. When completed, we can have a single custom variable accepting a format string, which can be used to customize display of durations for the entire application at once.
 
-+ user provides a duration (in seconds), and a format string
-+ =%y= , =%o= , =%w= , =%d= , ="%h"= , ="%m"= , ="%s"= - years (365 days), months (30 days? 4 weeks?), weeks, days, hours, minutes, seconds
-+ =%Y= , =%O= , =%W= , =%D= , ="%H"= , ="%M"= , ="%S"= - same as above, but with string units, e.g. ="hour(s)"= , ="minute(s)"= , and ="second(s)"=
++ user provides a duration (in seconds), a format string, and an optional separator string
++ ="%y"= , ="%o"= , ="%w"= , ="%d"= , ="%h"= , ="%m"= , ="%s"= - years (365 days), months (30 days? 4 weeks?), weeks, days, hours, minutes, seconds
++ ="%Y"= , ="%O"= , ="%W"= , ="%D"= , ="%H"= , ="%M"= , ="%S"= - same as above, but with string units, e.g. ="hour(s)"= , ="minute(s)"= , and ="second(s)"=
   - if the unit is >1, plurals are used
-  - separator can be specified like this - =%<SEP><CODE>= , e.g. =%-T=
-  - separators are only inserted if
+  - separator can be specified like this - ="%<SEP><CODE>"= , e.g. ="%-T"=; only entered if there is a value present to the left; if unspecified, it is a space
 + if the value is 0, the value and the unit are ignored even if provided in the input string
++ optional separator string is interspersed between each value
 
 Examples
-+ =(chronometrist-format-duration "%ss" 1)= => ="1s"=
-+ =(chronometrist-format-duration "%S" 1)= => ="1 second"=
-+ =(chronometrist-format-duration "%S" 5)= => ="5 seconds"=
++ =(chronometrist-format-duration "%ss"   1)= => ="1s"=
++ =(chronometrist-format-duration "%S"    1)= => ="1 second"=
++ =(chronometrist-format-duration "%S"    5)= => ="5 seconds"=
 + =(chronometrist-format-duration "%M %S" 5)= => ="5 seconds"=
 + =(chronometrist-format-duration "%M %S" 60)= => ="1 minute"=
 + =(chronometrist-format-duration "%M %S" 125)= => ="2 minutes, 5 seconds"=
 + [[https://en.wikipedia.org/wiki/ISO_8601#Durations][ISO-8601]] -
 #+BEGIN_SRC emacs-lisp :tangle no :load no
-  (chronometrist-format-duration "P%yY%oM%WW%DDT%HH%MM%SS"
+  (chronometrist-format-duration "P%yY%oM%wW%dDT%hH%mM%sS"
                      (+ (* 365 24 3600)
                         (* 30 24 3600)
                         (* 7 24 3600)
@@ -477,3 +477,9 @@ Examples
                         (* 10 60)
                         10)) ;; => "P1Y1M1W1DT10H10M10S"
 #+END_SRC
+
+Alternative syntax
++ large units are capitals - ="Y"= , ="M"= , ="W"= , ="D"=
++ small units are lower-case - ="h"= , ="m"=, ="s"=
++ to display only values, use ="%<code>"=
++ to display long units, use ="~[<separator>]<code>"=
