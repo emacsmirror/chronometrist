@@ -407,7 +407,7 @@ Some options and ideas -
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
-* documentation discoverability
+* documentation discoverability                        :doc:
 Ensure that the user manual is easily discoverable.
 
 #+BEGIN_QUOTE
@@ -421,7 +421,7 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
-* extension macro
+* extension macro                           :code:extension:
 <2021-06-07T16:33:54+0530>
 
 A macro to create new columns for Chronometrist.
@@ -483,3 +483,8 @@ Alternative syntax
 + small units are lower-case - ="h"= , ="m"=, ="s"=
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
+* error - =min= called with two nils             :spark:bug:
+<2021-06-11T03:44:17+0530>
+1. clock in
+2. change =:start= of active interval to another time on the same date
+3. error
