@@ -49,6 +49,9 @@ Quite recently, after around two years of Chronometrist developement and use, I 
 :END:
 For lack of a better term, events are how we refer to time intervals. They are stored as plists; each contains at least a =:name "<name>"=, a =:start "<iso-timestamp>"=, and (except in case of an ongoing task) a =:stop "<iso-timestamp>"=.
 
++ row :: a row of a table in a =tabulated-list-mode= buffer; an element of =tabulated-list-entries=.
++ schema :: the column descriptor of a table in a =tabulated-list-mode= buffer; the value of =tabulated-list-format=.
+
 See also [[#explanation-time-formats][Currently-Used Time Formats]]
 
 ** Overview
