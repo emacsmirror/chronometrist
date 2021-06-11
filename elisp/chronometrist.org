@@ -325,7 +325,6 @@ Once, for sake of neatness, I made the value of =Package-Requires:= multiline -
 #+END_SRC
 But I discovered that if I do that, =package-lint= says - =error: Couldn't parse "Package-Requires" header: End of file during parsing=.
 
-"Commentary" is displayed when the user clicks on the package's entry in =M-x list-packages=.
 #+BEGIN_SRC emacs-lisp
 ;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
 
@@ -344,7 +343,11 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 ;; means.
 ;;
 ;; For more information, please refer to <https://unlicense.org>
+#+END_SRC
 
+"Commentary" is displayed when the user clicks on the package's entry in =M-x list-packages=.
+
+#+BEGIN_SRC emacs-lisp
 ;;; Commentary:
 ;;
 ;; A time tracker in Emacs with a nice interface
