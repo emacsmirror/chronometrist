@@ -1054,7 +1054,7 @@ button action."
   "Create `chronometrist-file' if it doesn't already exist."
   (chronometrist-sexp-create-file))
 
-(defun chronometrist-task-active? (task)
+(defun chronometrist-task-active-p (task)
   "Return t if TASK is currently clocked in, else nil."
   (equal (chronometrist-current-task) task))
 
@@ -1153,7 +1153,7 @@ is the name of the task to be clocked out of."
            (task-button `(,task action chronometrist-toggle-task-button
                                 follow-link t))
            (task-time   (chronometrist-format-duration (chronometrist-task-time-one-day task)))
-           (indicator   (if (chronometrist-task-active? task)
+           (indicator   (if (chronometrist-task-active-p task)
                             (chronometrist-activity-indicator) "")))
       (--> (vector index task-button task-time indicator)
         (list task it)
