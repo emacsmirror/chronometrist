@@ -1422,6 +1422,17 @@ there is no corresponding task, do nothing."
   (interactive)
   (chronometrist-add-new-task-button nil))
 
+(defun chronometrist-command-helper (key value before after &optional inhibit-hooks)
+  "Update KEY and VALUE for the last plist in `chronometrist-file'.
+Run functions BEFORE and AFTER, before and after the
+modification, which must both accept two arguments - the name of
+the task, and INHIBIT-HOOKS."
+  (let* ((plist (plist-put (chronometrist-last) key value))
+         (task  (plist-get plist :name)))
+    (funcall before task inhibit-hooks)
+    (chronometrist-sexp-replace-last plist)
+    (funcall after task inhibit-hooks)))
+
 (defun chronometrist-restart-task (&optional inhibit-hooks)
   "Change the start time of the active task to the current time.
 `chronometrist-before-in-functions' and
