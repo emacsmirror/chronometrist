@@ -2503,6 +2503,25 @@ there is no corresponding task, do nothing."
       (unless inhibit-hooks
         (run-hook-with-args 'chronometrist-after-in-functions task)))))
 #+END_SRC
+**** extend-task                                :command:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-extend-task (&optional inhibit-hooks)
+  "Change the stop time of the last task to the current time.
+`chronometrist-before-out-functions' and
+`chronometrist-after-out-functions' are run again, unless
+INHIBIT-HOOKS is non-nil or prefix argument is supplied.
+
+Has no effect if a task is active."
+  (interactive "P")
+  (unless (chronometrist-current-task)
+    (let* ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601)))
+           (task  (plist-get plist :name)))
+      (unless inhibit-hooks
+        (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
+      (chronometrist-sexp-replace-last plist)
+      (unless inhibit-hooks
+        (run-hook-with-args 'chronometrist-after-out-functions task)))))
+#+END_SRC
 **** chronometrist                              :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
