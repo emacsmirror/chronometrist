@@ -2492,7 +2492,11 @@ there is no corresponding task, do nothing."
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-restart-task (&optional inhibit-hooks)
   "Change the start time of the active task to the current time.
-`chronometrist-before-in-functions' and `chronometrist-after-in-functions' are run again, unless INHIBIT-HOOKS is non-nil or prefix argument is suppled."
+`chronometrist-before-in-functions' and
+`chronometrist-after-in-functions' are run again, unless
+INHIBIT-HOOKS is non-nil or prefix argument is supplied.
+
+Has no effect if no task is active."
   (interactive "P")
   (when (chronometrist-current-task)
     (let* ((plist (plist-put (chronometrist-last) :start (chronometrist-format-time-iso8601)))
