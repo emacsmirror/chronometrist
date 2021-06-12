@@ -2512,13 +2512,14 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 Has no effect if no task is active."
   (interactive "P")
   (when (chronometrist-current-task)
-    (let* ((plist (plist-put (chronometrist-last) :start (chronometrist-format-time-iso8601)))
-           (task  (plist-get plist :name)))
-      (unless inhibit-hooks
-        (run-hook-with-args 'chronometrist-before-in-functions task))
-      (chronometrist-sexp-replace-last plist)
-      (unless inhibit-hooks
-        (run-hook-with-args 'chronometrist-after-in-functions task)))))
+    (chronometrist-command-helper
+     :start (chronometrist-format-time-iso8601)
+     (lambda (task inhibit-hooks)
+       (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-before-in-functions task)))
+     (lambda (task inhibit-hooks)
+       (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-after-in-functions task))))))
 #+END_SRC
 **** extend-task                                :command:
 #+BEGIN_SRC emacs-lisp
@@ -2531,13 +2532,14 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 Has no effect if a task is active."
   (interactive "P")
   (unless (chronometrist-current-task)
-    (let* ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601)))
-           (task  (plist-get plist :name)))
-      (unless inhibit-hooks
-        (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
-      (chronometrist-sexp-replace-last plist)
-      (unless inhibit-hooks
-        (run-hook-with-args 'chronometrist-after-out-functions task)))))
+    (chronometrist-command-helper
+     :stop (chronometrist-format-time-iso8601)
+     (lambda (task inhibit-hooks)
+       (unless inhibit-hooks
+         (run-hook-with-args-until-failure 'chronometrist-before-out-functions task)))
+     (lambda (task inhibit-hooks)
+       (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-after-out-functions task))))))
 #+END_SRC
 **** chronometrist                              :command:
 #+BEGIN_SRC emacs-lisp
