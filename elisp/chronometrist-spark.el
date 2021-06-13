@@ -36,19 +36,21 @@
   "If non-nil, display range of each sparkline."
   :type 'boolean)
 
-(defun chronometrist-spark-range (durations active-p)
+(defun chronometrist-spark-range (durations)
   "Return range for DURATIONS as a string.
-"
-  (let* ((duration-minutes (--map (/ it 60) durations))
-         (durations-nonzero (seq-remove #'zerop
-                                        duration-minutes)))
-    (if (= 1 (length durations-nonzero))
-        ;; This task only had activity on one day in the given range
-        ;; of days - these durations, then, cannot really have a
-        ;; minimum and maximum range
-        (format "(%sm)" (apply #'max duration-minutes))
-      (format "(%sm~%sm)" (apply #'min durations-nonzero)
-              (apply #'max duration-minutes)))))
+DURATIONS must be a list of integer seconds."
+  (let* ((duration-minutes  (--map (/ it 60) durations))
+         (durations-nonzero (seq-remove #'zerop duration-minutes))
+         (length            (length durations-nonzero)))
+    (cond ((not durations-nonzero) "")
+          ((> length 1)
+           (format "(%sm~%sm)" (apply #'min durations-nonzero)
+                   (apply #'max duration-minutes)))
+          ((= 1 length)
+           ;; This task only had activity on one day in the given
+           ;; range of days - these durations, then, cannot really
+           ;; have a minimum and maximum range.
+           (format "(%sm)" (apply #'max duration-minutes))))))
 
 (defun chronometrist-spark-row-transformer (row)
   "Add a sparkline cell to ROW.
@@ -61,17 +63,16 @@ ROW must be a valid element of the list specified by
            (cl-loop with today = (ts-now)
              with duration with active-p
              for day from (- (- chronometrist-spark-length 1)) to 0
-             collect (setq duration
-                           (chronometrist-task-time-one-day
-                            task (ts-adjust 'day day today)))
+             collect
+             (setq duration
+                   (chronometrist-task-time-one-day task
+                                        (ts-adjust 'day day today)))
              into durations
-             if (not (zerop duration))
-             do (setq active-p t)
+             unless (zerop duration) do (setq active-p t)
              finally return
              (if (and active-p chronometrist-spark-show-range)
-                 (format "%s %s" (spark durations)
-                         (chronometrist-spark-range durations active-p))
-                 (format "%s" (spark durations))))))
+                 (format "%s %s" (spark durations) (chronometrist-spark-range durations))
+               (format "%s" (spark durations))))))
     (list task (vconcat vector `[,sparkline]))))
 
 (defun chronometrist-spark-schema-transformer (schema)
