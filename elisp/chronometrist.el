@@ -1441,7 +1441,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if no task is active."
   (interactive "P")
-  (when (chronometrist-current-task)
+  (if (chronometrist-current-task)
     (chronometrist-command-helper
      :start (chronometrist-format-time-iso8601)
      (lambda (task inhibit-hooks)
@@ -1449,7 +1449,8 @@ Has no effect if no task is active."
          (run-hook-with-args 'chronometrist-before-in-functions task)))
      (lambda (task inhibit-hooks)
        (unless inhibit-hooks
-         (run-hook-with-args 'chronometrist-after-in-functions task))))))
+         (run-hook-with-args 'chronometrist-after-in-functions task))))
+    (message "Can only restart an active task - use this when clocked in.")))
 
 (defun chronometrist-extend-task (&optional inhibit-hooks)
   "Change the stop time of the last task to the current time.
@@ -1459,7 +1460,8 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if a task is active."
   (interactive "P")
-  (unless (chronometrist-current-task)
+  (if (chronometrist-current-task)
+      (message "Cannot extend an active task - use this after clocking out.")
     (chronometrist-command-helper
      :stop (chronometrist-format-time-iso8601)
      (lambda (task inhibit-hooks)
