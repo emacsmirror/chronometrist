@@ -1422,17 +1422,6 @@ there is no corresponding task, do nothing."
   (interactive)
   (chronometrist-add-new-task-button nil))
 
-(defun chronometrist-command-helper (key value before after &optional inhibit-hooks)
-  "Update KEY and VALUE for the last plist in `chronometrist-file'.
-Run functions BEFORE and AFTER, before and after the
-modification, which must both accept two arguments - the name of
-the task, and INHIBIT-HOOKS."
-  (let* ((plist (plist-put (chronometrist-last) key value))
-         (task  (plist-get plist :name)))
-    (funcall before task inhibit-hooks)
-    (chronometrist-sexp-replace-last plist)
-    (funcall after task inhibit-hooks)))
-
 (defun chronometrist-restart-task (&optional inhibit-hooks)
   "Change the start time of the active task to the current time.
 `chronometrist-before-in-functions' and
@@ -1442,14 +1431,13 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 Has no effect if no task is active."
   (interactive "P")
   (if (chronometrist-current-task)
-    (chronometrist-command-helper
-     :start (chronometrist-format-time-iso8601)
-     (lambda (task inhibit-hooks)
-       (unless inhibit-hooks
-         (run-hook-with-args 'chronometrist-before-in-functions task)))
-     (lambda (task inhibit-hooks)
-       (unless inhibit-hooks
-         (run-hook-with-args 'chronometrist-after-in-functions task))))
+      (let* ((plist (plist-put (chronometrist-last) :start (chronometrist-format-time-iso8601)))
+             (task  (plist-get plist :name)))
+        (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-before-in-functions task))
+        (chronometrist-sexp-replace-last plist)
+        (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-after-in-functions task)))
     (message "Can only restart an active task - use this when clocked in.")))
 
 (defun chronometrist-extend-task (&optional inhibit-hooks)
@@ -1462,14 +1450,13 @@ Has no effect if a task is active."
   (interactive "P")
   (if (chronometrist-current-task)
       (message "Cannot extend an active task - use this after clocking out.")
-    (chronometrist-command-helper
-     :stop (chronometrist-format-time-iso8601)
-     (lambda (task inhibit-hooks)
-       (unless inhibit-hooks
-         (run-hook-with-args-until-failure 'chronometrist-before-out-functions task)))
-     (lambda (task inhibit-hooks)
-       (unless inhibit-hooks
-         (run-hook-with-args 'chronometrist-after-out-functions task))))))
+    (let* ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601)))
+           (task  (plist-get plist :name)))
+      (unless inhibit-hooks
+         (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
+      (chronometrist-sexp-replace-last plist)
+      (unless inhibit-hooks
+        (run-hook-with-args 'chronometrist-after-out-functions task)))))
 
 ;;;###autoload
 (defun chronometrist (&optional arg)
