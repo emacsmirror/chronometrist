@@ -1054,7 +1054,7 @@ button action."
   "Create `chronometrist-file' if it doesn't already exist."
   (chronometrist-sexp-create-file))
 
-(defun chronometrist-task-active? (task)
+(defun chronometrist-task-active-p (task)
   "Return t if TASK is currently clocked in, else nil."
   (equal (chronometrist-current-task) task))
 
@@ -1153,7 +1153,7 @@ is the name of the task to be clocked out of."
            (task-button `(,task action chronometrist-toggle-task-button
                                 follow-link t))
            (task-time   (chronometrist-format-duration (chronometrist-task-time-one-day task)))
-           (indicator   (if (chronometrist-task-active? task)
+           (indicator   (if (chronometrist-task-active-p task)
                             (chronometrist-activity-indicator) "")))
       (--> (vector index task-button task-time indicator)
         (list task it)
@@ -1319,13 +1319,16 @@ PREFIX is ignored."
 
 (defvar chronometrist-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET")   #'chronometrist-toggle-task)
-    (define-key map (kbd "M-RET") #'chronometrist-toggle-task-no-hooks)
-    (define-key map (kbd "l")     #'chronometrist-open-log)
-    (define-key map (kbd "r")     #'chronometrist-report)
-    (define-key map [mouse-1]     #'chronometrist-toggle-task)
-    (define-key map [mouse-3]     #'chronometrist-toggle-task-no-hooks)
-    (define-key map (kbd "a")     #'chronometrist-add-new-task)
+    (define-key map (kbd "RET")        #'chronometrist-toggle-task)
+    (define-key map (kbd "M-RET")      #'chronometrist-toggle-task-no-hooks)
+    (define-key map (kbd "<C-return>") #'chronometrist-restart-task)
+    (define-key map (kbd "<C-M-return>") #'chronometrist-extend-task)
+    (define-key map (kbd "l")          #'chronometrist-open-log)
+    (define-key map (kbd "r")          #'chronometrist-report)
+    (define-key map [mouse-1]          #'chronometrist-toggle-task)
+    (define-key map [mouse-3]          #'chronometrist-toggle-task-no-hooks)
+    (define-key map (kbd "a")          #'chronometrist-add-new-task)
+    (define-key map (kbd "G")          #'chronometrist-reset)
     map)
   "Keymap used by `chronometrist-mode'.")
 
@@ -1411,8 +1414,8 @@ If INHIBIT-HOOKS is non-nil, the hooks
 (defun chronometrist-toggle-task-no-hooks (&optional prefix)
   "Like `chronometrist-toggle-task', but don't run hooks.
 
-With numeric prefix argument PREFIX, toggle the Nth task. If there
-is no corresponding task, do nothing."
+With numeric prefix argument PREFIX, toggle the Nth task. If
+there is no corresponding task, do nothing."
   (interactive "P")
   (chronometrist-toggle-task prefix t))
 
@@ -1420,6 +1423,42 @@ is no corresponding task, do nothing."
   "Add a new task."
   (interactive)
   (chronometrist-add-new-task-button nil))
+
+(defun chronometrist-restart-task (&optional inhibit-hooks)
+  "Change the start time of the active task to the current time.
+`chronometrist-before-in-functions' and
+`chronometrist-after-in-functions' are run again, unless
+INHIBIT-HOOKS is non-nil or prefix argument is supplied.
+
+Has no effect if no task is active."
+  (interactive "P")
+  (if (chronometrist-current-task)
+      (let* ((plist (plist-put (chronometrist-last) :start (chronometrist-format-time-iso8601)))
+             (task  (plist-get plist :name)))
+        (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-before-in-functions task))
+        (chronometrist-sexp-replace-last plist)
+        (unless inhibit-hooks
+         (run-hook-with-args 'chronometrist-after-in-functions task)))
+    (message "Can only restart an active task - use this when clocked in.")))
+
+(defun chronometrist-extend-task (&optional inhibit-hooks)
+  "Change the stop time of the last task to the current time.
+`chronometrist-before-out-functions' and
+`chronometrist-after-out-functions' are run again, unless
+INHIBIT-HOOKS is non-nil or prefix argument is supplied.
+
+Has no effect if a task is active."
+  (interactive "P")
+  (if (chronometrist-current-task)
+      (message "Cannot extend an active task - use this after clocking out.")
+    (let* ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601)))
+           (task  (plist-get plist :name)))
+      (unless inhibit-hooks
+         (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
+      (chronometrist-sexp-replace-last plist)
+      (unless inhibit-hooks
+        (run-hook-with-args 'chronometrist-after-out-functions task)))))
 
 ;;;###autoload
 (defun chronometrist (&optional arg)
