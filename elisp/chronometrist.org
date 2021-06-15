@@ -2220,17 +2220,17 @@ The plan is to loop over this list, emitting text to be inserted into the buffer
 Extensions may add to this list.
 
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-commands-to-print-alist
-  '((chronometrist-add-new-task . "start a new task")
-    (chronometrist-toggle-task  . "toggle task at point")
-    (chronometrist-toggle-task    "toggle <N>th task" :prepend "<numeric argument N>")
-    (chronometrist-toggle-task-no-hooks . "toggle without running hooks")
-    (chronometrist-restart-task . "discard and restart active task")
-    (chronometrist-extend-task  . "extend time for last completed task")
-    (chronometrist-report       . "see weekly report")
-    (chronometrist-open-log     . "view/edit log file")
-    (chronometrist-reset        . "reset state"))
-  "List of commands to be printed in the `chronometrist' buffer.")
+(easy-menu-define chronometrist-menu chronometrist-mode-map
+  "Chronometrist mode menu."
+  '("Chronometrist"
+    ["Start a new task" chronometrist-add-new-task]
+    ["Toggle task at point" chronometrist-toggle-task]
+    ["Toggle task without running hooks" chronometrist-toggle-task-no-hooks]
+    ["Discard and restart active task" chronometrist-restart-task]
+    ["Extend time for last completed task" chronometrist-extend-task]
+    ["See weekly report" chronometrist-report]
+    ["View/edit log file" chronometrist-open-log]
+    ["Reset state" chronometrist-reset]))
 #+END_SRC
 
 **** CLEANUP print-non-tabular                :procedure:
@@ -2405,7 +2405,7 @@ PREFIX is ignored."
     map)
   "Keymap used by `chronometrist-mode'.")
 #+END_SRC
-**** chronometrist-mode                      :major:mode:
+**** chronometrist-mode                                  :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
