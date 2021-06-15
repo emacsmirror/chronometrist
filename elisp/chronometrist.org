@@ -976,7 +976,7 @@ Boilerplate for updating state between file operations in tests.
            (list :last (chronometrist-file-hash :before-last nil)
                  :rest (chronometrist-file-hash nil :before-last t)))))
 #+END_SRC
-*** chronometrist-file                   :custom:variable:
+*** chronometrist-file                               :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-file
   (locate-user-emacs-file "chronometrist.sexp")
@@ -2099,7 +2099,7 @@ Return the value returned by Fₙ."
 See `tabulated-list-format'."
   :type '(vector))
 #+END_SRC
-**** chronometrist-mode-hook                :hook:normal:
+**** chronometrist-mode-hook                            :hook:normal:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-hook nil
   "Normal hook run at the very end of `chronometrist-mode'.")
@@ -2340,7 +2340,7 @@ refresh the `chronometrist' buffer."
          (chronometrist-out))
     t))
 #+END_SRC
-**** chronometrist-in                           :command:
+**** chronometrist-in                                       :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-in (task &optional _prefix)
   "Clock in to TASK; record current time in `chronometrist-file'.
@@ -2350,7 +2350,7 @@ TASK is the name of the task, a string. PREFIX is ignored."
     (chronometrist-sexp-new plist)
     (chronometrist-refresh)))
 #+END_SRC
-**** chronometrist-out                          :command:
+**** chronometrist-out                                      :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-out (&optional _prefix)
   "Record current moment as stop time to last s-exp in `chronometrist-file'.
@@ -2375,7 +2375,7 @@ PREFIX is ignored."
     (chronometrist-out)
     (run-hook-with-args 'chronometrist-after-out-functions task)))
 #+END_SRC
-**** chronometrist-mode-map                      :keymap:
+**** chronometrist-mode-map                                  :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-map
   (let ((map (make-sparse-keymap)))
@@ -2784,7 +2784,7 @@ Argument _FS-EVENT is ignored."
                                  '(change)
                                  #'chronometrist-refresh-file))))
 #+END_SRC
-**** chronometrist-report                       :command:
+**** chronometrist-report                                   :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
@@ -3046,7 +3046,7 @@ value of `revert-buffer-function'."
                                  '(change)
                                  #'chronometrist-refresh-file))))
 #+END_SRC
-**** chronometrist-statistics                   :command:
+**** chronometrist-statistics                               :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
@@ -3302,7 +3302,7 @@ Return value is a list as specified by `tabulated-list-entries'."
     do (cl-incf index)))
 #+END_SRC
 
-**** chronometrist-details-mode              :major:mode:
+**** chronometrist-details-mode                          :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
@@ -3316,7 +3316,7 @@ Return value is a list as specified by `tabulated-list-entries'."
   (run-hooks 'chronometrist-mode-hook))
 #+END_SRC
 
-**** chronometrist-details                      :command:
+**** chronometrist-details                                  :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details ()
   (interactive)
