@@ -483,6 +483,7 @@ Alternative syntax
 + small units are lower-case - ="h"= , ="m"=, ="s"=
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
+
 * error - =min= called with two nils             :spark:bug:
 <2021-06-11T03:44:17+0530>
 1. clock in
@@ -536,3 +537,9 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
   call-interactively(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)])
   command-execute(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)] t)
 #+END_SRC
+
+* discoverability and mouse-accessibility of commands
+<2021-06-15T16:18:49+0530>
+1. define context menu for right click outside of buttons
+2. left/right-clicking on buttons should toggle task with/without hooks
+3. print keybindings in columns (following the table width)
