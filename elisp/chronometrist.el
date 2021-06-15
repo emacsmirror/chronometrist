@@ -1182,6 +1182,18 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
            (chronometrist-format-keybinds command chronometrist-mode-map firstonly)
            (if description description ""))))
 
+(defvar chronometrist-commands-to-print-alist
+  '((chronometrist-add-new-task . "start a new task")
+    (chronometrist-toggle-task  . "toggle task at point")
+    (chronometrist-toggle-task    "toggle <N>th task" :prepend "<numeric argument N>")
+    (chronometrist-toggle-task-no-hooks . "toggle without running hooks")
+    (chronometrist-restart-task . "discard and restart active task")
+    (chronometrist-extend-task  . "extend time for last completed task")
+    (chronometrist-report       . "see weekly report")
+    (chronometrist-open-log     . "view/edit log file")
+    (chronometrist-reset        . "reset state"))
+  "List of commands to be printed in the `chronometrist' buffer.")
+
 (defun chronometrist-print-non-tabular ()
   "Print the non-tabular part of the buffer in `chronometrist'."
   (with-current-buffer chronometrist-buffer-name

@@ -1494,7 +1494,7 @@ Reading directly from the file could be difficult, especially when your most com
 The data from =chronometrist-events= is used by most (all?) interval-consuming functions, but is never written to the user's file itself.
 
 [fn:4] it might be the case that the [[#program-backend][file format]] is not suited to our most frequent operation...
-*** reset-state                                  :command:
+*** reset                                        :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
@@ -1504,7 +1504,7 @@ The data from =chronometrist-events= is used by most (all?) interval-consuming f
   (setq chronometrist--file-state nil)
   (chronometrist-refresh))
 #+END_SRC
-*** chronometrist-events                                    :variable:
+*** chronometrist-events                        :variable:
 :PROPERTIES:
 :VALUE:    hash table
 :END:
@@ -2214,6 +2214,25 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
            (chronometrist-format-keybinds command chronometrist-mode-map firstonly)
            (if description description ""))))
 #+END_SRC
+**** commands-to-print                         :variable:
+The plan is to loop over this list, emitting text to be inserted into the buffer.
+
+Extensions may add to this list.
+
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-commands-to-print-alist
+  '((chronometrist-add-new-task . "start a new task")
+    (chronometrist-toggle-task  . "toggle task at point")
+    (chronometrist-toggle-task    "toggle <N>th task" :prepend "<numeric argument N>")
+    (chronometrist-toggle-task-no-hooks . "toggle without running hooks")
+    (chronometrist-restart-task . "discard and restart active task")
+    (chronometrist-extend-task  . "extend time for last completed task")
+    (chronometrist-report       . "see weekly report")
+    (chronometrist-open-log     . "view/edit log file")
+    (chronometrist-reset        . "reset state"))
+  "List of commands to be printed in the `chronometrist' buffer.")
+#+END_SRC
+
 **** CLEANUP print-non-tabular                :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-print-non-tabular ()
@@ -2386,7 +2405,7 @@ PREFIX is ignored."
     map)
   "Keymap used by `chronometrist-mode'.")
 #+END_SRC
-**** chronometrist-mode                                  :major:mode:
+**** chronometrist-mode                      :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
