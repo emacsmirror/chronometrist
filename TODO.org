@@ -407,7 +407,7 @@ Some options and ideas -
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
-* documentation discoverability
+* documentation discoverability                        :doc:
 Ensure that the user manual is easily discoverable.
 
 #+BEGIN_QUOTE
@@ -421,7 +421,7 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
-* extension macro
+* extension macro                           :code:extension:
 <2021-06-07T16:33:54+0530>
 
 A macro to create new columns for Chronometrist.
@@ -483,3 +483,63 @@ Alternative syntax
 + small units are lower-case - ="h"= , ="m"=, ="s"=
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
+
+* error - =min= called with two nils             :spark:bug:
+<2021-06-11T03:44:17+0530>
+1. clock in
+2. change =:start= of active interval to another time on the same date
+3. error
+
+#+BEGIN_SRC emacs-lisp :tangle no :load no
+Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
+  min()
+  apply(min nil)
+  (format "(%sm~%sm)" (apply #'min durations-nonzero) (apply #'max duration-minutes))
+  (if (= 1 (length durations-nonzero)) (format "(%sm)" (apply #'max duration-minutes)) (format "(%sm~%sm)" (apply #'min durations-nonzero) (apply #'max duration-minutes)))
+  (let* ((duration-minutes (mapcar #'(lambda (it) (ignore it) (/ it 60)) durations)) (durations-nonzero (seq-remove #'zerop duration-minutes))) (if (= 1 (length durations-nonzero)) (format "(%sm)" (apply #'max duration-minutes)) (format "(%sm~%sm)" (apply #'min durations-nonzero) (apply #'max duration-minutes))))
+  chronometrist-spark-range((0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1) t)
+  (format "%s %s" (spark durations) (chronometrist-spark-range durations active-p))
+  (if (and active-p chronometrist-spark-show-range) (format "%s %s" (spark durations) (chronometrist-spark-range durations active-p)) (format "%s" (spark durations)))
+  (let* ((today (ts-now)) (duration nil) (active-p nil) (day (- (- chronometrist-spark-length 1))) (durations nil)) (while (<= day 0) (setq durations (nconc durations (list (setq duration (chronometrist-task-time-one-day task (ts-adjust ... day today)))))) (if (not (= 0 duration)) (progn (setq active-p t))) (setq day (+ day 1))) (if (and active-p chronometrist-spark-show-range) (format "%s %s" (spark durations) (chronometrist-spark-range durations active-p)) (format "%s" (spark durations))))
+  (let* ((--dash-source-12-- row) (task (car-safe (prog1 --dash-source-12-- (setq --dash-source-12-- (cdr --dash-source-12--))))) (vector (car --dash-source-12--)) (sparkline (let* ((today (ts-now)) (duration nil) (active-p nil) (day (- (- chronometrist-spark-length 1))) (durations nil)) (while (<= day 0) (setq durations (nconc durations (list ...))) (if (not (= 0 duration)) (progn (setq active-p t))) (setq day (+ day 1))) (if (and active-p chronometrist-spark-show-range) (format "%s %s" (spark durations) (chronometrist-spark-range durations active-p)) (format "%s" (spark durations)))))) (list task (vconcat vector (vector sparkline))))
+  chronometrist-spark-row-transformer(("Performance" ["14" ("Performance" action chronometrist-toggle-task-button follow-link t) "       1" "       1"]))
+  funcall(chronometrist-spark-row-transformer ("Performance" ["14" ("Performance" action chronometrist-toggle-task-button follow-link t) "       1" "       1"]))
+  (setq arg (funcall fn arg))
+  (let ((fn (car --dolist-tail--))) (setq arg (funcall fn arg)) (setq --dolist-tail-- (cdr --dolist-tail--)))
+  (while --dolist-tail-- (let ((fn (car --dolist-tail--))) (setq arg (funcall fn arg)) (setq --dolist-tail-- (cdr --dolist-tail--))))
+  (let ((--dolist-tail-- transformers)) (while --dolist-tail-- (let ((fn (car --dolist-tail--))) (setq arg (funcall fn arg)) (setq --dolist-tail-- (cdr --dolist-tail--)))) arg)
+  (if transformers (let ((--dolist-tail-- transformers)) (while --dolist-tail-- (let ((fn (car --dolist-tail--))) (setq arg (funcall fn arg)) (setq --dolist-tail-- (cdr --dolist-tail--)))) arg) arg)
+  chronometrist-run-transformers((chronometrist-spark-row-transformer chronometrist-goal-row-transformer) ("Performance" ["14" ("Performance" action chronometrist-toggle-task-button follow-link t) "       1" "       1"]))
+  (let ((it (list task it))) (chronometrist-run-transformers chronometrist-row-transformers it))
+  (let ((it (vector index task-button task-time indicator))) (let ((it (list task it))) (chronometrist-run-transformers chronometrist-row-transformers it)))
+  (let* ((index (number-to-string index)) (task-button (cons task '(action chronometrist-toggle-task-button follow-link t))) (task-time (chronometrist-format-duration (chronometrist-task-time-one-day task))) (indicator (if (chronometrist-task-active\? task) (chronometrist-activity-indicator) ""))) (let ((it (vector index task-button task-time indicator))) (let ((it (list task it))) (chronometrist-run-transformers chronometrist-row-transformers it))))
+  (cons (let* ((index (number-to-string index)) (task-button (cons task '(action chronometrist-toggle-task-button follow-link t))) (task-time (chronometrist-format-duration (chronometrist-task-time-one-day task))) (indicator (if (chronometrist-task-active\? task) (chronometrist-activity-indicator) ""))) (let ((it (vector index task-button task-time indicator))) (let ((it (list task it))) (chronometrist-run-transformers chronometrist-row-transformers it)))) --cl-var--)
+  (setq --cl-var-- (cons (let* ((index (number-to-string index)) (task-button (cons task '(action chronometrist-toggle-task-button follow-link t))) (task-time (chronometrist-format-duration (chronometrist-task-time-one-day task))) (indicator (if (chronometrist-task-active\? task) (chronometrist-activity-indicator) ""))) (let ((it (vector index task-button task-time indicator))) (let ((it (list task it))) (chronometrist-run-transformers chronometrist-row-transformers it)))) --cl-var--))
+  (while (consp --cl-var--) (setq task (car --cl-var--)) (setq --cl-var-- (cons (let* ((index (number-to-string index)) (task-button (cons task '...)) (task-time (chronometrist-format-duration (chronometrist-task-time-one-day task))) (indicator (if (chronometrist-task-active\? task) (chronometrist-activity-indicator) ""))) (let ((it (vector index task-button task-time indicator))) (let ((it ...)) (chronometrist-run-transformers chronometrist-row-transformers it)))) --cl-var--)) (setq index (1+ index)) (setq --cl-var-- (cdr --cl-var--)))
+  (let* ((index 1) (--cl-var-- (-sort #'string-lessp chronometrist-task-list)) (task nil) (--cl-var-- nil)) (while (consp --cl-var--) (setq task (car --cl-var--)) (setq --cl-var-- (cons (let* ((index (number-to-string index)) (task-button (cons task ...)) (task-time (chronometrist-format-duration ...)) (indicator (if ... ... ""))) (let ((it ...)) (let (...) (chronometrist-run-transformers chronometrist-row-transformers it)))) --cl-var--)) (setq index (1+ index)) (setq --cl-var-- (cdr --cl-var--))) (nreverse --cl-var--))
+  chronometrist-rows()
+  #f(compiled-function (&optional remember-pos update) "Populate the current Tabulated List mode buffer.\nThis sorts the `tabulated-list-entries' list if sorting is\nspecified by `tabulated-list-sort-key'.  It then erases the\nbuffer and inserts the entries with `tabulated-list-printer'.\n\nOptional argument REMEMBER-POS, if non-nil, means to move point\nto the entry with the same ID element as the current line and\nrecenter window line accordingly.\n\nNon-nil UPDATE argument means to use an alternative printing\nmethod which is faster if most entries haven't changed since the\nlast print.  The only difference in outcome is that tags will not\nbe removed from entries that haven't changed (see\n`tabulated-list-put-tag').  Don't use this immediately after\nchanging `tabulated-list-sort-key'." #<bytecode 0x1fdbee9d8f65>)(t nil)
+  ad-Advice-tabulated-list-print(#f(compiled-function (&optional remember-pos update) "Populate the current Tabulated List mode buffer.\nThis sorts the `tabulated-list-entries' list if sorting is\nspecified by `tabulated-list-sort-key'.  It then erases the\nbuffer and inserts the entries with `tabulated-list-printer'.\n\nOptional argument REMEMBER-POS, if non-nil, means to move point\nto the entry with the same ID element as the current line and\nrecenter window line accordingly.\n\nNon-nil UPDATE argument means to use an alternative printing\nmethod which is faster if most entries haven't changed since the\nlast print.  The only difference in outcome is that tags will not\nbe removed from entries that haven't changed (see\n`tabulated-list-put-tag').  Don't use this immediately after\nchanging `tabulated-list-sort-key'." #<bytecode 0x1fdbee9d8f65>) t nil)
+  apply(ad-Advice-tabulated-list-print #f(compiled-function (&optional remember-pos update) "Populate the current Tabulated List mode buffer.\nThis sorts the `tabulated-list-entries' list if sorting is\nspecified by `tabulated-list-sort-key'.  It then erases the\nbuffer and inserts the entries with `tabulated-list-printer'.\n\nOptional argument REMEMBER-POS, if non-nil, means to move point\nto the entry with the same ID element as the current line and\nrecenter window line accordingly.\n\nNon-nil UPDATE argument means to use an alternative printing\nmethod which is faster if most entries haven't changed since the\nlast print.  The only difference in outcome is that tags will not\nbe removed from entries that haven't changed (see\n`tabulated-list-put-tag').  Don't use this immediately after\nchanging `tabulated-list-sort-key'." #<bytecode 0x1fdbee9d8f65>) (t nil))
+  tabulated-list-print(t nil)
+  (save-current-buffer (set-buffer chronometrist-buffer-name) (tabulated-list-print t nil) (chronometrist-print-non-tabular) (chronometrist-maybe-start-timer) (set-window-point window point))
+  (progn (save-current-buffer (set-buffer chronometrist-buffer-name) (tabulated-list-print t nil) (chronometrist-print-non-tabular) (chronometrist-maybe-start-timer) (set-window-point window point)))
+  (if window (progn (save-current-buffer (set-buffer chronometrist-buffer-name) (tabulated-list-print t nil) (chronometrist-print-non-tabular) (chronometrist-maybe-start-timer) (set-window-point window point))))
+  (let* ((window (get-buffer-window chronometrist-buffer-name t)) (point (window-point window))) (if window (progn (save-current-buffer (set-buffer chronometrist-buffer-name) (tabulated-list-print t nil) (chronometrist-print-non-tabular) (chronometrist-maybe-start-timer) (set-window-point window point)))))
+  chronometrist-refresh()
+  (let* ((--dash-source-6-- fs-event) (descriptor (car-safe (prog1 --dash-source-6-- (setq --dash-source-6-- (cdr --dash-source-6--))))) (action (car-safe (prog1 --dash-source-6-- (setq --dash-source-6-- (cdr --dash-source-6--))))) (_ (car (cdr --dash-source-6--))) (change (if chronometrist--file-state (progn (chronometrist-file-change-type chronometrist--file-state)))) (reset-watch (or (eq action 'deleted) (eq action 'renamed)))) (cond ((or reset-watch (not chronometrist--file-state) (eq change t)) (if reset-watch (progn (file-notify-rm-watch chronometrist--fs-watch) (setq chronometrist--fs-watch nil chronometrist--file-state nil))) (chronometrist-events-populate) (chronometrist-reset-task-list)) (chronometrist--file-state (let* ((old-task (plist-get (chronometrist-events-last) :name)) (new-task (plist-get (chronometrist-sexp-last) :name))) (cond ((eq change :append) (chronometrist-events-update (chronometrist-sexp-last)) (chronometrist-add-to-task-list new-task)) ((eq change :modify) (chronometrist-events-update (chronometrist-sexp-last) t) (chronometrist-remove-from-task-list old-task) (chronometrist-add-to-task-list new-task)) ((eq change :remove) (let (...) (chronometrist-remove-from-task-list old-task) (let ... ...))) ((null change) nil) (t nil))))) (setq chronometrist--file-state (list :last (chronometrist-file-hash :before-last nil) :rest (chronometrist-file-hash nil :before-last t))) (chronometrist-refresh))
+  chronometrist-refresh-file(((1 . 1) changed "/home/anon/.emacs.d/chronometrist.sexp"))
+  file-notify--call-handler(#s(file-notify--watch :directory "/home/anon/.emacs.d" :filename "chronometrist.sexp" :callback chronometrist-refresh-file) (1 . 1) changed "/home/anon/.emacs.d/chronometrist.sexp" nil)
+  file-notify--handle-event((1 . 1) (changed) "chronometrist.sexp" 0)
+  file-notify--callback-inotify(((1 . 1) (modify) "chronometrist.sexp" 0))
+  file-notify-handle-event((file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify))
+  funcall-interactively(file-notify-handle-event (file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify))
+  call-interactively(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)])
+  command-execute(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)] t)
+#+END_SRC
+
+* discoverability and mouse-accessibility of commands
+<2021-06-15T16:18:49+0530>
+1. define context menu for right click outside of buttons
+2. left/right-clicking on buttons should toggle task with/without hooks
+3. print keybindings in columns (following the table width)
