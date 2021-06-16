@@ -543,3 +543,12 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
 1. define context menu for right click outside of buttons
 2. left/right-clicking on buttons should toggle task with/without hooks
 3. print keybindings in columns (following the table width)
+
+* querying and narrowing the chronometrist-file buffer :feature:
+<2021-06-16T07:50:21+0530>
+
+=chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.
+1. The result data may just be plists, which could be displayed/edited directly from the search results ([[info:elisp#Invisible Text][invisible text]] or [[info:elisp#Selective Display][selective display]] +
+ [[info:elisp#Narrowing][narrowing]]?)
+2. The result data may be something which corresponds to the input data, in which case we could jump to the corresponding plist.
+3. The result data may be impossible to trace back to the input data (e.g. a sum of intervals from many plists), in which case we cannot provide direct editing.
