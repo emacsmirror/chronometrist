@@ -25,20 +25,26 @@
       * timer will only refresh when clocked in...
    7. [X] regression - no value history
    8. [ ] Possible to add the same key-value twice
-      * Clock in - clock out - add key-value and accept - delete =:stop= time and save - clock out again - accept the already-inserted key-value - duplicate!
-** Features [25%]
-   1. [ ] Create chronometrist-unused-projects-list + chronometrist-projects-list.
-   2. [ ] New commands
+      * Steps
+        1. Ensure that =chronometrist-kv-add= is present in =chronometrist-before-out-functions=
+        2. Clock in
+        3. Clock out
+        4. Add key-value and accept
+        5. Delete =:stop= time and save
+        6. Clock out again
+        7. Accept the already-inserted key-value. Duplicate!
+** Features [33%]
+   1. [ ] New commands
       1. [ ] *Kill/discard* (bind to 'k') - which will delete the interval currently being recorded.
          - Most conservative option - it will only operate on the project at point, and will only kill for a clocked-in project.
          - Somewhat less conservative option - it will operate on the currently clocked-in project, no matter where point is.
          - It _should_ ask for confirmation.
          - Alternatively, or as a complement - an *undo command*, which will undo your last action (clock in or clock out).
            - Undo and redo seem like the best bets.
-   3. [ ] Hook enhancement - can we supply the whole plist (including tags and key-values) to the task-start hooks, so users can have even smarter hook functions?
+   2. [ ] Hook enhancement - can we supply the whole plist (including tags and key-values) to the task-start hooks, so users can have even smarter hook functions?
       * That would mean ensuring that -kv-read runs before other hooks.
       * Actually, it should be trivial to access the last expression in the file, so maybe this is unnecessary.
-   4. [X] Revisit 'no reason' commands - maybe we should ask for tags and key-values with the regular commands, and skip them with the 'no reason' variants?
+   3. [X] Revisit 'no reason' commands - maybe we should ask for tags and key-values with the regular commands, and skip them with the 'no reason' variants?
 *** Key-values [66%]
     1. [X] bug - value-history appears in chronological rather than reverse chronological order
     2. [X] generate history hash table from chronometrist-file.
@@ -328,8 +334,6 @@ Some options and ideas -
    10. [ ] =chronometrist-timer= - if =chronometrist-file= is being edited (buffer exists and modified), don't refresh - this will (hopefully) prevent Emacs from going crazy with errors in trying to parse malformed data.
 
 * Maybe
-** Code
-1. There is some duplication among extensions - =*-setup= and =*-teardown= functions in =goal= and =sparkline= could be refactored into a common helper for all extensions.
 ** New features [14%]
 1. [ ] Interact with Chronometrist from phone, tablet, or smart watches. (Help needed, I'm a total strange to mobile development and don't own any wearables.)
 2. [ ] Some way to use markup (Markdown, Org, etc) for certain plist values.
