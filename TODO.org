@@ -408,7 +408,7 @@ Some options and ideas -
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
-* documentation discoverability                        :doc:
+* documentation discoverability                                         :doc:
 Ensure that the user manual is easily discoverable.
 
 #+BEGIN_QUOTE
@@ -422,7 +422,7 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
-* macro for extensions                      :code:extension:
+* macro for extensions                                       :code:extension:
 <2021-06-07T16:33:54+0530>
 
 A macro to create new columns for Chronometrist.
@@ -485,7 +485,7 @@ Alternative syntax
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
 
-* error - =min= called with nil                  :spark:bug:
+* error - =min= called with nil                                   :spark:bug:
 <2021-06-11T03:44:17+0530>
 1. clock in
 2. change =:start= of active interval to another time on the same date
@@ -539,13 +539,13 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
   command-execute(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)] t)
 #+END_SRC
 
-* discoverability and mouse-accessibility of commands
+* discoverability and mouse-accessibility of commands                    :ux:
 <2021-06-15T16:18:49+0530>
 1. define context menu for right click outside of buttons
 2. left/right-clicking on buttons should toggle task with/without hooks
 3. print keybindings in columns (following the table width)
 
-* querying and narrowing the chronometrist-file buffer :feature:
+* querying and narrowing the file buffer                            :feature:
 <2021-06-16T07:50:21+0530>
 
 =chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.

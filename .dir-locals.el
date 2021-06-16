@@ -14,8 +14,7 @@
                               ("cr" . "chronometrist-report")
                               ("cs" . "chronometrist-statistics")
                               ("cx" . "chronometrist-sexp")))))
- (org-mode . ((org-tags-column . -60)
-              (org-html-self-link-headlines . t)
+ (org-mode . ((org-html-self-link-headlines . t)
               (eval . (org-indent-mode))
               (org-html-head
                . (concat "<link rel=\"stylesheet\" "
