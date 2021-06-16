@@ -553,3 +553,10 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
  [[info:elisp#Narrowing][narrowing]]?)
 2. The result data may be something which corresponds to the input data, in which case we could jump to the corresponding plist.
 3. The result data may be impossible to trace back to the input data (e.g. a sum of intervals from many plists), in which case we cannot provide direct editing.
+* Error in change type detection                                   :core:bug:
+<2021-06-16T18:40:18+0530>
+Steps
+1. Clock in
+2. Delete active task plist, but don't save
+3. Clock in to different task
+4. error
