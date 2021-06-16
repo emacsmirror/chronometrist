@@ -485,7 +485,7 @@ Alternative syntax
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
 
-* error - =min= called with nil                                   :spark:bug:
+* DONE error - =min= called with nil                              :spark:bug:
 <2021-06-11T03:44:17+0530>
 1. clock in
 2. change =:start= of active interval to another time on the same date
