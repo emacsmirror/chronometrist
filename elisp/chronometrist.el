@@ -1173,39 +1173,32 @@ is the name of the task to be clocked out of."
   (re-search-forward (plist-get (chronometrist-last) :name) nil t)
   (beginning-of-line))
 
-(defun chronometrist-print-keybind (command &optional description firstonly)
-  "Insert the keybindings for COMMAND.
-If DESCRIPTION is non-nil, insert that too.
-If FIRSTONLY is non-nil, return only the first keybinding found."
-  (insert
-   (format "\n% 18s - %s"
-           (chronometrist-format-keybinds command chronometrist-mode-map firstonly)
-           (if description description ""))))
+(easy-menu-define chronometrist-menu chronometrist-mode-map
+  "Chronometrist mode menu."
+  '("Chronometrist"
+    ["Start a new task" chronometrist-add-new-task]
+    ["Toggle task at point" chronometrist-toggle-task]
+    ["Toggle task without running hooks" chronometrist-toggle-task-no-hooks]
+    ["Discard and restart active task" chronometrist-restart-task]
+    ["Discard and restart without running hooks" (chronometrist-restart-task t)
+     :keys "\\[universal-argument] \\[chronometrist-restart-task]"]
+    ["Extend time for last completed task" chronometrist-extend-task]
+    ["Extend time without running hooks" (chronometrist-extend-task t)
+     :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
+    ["View details of today's data" chronometrist-details]
+    ["View weekly report" chronometrist-report]
+    ["View/edit log file" chronometrist-open-log]
+    ["Reset state" chronometrist-reset]))
 
 (defun chronometrist-print-non-tabular ()
   "Print the non-tabular part of the buffer in `chronometrist'."
   (with-current-buffer chronometrist-buffer-name
-    (let ((inhibit-read-only t)
-          (w "\n    ")
-          ;; (keybind-start-new (chronometrist-format-keybinds 'chronometrist-add-new-task chronometrist-mode-map))
-          (keybind-toggle    (chronometrist-format-keybinds 'chronometrist-toggle-task chronometrist-mode-map t)))
+    (let ((inhibit-read-only t) (w "\n    "))
       (goto-char (point-max))
       (--> (chronometrist-active-time-one-day)
            (chronometrist-format-duration it)
            (format "%s%- 26s%s" w "Total" it)
-           (insert it))
-      (insert "\n")
-      (insert w (format "% 17s" "Keys") w (format "% 17s" "----"))
-      (chronometrist-print-keybind 'chronometrist-add-new-task)
-      (insert-text-button "start a new task" 'action #'chronometrist-add-new-task-button 'follow-link t)
-      (chronometrist-print-keybind 'chronometrist-toggle-task "toggle task at point")
-      (chronometrist-print-keybind 'chronometrist-toggle-task-no-hooks "toggle without running hooks")
-      (insert "\n " (format "%s %s - %s" "<numeric argument N>" keybind-toggle "toggle <N>th task"))
-      (chronometrist-print-keybind 'chronometrist-report)
-      (insert-text-button "see weekly report" 'action #'chronometrist-report 'follow-link t)
-      (chronometrist-print-keybind 'chronometrist-open-log)
-      (insert-text-button "view/edit log file" 'action #'chronometrist-open-log 'follow-link t)
-      (insert "\n"))))
+           (insert it)))))
 
 (defun chronometrist-goto-nth-task (n)
   "Move point to the line containing the Nth task.

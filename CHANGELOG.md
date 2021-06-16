@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 ### Added
 1. New commands `chronometrist-restart-task`, `chronometrist-extend-task`
+2. Menu of commands available in `chronometrist`
 ### Changed
-2. Display graph ranges in `chronometrist-spark` column
+3. Display graph ranges in `chronometrist-spark` column
 
 ## [0.8.1] - 2021-06-01
 ### Changed
