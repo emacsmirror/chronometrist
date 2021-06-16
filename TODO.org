@@ -539,7 +539,7 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
   command-execute(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)] t)
 #+END_SRC
 
-* discoverability and mouse-accessibility of commands                    :ux:
+* STARTED discoverability and mouse-accessibility of commands [33%]      :ux:
 <2021-06-15T16:18:49+0530>
 Goals
 1. discoverability of commands
