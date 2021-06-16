@@ -340,6 +340,7 @@ Some options and ideas -
        - The buffer and window will be created when a keyword associated with that mode is selected at the prompt.
      + Alternatively, the whole plist goes into a single buffer of the markup's major mode - the markup bits as markup, the rest of the plist in a code block 🤷‍
      + poly-mode to mix different modes
+     + see [[info:elisp#Swapping Text][swapping text]]
    * "Input frontends" - a way to represent s-expressions as Markdown, Org, etc, so the entire plist can be edited in that mode. As a side-effect, this will permit use of Markdown, Org, etc in keyword-values - e.g. to use markup in comments or notes.
    * A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
 3. [ ] /Task List/ - a custom variable containing a list of tasks
@@ -421,7 +422,7 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
-* extension macro                           :code:extension:
+* macro for extensions                      :code:extension:
 <2021-06-07T16:33:54+0530>
 
 A macro to create new columns for Chronometrist.
@@ -484,7 +485,7 @@ Alternative syntax
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
 
-* error - =min= called with two nils             :spark:bug:
+* error - =min= called with nil                  :spark:bug:
 <2021-06-11T03:44:17+0530>
 1. clock in
 2. change =:start= of active interval to another time on the same date
