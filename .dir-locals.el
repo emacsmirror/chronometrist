@@ -21,14 +21,12 @@
                . (concat "<link rel=\"stylesheet\" "
                          "type=\"text/css\" "
                          "href=\"../org-doom-molokai.css\" />"))
-              (eval . (progn
-                        (make-local-variable 'after-save-hook)
-                        (add-hook 'after-save-hook
+              (eval . (add-hook 'after-save-hook
                                 (lambda nil
-                                  (interactive)
                                   (compile
                                    (mapconcat #'shell-quote-argument
                                               `("emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)"
                                                 ,(format "--eval=(org-babel-tangle-file \"%s\")" (buffer-file-name)))
                                               " ")))
-                                nil t))))))
+                                nil t))
+              (eval . (add-hook 'before-save-hook (lambda nil (org-align-all-tags)) nil t)))))
