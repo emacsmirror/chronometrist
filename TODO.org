@@ -541,9 +541,19 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
 
 * discoverability and mouse-accessibility of commands                    :ux:
 <2021-06-15T16:18:49+0530>
-1. define context menu for right click outside of buttons
-2. left/right-clicking on buttons should toggle task with/without hooks
-3. print keybindings in columns (following the table width)
+Goals
+1. discoverability of commands
+2. discoverability of default keybindings
+3. mouse accessibility of commands
+
+Strategies
+1. [X] define menu
+2. [ ] bind context menu to right click outside of buttons
+3. [ ] bind toggle task with/without hooks to left/right-click on buttons
+   1. [ ] keybindings in tooltips
+4. +print keybindings in columns (following the table width)+
+   * Perhaps I needn't worry too much. =menu-bar-mode= is enabled by default, and it makes #1 and #2 easy. I think a significant amount of the userbase disables =menu-bar-mode=, but they also have things like =counsel-M-x=, =describe-=.
+     + The menu does not make the behavior of the numeric argument discoverable. Doesn't make sense to put it there, either.
 
 * querying and narrowing the file buffer                            :feature:
 <2021-06-16T07:50:21+0530>
