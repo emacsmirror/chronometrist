@@ -552,3 +552,4 @@ Strategies
    1. [ ] keybindings in tooltips
 4. +print keybindings in columns (following the table width)+
    * Perhaps I needn't worry too much. =menu-bar-mode= is enabled by default, and it makes #1 and #2 easy. I think a significant amount of the userbase disables =menu-bar-mode=, but they also have things like =counsel-M-x=, =describe-=.
+     + The menu does not make the behavior of the numeric argument discoverable. Doesn't make sense to put it there, either.
