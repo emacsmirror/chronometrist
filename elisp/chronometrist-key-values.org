@@ -672,7 +672,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
       (chronometrist-tag-choice-prompt "Which tags?"))
     t))
 #+END_SRC
-*** WIP chronometrist-key-choice                              :hook:writer:
+*** WIP chronometrist-key-choice                                          :hook:writer:
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-key-choice (task)
   "Query user for keys to be added to TASK.
@@ -685,7 +685,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
       (chronometrist-key-choice-prompt "Which keys?"))
     t))
 #+END_SRC
-*** WIP chronometrist-kv-prompt-helper                           :function:
+*** WIP chronometrist-kv-prompt-helper                                       :function:
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (defun chronometrist-kv-prompt-helper (mode task)
   (let ((table (case mode
