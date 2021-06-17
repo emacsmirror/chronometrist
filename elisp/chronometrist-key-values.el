@@ -396,9 +396,10 @@ used in `chronometrist-before-out-functions'."
 (easy-menu-define chronometrist-key-value-menu chronometrist-mode-map
   "Key value menu for Chronometrist mode."
   '("Key-Values"
-    ["Add tags to active/last interval" chronometrist-tags-add]
-    ["Add key-values to active/last interval" chronometrist-kv-add]
-    ["Add tags and key-values to active/last interval" chronometrist-key-values-unified-prompt]))
+    ["Change tags for active/last interval" chronometrist-tags-add]
+    ["Change key-values for active/last interval" chronometrist-kv-add]
+    ["Change tags and key-values for active/last interval"
+     chronometrist-key-values-unified-prompt]))
 
 (cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-sexp-last) :name)))
   "Query user for tags and key-values to be added for TASK.
