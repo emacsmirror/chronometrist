@@ -166,6 +166,7 @@ INITIAL-INPUT is as used in `completing-read'."
   "Read tags from the user; add them to the last entry in `chronometrist-file'.
 _ARGS are ignored. This function always returns t, so it can be
 used in `chronometrist-before-out-functions'."
+  (interactive)
   (let* ((last-expr (chronometrist-last))
          (last-name (plist-get last-expr :name))
          (_history  (chronometrist-tags-history-populate last-name
@@ -331,6 +332,7 @@ to add them to the last s-expression in `chronometrist-file', or
 
 _ARGS are ignored. This function always returns t, so it can be
 used in `chronometrist-before-out-functions'."
+  (interactive)
   (let* ((buffer      (get-buffer-create chronometrist-kv-buffer-name))
          (first-key-p t)
          (last-sexp   (chronometrist-last))
@@ -391,9 +393,18 @@ used in `chronometrist-before-out-functions'."
   (kill-buffer chronometrist-kv-buffer-name)
   (chronometrist-refresh))
 
-(defun chronometrist-key-values-unified-prompt (task)
+(easy-menu-define chronometrist-key-value-menu chronometrist-mode-map
+  "Key value menu for Chronometrist mode."
+  '("Key-Values"
+    ["Change tags for active/last interval" chronometrist-tags-add]
+    ["Change key-values for active/last interval" chronometrist-kv-add]
+    ["Change tags and key-values for active/last interval"
+     chronometrist-key-values-unified-prompt]))
+
+(cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-sexp-last) :name)))
   "Query user for tags and key-values to be added for TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
+  (interactive)
   (let ((key-values (chronometrist-loop-file for plist in chronometrist-file
                       when (equal (plist-get plist :name) task)
                       collect
