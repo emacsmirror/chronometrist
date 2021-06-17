@@ -300,6 +300,7 @@ INITIAL-INPUT is as used in `completing-read'."
   "Read tags from the user; add them to the last entry in `chronometrist-file'.
 _ARGS are ignored. This function always returns t, so it can be
 used in `chronometrist-before-out-functions'."
+  (interactive)
   (let* ((last-expr (chronometrist-last))
          (last-name (plist-get last-expr :name))
          (_history  (chronometrist-tags-history-populate last-name
@@ -524,6 +525,7 @@ to add them to the last s-expression in `chronometrist-file', or
 
 _ARGS are ignored. This function always returns t, so it can be
 used in `chronometrist-before-out-functions'."
+  (interactive)
   (let* ((buffer      (get-buffer-create chronometrist-kv-buffer-name))
          (first-key-p t)
          (last-sexp   (chronometrist-last))
@@ -587,6 +589,15 @@ used in `chronometrist-before-out-functions'."
   (interactive)
   (kill-buffer chronometrist-kv-buffer-name)
   (chronometrist-refresh))
+#+END_SRC
+*** chronometrist-key-value-menu                                                 :menu:
+#+BEGIN_SRC emacs-lisp
+(easy-menu-define chronometrist-key-value-menu chronometrist-mode-map
+  "Key value menu for Chronometrist mode."
+  '("Key-Values"
+    ["Add tags to active/last interval" chronometrist-tags-add]
+    ["Add key-values to active/last interval" chronometrist-kv-add]
+    ["Add tags and key-values to active/last interval" chronometrist-key-values-unified-prompt]))
 #+END_SRC
 ** WIP Single-key prompts [0%]
 This was initially implemented using Hydra. But, at the moment of reckoning, it turned out that Hydra does not pause Emacs until the user provides an input, and is thus unsuited for use in a hook. Thus, we created a new library called =choice.el= which functions similarly to Hydra (associations of keys, Lisp forms, and hints are passed to a macro which emits a prompt function) and used that.
@@ -685,9 +696,10 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 *** WIP unified-prompt                                        :hook:writer:
 1. [ ] Improve appearance - is there an easy way to syntax highlight the plists?
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-key-values-unified-prompt (task)
+(cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-sexp-last) :name)))
   "Query user for tags and key-values to be added for TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
+  (interactive)
   (let ((key-values (chronometrist-loop-file for plist in chronometrist-file
                       when (equal (plist-get plist :name) task)
                       collect
