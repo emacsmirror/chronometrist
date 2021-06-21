@@ -413,7 +413,7 @@ Some options and ideas -
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
-* documentation discoverability                                         :doc:
+* documentation discoverability                                    :doc:
 Ensure that the user manual is easily discoverable.
 
 #+BEGIN_QUOTE
@@ -427,7 +427,7 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
-* macro for extensions                                       :code:extension:
+* macro for extensions                                  :code:extension:
 <2021-06-07T16:33:54+0530>
 
 A macro to create new columns for Chronometrist.
@@ -490,7 +490,7 @@ Alternative syntax
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
 
-* DONE error - =min= called with nil                              :spark:bug:
+* DONE error - =min= called with nil                         :spark:bug:
 <2021-06-11T03:44:17+0530>
 1. clock in
 2. change =:start= of active interval to another time on the same date
@@ -544,7 +544,7 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
   command-execute(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)] t)
 #+END_SRC
 
-* STARTED discoverability and mouse-accessibility of commands [33%]      :ux:
+* STARTED discoverability and mouse-accessibility of commands [33%] :ux:
 <2021-06-15T16:18:49+0530>
 Goals
 1. discoverability of commands
@@ -560,7 +560,7 @@ Strategies
    * Perhaps I needn't worry too much. =menu-bar-mode= is enabled by default, and it makes #1 and #2 easy. I think a significant amount of the userbase disables =menu-bar-mode=, but they also have things like =counsel-M-x=, =describe-=.
      + The menu does not make the behavior of the numeric argument discoverable. Doesn't make sense to put it there, either.
 
-* query-editing the file buffer                                     :feature:
+* query-editing the file buffer                                :feature:
 <2021-06-16T07:50:21+0530>
 
 =chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.
@@ -568,7 +568,8 @@ Strategies
  [[info:elisp#Narrowing][narrowing]]?)
 2. The result data may be something which corresponds to the input data, in which case we could jump to the corresponding plist.
 3. The result data may be impossible to trace back to the input data (e.g. a sum of intervals from many plists), in which case we cannot provide direct editing.
-* error in change type detection                                   :core:bug:
+
+* error in change type detection                              :core:bug:
 <2021-06-16T18:40:18+0530>
 Steps
 1. Clock in
@@ -576,17 +577,16 @@ Steps
 3. Clock in to different task. Error.
 
 Might have to do with there being 2 empty lines between the last-but-one plist and the new last plist.
-* spark monthly view                                          :spark:feature:
+* spark monthly view                                     :spark:feature:
 :PROPERTIES:
 :feature:  frontend
 :END:
 <2021-06-17T00:08:08+0530>
 Frontend to show one or more months for a specific task, calendar-style, with each day being a single sparkline block.
 
-* Task-specific detailed weekly view                           :feature:
+* Task-specific detailed view                                  :feature:
 :PROPERTIES:
 :feature:  frontend
 :END:
 <2021-06-22T04:57:06+0530>
 Frontend similar to =chronometrist=, but specific to one task - displays its unique tag/key-value combinations and their sparklines. Time period (day, week, etc) could be customizable.
-
