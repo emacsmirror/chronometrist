@@ -178,6 +178,7 @@ Some options and ideas -
           * Or even the first expression of the current date. That way, we just re-read the intervals for today. Because chronometrist-events uses dates as keys, it's easy to work on the basis of dates.
    6. [ ] Don't generate tag/keyword/value history from the entire log, just from the last N days (where N is user-customizable).
    7. [ ] Just why are we reading the whole file? ~chronometrist~ should not read more than a day; ~chronometrist-report~ should not read more than a week at a time, and so on. Make a branch which works on this logic, see if it is faster.
+** Clocking in/out might be too slow for my liking
 
 * Certain
 1. [ ] statistics UI for arbitrary queries
@@ -451,7 +452,7 @@ Benefits -
 + easier creation of such extensions
 + users can easily replace the function used to generate the cells, without having to deal with how the string is inserted into the row specifier.
 
-* unified format-duration function
+* unified format-duration function                  :code:customization:
 <2021-06-08T11:17:54+0530>
 
 Currently we have at least three ways of displaying durations - ="HH:MM:SS"= , ="XhYm"= , and =X hour(s), Y minutes(s)"= . Make a single function similar to =format-time-string=, but for durations. =ts-human-format-duration= from =ts.el= is not nearly as flexible as I'd like. When completed, we can have a single custom variable accepting a format string, which can be used to customize display of durations for the entire application at once.
@@ -576,5 +577,16 @@ Steps
 
 Might have to do with there being 2 empty lines between the last-but-one plist and the new last plist.
 * spark monthly view                                          :spark:feature:
+:PROPERTIES:
+:feature:  frontend
+:END:
 <2021-06-17T00:08:08+0530>
 Frontend to show one or more months for a specific task, calendar-style, with each day being a single sparkline block.
+
+* Task-specific detailed weekly view                           :feature:
+:PROPERTIES:
+:feature:  frontend
+:END:
+<2021-06-22T04:57:06+0530>
+Frontend similar to =chronometrist=, but specific to one task - displays its unique tag/key-value combinations and their sparklines. Time period (day, week, etc) could be customizable.
+
