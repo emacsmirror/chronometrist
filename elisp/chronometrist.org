@@ -2209,25 +2209,6 @@ is the name of the task to be clocked out of."
   (re-search-forward (plist-get (chronometrist-last) :name) nil t)
   (beginning-of-line))
 #+END_SRC
-**** chronometrist-menu                                             :menu:
-#+BEGIN_SRC emacs-lisp
-(easy-menu-define chronometrist-menu chronometrist-mode-map
-  "Chronometrist mode menu."
-  '("Chronometrist"
-    ["Start a new task" chronometrist-add-new-task]
-    ["Toggle task at point" chronometrist-toggle-task]
-    ["Toggle task without running hooks" chronometrist-toggle-task-no-hooks]
-    ["Discard and restart active task" chronometrist-restart-task]
-    ["Discard and restart without running hooks" (chronometrist-restart-task t)
-     :keys "\\[universal-argument] \\[chronometrist-restart-task]"]
-    ["Extend time for last completed task" chronometrist-extend-task]
-    ["Extend time without running hooks" (chronometrist-extend-task t)
-     :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
-    ["View details of today's data" chronometrist-details]
-    ["View weekly report" chronometrist-report]
-    ["View/edit log file" chronometrist-open-log]
-    ["Reset state" chronometrist-reset]))
-#+END_SRC
 **** CLEANUP print-non-tabular                                 :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-print-non-tabular ()
@@ -2368,7 +2349,7 @@ PREFIX is ignored."
     (chronometrist-out)
     (run-hook-with-args 'chronometrist-after-out-functions task)))
 #+END_SRC
-**** chronometrist-mode-map                                       :keymap:
+**** chronometrist-mode-map                                                   :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-map
   (let ((map (make-sparse-keymap)))
@@ -2386,7 +2367,26 @@ PREFIX is ignored."
     map)
   "Keymap used by `chronometrist-mode'.")
 #+END_SRC
-**** chronometrist-mode                                       :major:mode:
+**** chronometrist-menu                                                         :menu:
+#+BEGIN_SRC emacs-lisp
+(easy-menu-define chronometrist-menu chronometrist-mode-map
+  "Chronometrist mode menu."
+  '("Chronometrist"
+    ["Start a new task" chronometrist-add-new-task]
+    ["Toggle task at point" chronometrist-toggle-task]
+    ["Toggle task without running hooks" chronometrist-toggle-task-no-hooks]
+    ["Discard and restart active task" chronometrist-restart-task]
+    ["Discard and restart without running hooks" (chronometrist-restart-task t)
+     :keys "\\[universal-argument] \\[chronometrist-restart-task]"]
+    ["Extend time for last completed task" chronometrist-extend-task]
+    ["Extend time without running hooks" (chronometrist-extend-task t)
+     :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
+    ["View details of today's data" chronometrist-details]
+    ["View weekly report" chronometrist-report]
+    ["View/edit log file" chronometrist-open-log]
+    ["Reset state" chronometrist-reset]))
+#+END_SRC
+**** chronometrist-mode                                                   :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
