@@ -429,7 +429,6 @@ Ensure that the user manual is easily discoverable.
 #+END_QUOTE
 * macro for extensions                                       :code:extension:
 <2021-06-07T16:33:54+0530>
-
 A macro to create new columns for Chronometrist.
 
 Extension writer specifies
@@ -451,6 +450,26 @@ Benefits -
 + reduced duplication
 + easier creation of such extensions
 + users can easily replace the function used to generate the cells, without having to deal with how the string is inserted into the row specifier.
+
+Current uses -
+1. =chronometrist-goal=
+2. =chronometrist-spark=
+
+* macro for frontends                                                  :code:
+<2021-06-26T08:49:25+0530>
+A macro to create Chronometrist frontends (based on =tabulated-list-mode=). If implemented, would shorten code for all four existing and two planned frontends.
+
+Programmer specifies -
+1. frontend command name (a symbol)
+2. name (string, passed to =define-derived-mode=)
+3. rows function
+4. schema value
+5. name of buffer created by command
+
+Macro creates -
+1. =frontend= interactive command, which behaves like a toggle
+2. function =frontend-rows=
+3. custom variables =frontend-schema=, =frontend-row-transformers=, =frontend-schema-transformers=, =frontend-buffer-name=
 
 * unified format-duration function                       :code:customization:
 <2021-06-08T11:17:54+0530>
@@ -577,7 +596,7 @@ Steps
 3. Clock in to different task. Error.
 
 Might have to do with there being 2 empty lines between the last-but-one plist and the new last plist.
-* Task-specific monthly spark view                            :spark:feature:
+* spark monthly view                                          :spark:feature:
 :PROPERTIES:
 :feature:  frontend
 :END:
