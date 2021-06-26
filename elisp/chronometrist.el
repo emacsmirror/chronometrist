@@ -1173,23 +1173,6 @@ is the name of the task to be clocked out of."
   (re-search-forward (plist-get (chronometrist-last) :name) nil t)
   (beginning-of-line))
 
-(easy-menu-define chronometrist-menu chronometrist-mode-map
-  "Chronometrist mode menu."
-  '("Chronometrist"
-    ["Start a new task" chronometrist-add-new-task]
-    ["Toggle task at point" chronometrist-toggle-task]
-    ["Toggle task without running hooks" chronometrist-toggle-task-no-hooks]
-    ["Discard and restart active task" chronometrist-restart-task]
-    ["Discard and restart without running hooks" (chronometrist-restart-task t)
-     :keys "\\[universal-argument] \\[chronometrist-restart-task]"]
-    ["Extend time for last completed task" chronometrist-extend-task]
-    ["Extend time without running hooks" (chronometrist-extend-task t)
-     :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
-    ["View details of today's data" chronometrist-details]
-    ["View weekly report" chronometrist-report]
-    ["View/edit log file" chronometrist-open-log]
-    ["Reset state" chronometrist-reset]))
-
 (defun chronometrist-print-non-tabular ()
   "Print the non-tabular part of the buffer in `chronometrist'."
   (with-current-buffer chronometrist-buffer-name
@@ -1325,6 +1308,23 @@ PREFIX is ignored."
     (define-key map (kbd "G")          #'chronometrist-reset)
     map)
   "Keymap used by `chronometrist-mode'.")
+
+(easy-menu-define chronometrist-menu chronometrist-mode-map
+  "Chronometrist mode menu."
+  '("Chronometrist"
+    ["Start a new task" chronometrist-add-new-task]
+    ["Toggle task at point" chronometrist-toggle-task]
+    ["Toggle task without running hooks" chronometrist-toggle-task-no-hooks]
+    ["Discard and restart active task" chronometrist-restart-task]
+    ["Discard and restart without running hooks" (chronometrist-restart-task t)
+     :keys "\\[universal-argument] \\[chronometrist-restart-task]"]
+    ["Extend time for last completed task" chronometrist-extend-task]
+    ["Extend time without running hooks" (chronometrist-extend-task t)
+     :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
+    ["View details of today's data" chronometrist-details]
+    ["View weekly report" chronometrist-report]
+    ["View/edit log file" chronometrist-open-log]
+    ["Reset state" chronometrist-reset]))
 
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
