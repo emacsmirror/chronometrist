@@ -1457,12 +1457,8 @@ Has no effect if a task is active."
 ;;;###autoload
 (defun chronometrist (&optional arg)
   "Display the user's tasks and the time spent on them today.
-
-Based on their timelog file `chronometrist-file'. This is the
-'listing command' for `chronometrist-mode'.
-
-If numeric argument ARG is 1, run `chronometrist-report'.
-If numeric argument ARG is 2, run `chronometrist-statistics'."
+If numeric argument ARG is 1, run `chronometrist-report'; if 2,
+run `chronometrist-statistics'."
   (interactive "P")
   (chronometrist-migrate-check)
   (let ((buffer (get-buffer-create chronometrist-buffer-name))
