@@ -2100,6 +2100,32 @@ Return value is a list as specified by `tabulated-list-entries'."
                (chronometrist-details-mode)
                (tabulated-list-print))))))
 
+(defvar chronometrist-details-range nil
+  "Time range for intervals displayed by `chronometrist-details'.
+Values can be one of -
+nil - no range. Display all intervals for today.
+An ISO date string - display intervals for this date.
+A cons cell in the form (BEGIN . END), where BEGIN and END are
+ISO date or date-time strings - display intervals in this range.
+Dates are inclusive.")
+(make-variable-buffer-local 'chronometrist-details-range)
+
+(defvar chronometrist-details-set-range ()
+  "Prompt user for range for current `chronometrist-details' buffer.")
+
+(defvar chronometrist-details-filter nil
+  "Parameters to filter intervals displayed by `chronometrist-details'.
+Values can be one of -
+nil - no filter. Display all intervals in the given time range.
+A list of keywords - display intervals containing all given keywords.
+A plist - display intervals containing all given keyword-values.
+A predicate of one argument (the interval plist) - display all
+intervals for which the predicate returns non-nil.")
+(make-variable-buffer-local 'chronometrist-details-filter)
+
+(defun chronometrist-details-set-filter (arg)
+  "Prompt user for filter for current `chronometrist-details' buffer.")
+
 (provide 'chronometrist)
 
 ;;; chronometrist.el ends here

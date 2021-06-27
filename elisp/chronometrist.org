@@ -2349,7 +2349,7 @@ PREFIX is ignored."
     (chronometrist-out)
     (run-hook-with-args 'chronometrist-after-out-functions task)))
 #+END_SRC
-**** chronometrist-mode-map                                                   :keymap:
+**** chronometrist-mode-map                                       :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-map
   (let ((map (make-sparse-keymap)))
@@ -2367,7 +2367,7 @@ PREFIX is ignored."
     map)
   "Keymap used by `chronometrist-mode'.")
 #+END_SRC
-**** chronometrist-menu                                                         :menu:
+**** chronometrist-menu                                             :menu:
 #+BEGIN_SRC emacs-lisp
 (easy-menu-define chronometrist-menu chronometrist-mode-map
   "Chronometrist mode menu."
@@ -2386,7 +2386,7 @@ PREFIX is ignored."
     ["View/edit log file" chronometrist-open-log]
     ["Reset state" chronometrist-reset]))
 #+END_SRC
-**** chronometrist-mode                                                   :major:mode:
+**** chronometrist-mode                                       :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
@@ -3296,7 +3296,7 @@ Return value is a list as specified by `tabulated-list-entries'."
     do (cl-incf index)))
 #+END_SRC
 
-**** chronometrist-details-mode                               :major:mode:
+**** chronometrist-details-mode                                           :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
@@ -3310,7 +3310,7 @@ Return value is a list as specified by `tabulated-list-entries'."
   (run-hooks 'chronometrist-mode-hook))
 #+END_SRC
 
-**** chronometrist-details                                       :command:
+**** chronometrist-details                                                   :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details ()
   (interactive)
@@ -3322,6 +3322,45 @@ Return value is a list as specified by `tabulated-list-entries'."
                (switch-to-buffer buffer)
                (chronometrist-details-mode)
                (tabulated-list-print))))))
+#+END_SRC
+
+**** range                                                      :variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-details-range nil
+  "Time range for intervals displayed by `chronometrist-details'.
+Values can be one of -
+nil - no range. Display all intervals for today.
+An ISO date string - display intervals for this date.
+A cons cell in the form (BEGIN . END), where BEGIN and END are
+ISO date or date-time strings - display intervals in this range.
+Dates are inclusive.")
+(make-variable-buffer-local 'chronometrist-details-range)
+
+#+END_SRC
+**** set-range                                                   :command:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-details-set-range ()
+  "Prompt user for range for current `chronometrist-details' buffer.")
+
+#+END_SRC
+**** filter                                                     :variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-details-filter nil
+  "Parameters to filter intervals displayed by `chronometrist-details'.
+Values can be one of -
+nil - no filter. Display all intervals in the given time range.
+A list of keywords - display intervals containing all given keywords.
+A plist - display intervals containing all given keyword-values.
+A predicate of one argument (the interval plist) - display all
+intervals for which the predicate returns non-nil.")
+(make-variable-buffer-local 'chronometrist-details-filter)
+
+#+END_SRC
+**** set-filter                                                  :command:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details-set-filter (arg)
+  "Prompt user for filter for current `chronometrist-details' buffer.")
+
 #+END_SRC
 
 ** Provide
