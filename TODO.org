@@ -624,3 +624,9 @@ Define commands to -
 Problems -
 1. What happens when the user clocks in? We could switch back to the default view. Do we want the user to clock in while the buffer is displaying old data? Perhaps clocking in can be disabled while the buffer is displaying old data - you have to exit the 'browse mode' to clock in.
    * Non-default views could also be created as new buffers (a la Dired), to differentiate them from the default view as well as make it easy to compare different views.
+
+* Enhanced sparklines                                               :feature:
+<2021-06-27T05:42:56+0530>
+Show more information when hovering or clicking on a sparkline bar -
+1. mouse over on a bar to show the duration it represents
+2. if the bar represents time in a single day, click on it open =chronometrist-details= for that day.
