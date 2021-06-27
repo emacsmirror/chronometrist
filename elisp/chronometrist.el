@@ -869,7 +869,8 @@ unchanged."
 
 (defun chronometrist-iso-timestamp-to-ts (timestamp)
   "Convert TIMESTAMP to a TS struct. (see `ts.el')
-TIMESTAMP must be the ISO-8601 format, as handled by `parse-iso8601-time-string'."
+TIMESTAMP must be an ISO-8601 timestamp, as handled by
+`parse-iso8601-time-string'."
   (-let [(second minute hour day month year dow _dst utcoff)
          (decode-time
           (parse-iso8601-time-string timestamp))]
@@ -2051,7 +2052,8 @@ using `chronometrist-details-schema-transformers'.")
   "Return rows to be displayed in the `chronometrist-details' buffer.
 Return value is a list as specified by `tabulated-list-entries'."
   (cl-loop with index = 1
-    for plist in (gethash (chronometrist-events-last-date) chronometrist-events) collect
+    for plist in (chronometrist-details-intervals-for-range chronometrist-details-range chronometrist-events)
+    collect
     (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
             ;; whether tags or key-values are actually displayed is handled later
             (tags       (chronometrist-details-rows-helper tags))
@@ -2109,6 +2111,35 @@ A cons cell in the form (BEGIN . END), where BEGIN and END are
 ISO date or date-time strings - display intervals in this range.
 Dates are inclusive.")
 (make-variable-buffer-local 'chronometrist-details-range)
+
+(defun chronometrist-iso-date-p (string)
+  (string-match-p
+   (rx (and string-start
+            (>= 1 num) "-" (= 2 num) "-" (= 2 num)
+            string-end))
+   string))
+
+(defun chronometrist-details-intervals-for-range (range table)
+  "Return intervals for RANGE from TABLE.
+RANGE must be a time range as specified by `chronometrist-details-range'.
+
+TABLE must be a hash table similar to `chronometrist-events'."
+  (pcase range
+    ('nil
+     (gethash (format-time-string "%F") table))
+    ((pred stringp)
+     (gethash range table))
+    (`(,begin . ,end)
+     (if (and (chronometrist-iso-date-p begin) (chronometrist-iso-date-p end))
+         (let ((begin-ts (chronometrist-iso-timestamp-to-ts begin))
+               (end-ts   (chronometrist-iso-timestamp-to-ts end)))
+           (cl-loop while (not (ts> begin-ts end-ts))
+             append (gethash (ts-format "%F" begin-ts) table)
+             do (ts-adjustf begin-ts 'day 1)))))))
+
+;; (chronometrist-details-intervals-for-range nil chronometrist-events)
+;; (chronometrist-details-intervals-for-range "2021-06-01" chronometrist-events)
+;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
 
 (defvar chronometrist-details-set-range ()
   "Prompt user for range for current `chronometrist-details' buffer.")
