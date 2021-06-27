@@ -2080,6 +2080,11 @@ Return value is a list as specified by `tabulated-list-entries'."
         (chronometrist-run-transformers chronometrist-details-row-transformers it)))
     do (cl-incf index)))
 
+(defvar chronometrist-details-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "R" 'chronometrist-details-set-range)
+    map))
+
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
   (make-local-variable 'tabulated-list-format)
@@ -2141,8 +2146,18 @@ TABLE must be a hash table similar to `chronometrist-events'."
 ;; (chronometrist-details-intervals-for-range "2021-06-01" chronometrist-events)
 ;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
 
-(defvar chronometrist-details-set-range ()
-  "Prompt user for range for current `chronometrist-details' buffer.")
+(defun chronometrist-details-set-range ()
+  "Prompt user for range for current `chronometrist-details' buffer."
+  (interactive)
+  (let ((input (completing-read-multiple
+                (concat "Range (blank, ISO-8601 date, "
+                        "or two ISO-8601 dates/timestamps): ")
+                (hash-table-keys chronometrist-events) nil nil chronometrist-details-range)))
+    (pcase input
+      ("" (setq-local chronometrist-details-range nil))
+      ((or string `(,begin . ,end))
+       (setq-local chronometrist-details-range (read input)))
+      (t (error "Unsupported range.")))))
 
 (defvar chronometrist-details-filter nil
   "Parameters to filter intervals displayed by `chronometrist-details'.

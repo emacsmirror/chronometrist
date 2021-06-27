@@ -2328,7 +2328,7 @@ refresh the `chronometrist' buffer."
          (chronometrist-out))
     t))
 #+END_SRC
-**** chronometrist-in                                            :command:
+**** chronometrist-in                                                        :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-in (task &optional _prefix)
   "Clock in to TASK; record current time in `chronometrist-file'.
@@ -2338,7 +2338,7 @@ TASK is the name of the task, a string. PREFIX is ignored."
     (chronometrist-sexp-new plist)
     (chronometrist-refresh)))
 #+END_SRC
-**** chronometrist-out                                           :command:
+**** chronometrist-out                                                       :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-out (&optional _prefix)
   "Record current moment as stop time to last s-exp in `chronometrist-file'.
@@ -2363,7 +2363,7 @@ PREFIX is ignored."
     (chronometrist-out)
     (run-hook-with-args 'chronometrist-after-out-functions task)))
 #+END_SRC
-**** chronometrist-mode-map                                       :keymap:
+**** chronometrist-mode-map                                                   :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-map
   (let ((map (make-sparse-keymap)))
@@ -2381,7 +2381,7 @@ PREFIX is ignored."
     map)
   "Keymap used by `chronometrist-mode'.")
 #+END_SRC
-**** chronometrist-menu                                             :menu:
+**** chronometrist-menu                                                         :menu:
 #+BEGIN_SRC emacs-lisp
 (easy-menu-define chronometrist-menu chronometrist-mode-map
   "Chronometrist mode menu."
@@ -2400,7 +2400,7 @@ PREFIX is ignored."
     ["View/edit log file" chronometrist-open-log]
     ["Reset state" chronometrist-reset]))
 #+END_SRC
-**** chronometrist-mode                                       :major:mode:
+**** chronometrist-mode                                                   :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
   "Major mode for `chronometrist'."
@@ -2792,7 +2792,7 @@ Argument _FS-EVENT is ignored."
                                  '(change)
                                  #'chronometrist-refresh-file))))
 #+END_SRC
-**** chronometrist-report                                        :command:
+**** chronometrist-report                                                    :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
@@ -3054,7 +3054,7 @@ value of `revert-buffer-function'."
                                  '(change)
                                  #'chronometrist-refresh-file))))
 #+END_SRC
-**** chronometrist-statistics                                    :command:
+**** chronometrist-statistics                                                :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
@@ -3311,7 +3311,21 @@ Return value is a list as specified by `tabulated-list-entries'."
     do (cl-incf index)))
 #+END_SRC
 
-**** chronometrist-details-mode                               :major:mode:
+**** map                                                          :keymap:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-details-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "R" 'chronometrist-details-set-range)
+    map))
+
+#+END_SRC
+**** menu
+#+BEGIN_SRC emacs-lisp
+(easy-menu-define chronometrist-details-menu chronometrist-details-mode-map
+  "Menu for `chronometrist-details'."
+  '("Details" ["Set date/time range" chronometrist-details-set-range]))
+#+END_SRC
+**** chronometrist-details-mode                                           :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
@@ -3325,7 +3339,7 @@ Return value is a list as specified by `tabulated-list-entries'."
   (run-hooks 'chronometrist-mode-hook))
 #+END_SRC
 
-**** chronometrist-details                                       :command:
+**** chronometrist-details                                                   :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details ()
   (interactive)
@@ -3391,8 +3405,27 @@ TABLE must be a hash table similar to `chronometrist-events'."
 #+END_SRC
 **** set-range                                                   :command:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-details-set-range ()
-  "Prompt user for range for current `chronometrist-details' buffer.")
+(defun chronometrist-details-set-range ()
+  "Prompt user for range for current `chronometrist-details' buffer."
+  (interactive)
+  (let ((input (completing-read-multiple
+                (concat "Range (blank, ISO-8601 date, "
+                        "or two ISO-8601 dates/timestamps): ")
+                (hash-table-keys chronometrist-events) nil nil
+                (pcase chronometrist-details-range
+                  ('nil nil)
+                  ((pred stringp)
+                   (format "%s" chronometrist-details-range))
+                  (`(,begin . ,end)
+                   (format "%s,%s" begin end))))))
+    (pcase input
+      ('nil (setq-local chronometrist-details-range nil))
+      (`(,date)
+       (setq-local chronometrist-details-range date))
+      (`(,begin ,end)
+       (setq-local chronometrist-details-range (cons begin end)))
+      (_ (error "Unsupported range.")))
+    (tabulated-list-revert)))
 
 #+END_SRC
 **** filter                                                     :variable:
