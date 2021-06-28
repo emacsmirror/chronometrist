@@ -2052,7 +2052,7 @@ using `chronometrist-details-schema-transformers'.")
   "Return rows to be displayed in the `chronometrist-details' buffer.
 Return value is a list as specified by `tabulated-list-entries'."
   (cl-loop with index = 1
-    for plist in (chronometrist-details-intervals-for-range chronometrist-details-range chronometrist-events)
+    for plist in (chronometrist-details-intervals chronometrist-details-range chronometrist-details-filter chronometrist-events)
     collect
     (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
             ;; whether tags or key-values are actually displayed is handled later
@@ -2060,18 +2060,18 @@ Return value is a list as specified by `tabulated-list-entries'."
             (key-values (chronometrist-details-rows-helper plist))
             ;; resetting seconds with `ts-apply' is necessary to
             ;; prevent situations like "1 hour  from 00:08 to 01:09"
-            (start         (ts-apply :second 0
-                                     (chronometrist-iso-timestamp-to-ts start)))
-            (stop          (ts-apply :second 0
-                                     (if stop
-                                         (chronometrist-iso-timestamp-to-ts stop)
-                                       (ts-now))))
+            (start   (ts-apply :second 0 (chronometrist-iso-timestamp-to-ts start)))
+            (stop    (ts-apply :second 0 (if stop
+                                             (chronometrist-iso-timestamp-to-ts stop)
+                                           (ts-now))))
             (interval      (floor (ts-diff stop start)))
             (index-string  (format "%s" index))
             (duration      (chronometrist-format-duration-long interval))
-            (timespan      (format "from %s to %s"
-                                   (ts-format chronometrist-details-time-format-string start)
-                                   (ts-format chronometrist-details-time-format-string stop))))
+            (timespan (format "from %s to %s"
+                              (ts-format chronometrist-details-time-format-string
+                                         start)
+                              (ts-format chronometrist-details-time-format-string
+                                         stop))))
       (--> (vconcat (vector index-string name)
                     (when chronometrist-details-display-tags (vector tags))
                     (when chronometrist-details-display-key-values (vector key-values))
@@ -2082,8 +2082,13 @@ Return value is a list as specified by `tabulated-list-entries'."
 
 (defvar chronometrist-details-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "R" 'chronometrist-details-set-range)
+    (define-key map (kbd "s r") 'chronometrist-details-set-range)
+    (define-key map (kbd "s f") 'chronometrist-details-set-filter)
     map))
+
+(easy-menu-define chronometrist-details-menu chronometrist-details-mode-map
+  "Menu for `chronometrist-details'."
+  '("Details" ["Set date/time range" chronometrist-details-set-range]))
 
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
@@ -2152,12 +2157,21 @@ TABLE must be a hash table similar to `chronometrist-events'."
   (let ((input (completing-read-multiple
                 (concat "Range (blank, ISO-8601 date, "
                         "or two ISO-8601 dates/timestamps): ")
-                (hash-table-keys chronometrist-events) nil nil chronometrist-details-range)))
+                (reverse (hash-table-keys chronometrist-events)) nil nil
+                (pcase chronometrist-details-range
+                  ('nil nil)
+                  ((pred stringp)
+                   (format "%s" chronometrist-details-range))
+                  (`(,begin . ,end)
+                   (format "%s,%s" begin end))))))
     (pcase input
-      ("" (setq-local chronometrist-details-range nil))
-      ((or string `(,begin . ,end))
-       (setq-local chronometrist-details-range (read input)))
-      (t (error "Unsupported range.")))))
+      ('nil (setq-local chronometrist-details-range nil))
+      (`(,date)
+       (setq-local chronometrist-details-range date))
+      (`(,begin ,end)
+       (setq-local chronometrist-details-range (cons begin end)))
+      (_ (error "Unsupported range.")))
+    (tabulated-list-revert)))
 
 (defvar chronometrist-details-filter nil
   "Parameters to filter intervals displayed by `chronometrist-details'.
@@ -2169,8 +2183,46 @@ A predicate of one argument (the interval plist) - display all
 intervals for which the predicate returns non-nil.")
 (make-variable-buffer-local 'chronometrist-details-filter)
 
-(defun chronometrist-details-set-filter (arg)
-  "Prompt user for filter for current `chronometrist-details' buffer.")
+(defun chronometrist-details-filter-match-p (plist filter)
+  "Return PLIST if it matches FILTER.
+FILTER must be a filter specifier as described by
+`chronometrist-details-filter'."
+  (cond ((null filter) plist)
+        ((seq-every-p #'keywordp filter)
+         (when (--map (plist-get plist keyword) filter)
+           plist))
+        ((chronometrist-plist-p filter)
+         (when (cl-loop for (keyword value) on filter by #'cddr
+                 always (equal (plist-get plist keyword) value))
+           plist))
+        ((functionp filter)
+         (when (funcall filter plist) plist))
+        (t (error "Invalid filter."))))
+
+(defun chronometrist-details-set-filter ()
+  "Prompt user for filter for current `chronometrist-details' buffer."
+  (interactive)
+  (let* ((input (completing-read
+                 (concat "Filter (blank, one or more keywords, "
+                         "a plist, or a predicate): ")
+                 nil nil nil
+                 (pcase chronometrist-details-filter
+                   ('nil "")
+                   ((pred consp) (format "%S" chronometrist-details-filter)))))
+         (sexp (ignore-errors (read input))))
+    (cond ((equal input "") (setq-local chronometrist-details-filter nil))
+          ((consp sexp)     (setq-local chronometrist-details-filter sexp))
+          (_ (error "Unsupported filter.")))
+    (tabulated-list-revert)))
+
+(defun chronometrist-details-intervals (range filter table)
+  "Return plists matching RANGE and FILTER from TABLE.
+For values of RANGE, see `chronometrist-details-range'. For
+values of FILTER, see `chronometrist-details-filter'. TABLE must
+be a hash table similar to `chronometrist-events'."
+  (cl-loop for plist in (chronometrist-details-intervals-for-range range table)
+    when (chronometrist-details-filter-match-p plist filter)
+    collect plist))
 
 (provide 'chronometrist)
 
