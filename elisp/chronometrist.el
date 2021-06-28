@@ -2189,7 +2189,7 @@ FILTER must be a filter specifier as described by
 `chronometrist-details-filter'."
   (cond ((null filter) plist)
         ((seq-every-p #'keywordp filter)
-         (when (--map (plist-get plist keyword) filter)
+         (when (--every-p (plist-get plist it) filter)
            plist))
         ((chronometrist-plist-p filter)
          (when (cl-loop for (keyword value) on filter by #'cddr
