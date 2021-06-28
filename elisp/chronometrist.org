@@ -3466,10 +3466,10 @@ FILTER must be a filter specifier as described by
 (defun chronometrist-details-set-filter ()
   "Prompt user for filter for current `chronometrist-details' buffer."
   (interactive)
-  (let* ((input (completing-read
-                 (concat "Filter (blank, one or more keywords, "
+  (let* ((input (read-from-minibuffer
+                 (concat "Filter (blank, a list of keywords, "
                          "a plist, or a predicate): ")
-                 nil nil nil
+                 nil nil nil nil
                  (pcase chronometrist-details-filter
                    ('nil "")
                    ((pred consp) (format "%S" chronometrist-details-filter)))))
