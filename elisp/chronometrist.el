@@ -2082,13 +2082,21 @@ Return value is a list as specified by `tabulated-list-entries'."
 
 (defvar chronometrist-details-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "s r") 'chronometrist-details-set-range)
-    (define-key map (kbd "s f") 'chronometrist-details-set-filter)
+    (define-key map (kbd "s r") #'chronometrist-details-set-range)
+    (define-key map (kbd "s f") #'chronometrist-details-set-filter)
+    (define-key map (kbd "r") #'chronometrist-report)
+    (define-key map (kbd "l") #'chronometrist-open-log)
+    (define-key map (kbd "G") #'chronometrist-reset)
     map))
 
 (easy-menu-define chronometrist-details-menu chronometrist-details-mode-map
   "Menu for `chronometrist-details'."
-  '("Details" ["Set date/time range" chronometrist-details-set-range]))
+  '("Details"
+    ["Set date/time range" chronometrist-details-set-range]
+    ["Set interval filter" chronometrist-details-set-filter]
+    ["View weekly report" chronometrist-report]
+    ["View/edit log file" chronometrist-open-log]
+    ["Reset state" chronometrist-reset]))
 
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
   "Major mode for `chronometrist-details'."
