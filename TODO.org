@@ -413,7 +413,7 @@ Some options and ideas -
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
-* documentation discoverability                                    :doc:
+* documentation discoverability                                         :doc:
 Ensure that the user manual is easily discoverable.
 
 #+BEGIN_QUOTE
@@ -427,9 +427,8 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
-* macro for extensions                                  :code:extension:
+* macro for extensions                                       :code:extension:
 <2021-06-07T16:33:54+0530>
-
 A macro to create new columns for Chronometrist.
 
 Extension writer specifies
@@ -452,7 +451,27 @@ Benefits -
 + easier creation of such extensions
 + users can easily replace the function used to generate the cells, without having to deal with how the string is inserted into the row specifier.
 
-* unified format-duration function                  :code:customization:
+Current uses -
+1. =chronometrist-goal=
+2. =chronometrist-spark=
+
+* macro for frontends                                                  :code:
+<2021-06-26T08:49:25+0530>
+A macro to create Chronometrist frontends (based on =tabulated-list-mode=). If implemented, would shorten code for all four existing and two planned frontends.
+
+Programmer specifies -
+1. frontend command name (a symbol)
+2. name (string, passed to =define-derived-mode=)
+3. rows function
+4. schema value
+5. name of buffer created by command
+
+Macro creates -
+1. =frontend= interactive command, which behaves like a toggle
+2. function =frontend-rows=
+3. custom variables =frontend-schema=, =frontend-row-transformers=, =frontend-schema-transformers=, =frontend-buffer-name=
+
+* unified format-duration function                       :code:customization:
 <2021-06-08T11:17:54+0530>
 
 Currently we have at least three ways of displaying durations - ="HH:MM:SS"= , ="XhYm"= , and =X hour(s), Y minutes(s)"= . Make a single function similar to =format-time-string=, but for durations. =ts-human-format-duration= from =ts.el= is not nearly as flexible as I'd like. When completed, we can have a single custom variable accepting a format string, which can be used to customize display of durations for the entire application at once.
@@ -490,7 +509,7 @@ Alternative syntax
 + to display only values, use ="%<code>"=
 + to display long units, use ="~[<separator>]<code>"=
 
-* DONE error - =min= called with nil                         :spark:bug:
+* DONE error - =min= called with nil                              :spark:bug:
 <2021-06-11T03:44:17+0530>
 1. clock in
 2. change =:start= of active interval to another time on the same date
@@ -544,7 +563,7 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
   command-execute(file-notify-handle-event nil [(file-notify ((1 . 1) (modify) "chronometrist.sexp" 0) file-notify--callback-inotify)] t)
 #+END_SRC
 
-* STARTED discoverability and mouse-accessibility of commands [33%] :ux:
+* STARTED discoverability and mouse-accessibility of commands [33%]      :ux:
 <2021-06-15T16:18:49+0530>
 Goals
 1. discoverability of commands
@@ -560,7 +579,7 @@ Strategies
    * Perhaps I needn't worry too much. =menu-bar-mode= is enabled by default, and it makes #1 and #2 easy. I think a significant amount of the userbase disables =menu-bar-mode=, but they also have things like =counsel-M-x=, =describe-=.
      + The menu does not make the behavior of the numeric argument discoverable. Doesn't make sense to put it there, either.
 
-* query-editing the file buffer                                :feature:
+* query-editing the file buffer                                     :feature:
 <2021-06-16T07:50:21+0530>
 
 =chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.
@@ -569,7 +588,7 @@ Strategies
 2. The result data may be something which corresponds to the input data, in which case we could jump to the corresponding plist.
 3. The result data may be impossible to trace back to the input data (e.g. a sum of intervals from many plists), in which case we cannot provide direct editing.
 
-* error in change type detection                              :core:bug:
+* error in change type detection                                   :core:bug:
 <2021-06-16T18:40:18+0530>
 Steps
 1. Clock in
@@ -577,16 +596,53 @@ Steps
 3. Clock in to different task. Error.
 
 Might have to do with there being 2 empty lines between the last-but-one plist and the new last plist.
-* spark monthly view                                     :spark:feature:
-:PROPERTIES:
-:feature:  frontend
-:END:
-<2021-06-17T00:08:08+0530>
-Frontend to show one or more months for a specific task, calendar-style, with each day being a single sparkline block.
 
-* Task-specific detailed view                                  :feature:
-:PROPERTIES:
-:feature:  frontend
-:END:
-<2021-06-22T04:57:06+0530>
-Frontend similar to =chronometrist=, but specific to one task - displays its unique tag/key-value combinations and their sparklines. Time period (day, week, etc) could be customizable.
+* STARTED New frontends and enhancements                            :feature:
+** Existing frontends
+*** chronometrist (overview for a day)
+list of tasks, one day, durations and graphs
++ commands [0%]
+  1. [ ] previous/next day
+  2. [ ] set day
+  3. [ ] reset day
+  4. [ ] set duration format
+*** report
+list of tasks, one week, durations only
+*** statistics
+list of tasks, one week/month/year [fn:1]
+*** details (intervals for a day) [0%]
+list of intervals, one day [fn:1]
++ [-] commands [50%]
+  1. [X] set [task/key-value] filter [fn:2]
+  2. [X] set range
+  3. [ ] previous/next day
+  4. [ ] set duration format
++ [ ] with =spark= - vertical sparkline for each interval
++ [ ] non-tabular text [fn:3]
++ [ ] when range is a pair with the =car= or the =cdr= being blank, set the respective date to the earliest (if =car= is blank) or the latest (if =cdr= is blank) date available.
+
+** New frontends I want
+*** task-key-values
+list of unique key-values for a task, one day [fn:1], durations and graphs
++ commands [0%]
+  1. [ ] set task
+  2. [ ] set range
+*** task-graph [0%]
+list of weeks or months [fn:1], one task (with optional key-value filter [fn:2]), horizontal graph (and durations/stats?)
++ [ ] commands [0%]
+  1. [ ] toggle week/month
+  2. [ ] set [task/key-value] filter
+  3. [ ] set range
++ [ ] non-tabular text [fn:3]
+
+[fn:1] variable range
+[fn:2] keys - show intervals with those keys; key-values - intervals with those values; or predicate
+[fn:3]
+#+BEGIN_SRC
+"(Showing intervals|No intervals to show)
+[(with (<keyword>*|<keyword-value>*)|
+matching <predicate>)]
+(for <date>|
+between (<date>|<datetime>) and (<date>|<datetime>)|
+for <predicate>)"
+#+END_SRC
