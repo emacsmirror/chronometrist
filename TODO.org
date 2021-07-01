@@ -596,37 +596,53 @@ Steps
 3. Clock in to different task. Error.
 
 Might have to do with there being 2 empty lines between the last-but-one plist and the new last plist.
-* spark monthly view                                          :spark:feature:
-:PROPERTIES:
-:feature:  frontend
-:END:
-<2021-06-17T00:08:08+0530>
-Frontend to show one or more months for a specific task, calendar-style, with each day being a single sparkline block.
 
-* Task-specific detailed view                                       :feature:
-:PROPERTIES:
-:feature:  frontend
-:END:
-<2021-06-22T04:57:06+0530>
-Frontend similar to =chronometrist= [fn:1], but specific to one task - displays its unique tag/key-value combinations and their sparklines. Time period (day, week, etc) could be customizable.
+* STARTED New frontends and enhancements                            :feature:
+** Existing frontends
+*** chronometrist (overview for a day)
+list of tasks, one day, durations and graphs
++ commands [0%]
+  1. [ ] previous/next day
+  2. [ ] set day
+  3. [ ] reset day
+  4. [ ] set duration format
+*** report
+list of tasks, one week, durations only
+*** statistics
+list of tasks, one week/month/year [fn:1]
+*** details (intervals for a day) [0%]
+list of intervals, one day [fn:1]
++ [-] commands [50%]
+  1. [X] set [task/key-value] filter [fn:2]
+  2. [X] set range
+  3. [ ] previous/next day
+  4. [ ] set duration format
++ [ ] with =spark= - vertical sparkline for each interval
++ [ ] non-tabular text [fn:3]
++ [ ] when range is a pair with the =car= or the =cdr= being blank, set the respective date to the earliest (if =car= is blank) or the latest (if =cdr= is blank) date available.
 
-[fn:1] Probably want to extend it by creating a new view-changing command, rather than defining a new frontend.
+** New frontends I want
+*** task-key-values
+list of unique key-values for a task, one day [fn:1], durations and graphs
++ commands [0%]
+  1. [ ] set task
+  2. [ ] set range
+*** task-graph [0%]
+list of weeks or months [fn:1], one task (with optional key-value filter [fn:2]), horizontal graph (and durations/stats?)
++ [ ] commands [0%]
+  1. [ ] toggle week/month
+  2. [ ] set [task/key-value] filter
+  3. [ ] set range
++ [ ] non-tabular text [fn:3]
 
-* More flexible Chronometrist buffer                                :feature:
-:PROPERTIES:
-:feature:  frontend
-:END:
-<2021-06-22T12:45:12+0530>
-Define commands to -
-1. increment/decrement date for which data is displayed
-2. change time range for which data is displayed (day, week, month, etc)
-
-Problems -
-1. What happens when the user clocks in? We could switch back to the default view. Do we want the user to clock in while the buffer is displaying old data? Perhaps clocking in can be disabled while the buffer is displaying old data - you have to exit the 'browse mode' to clock in.
-   * Non-default views could also be created as new buffers (a la Dired), to differentiate them from the default view as well as make it easy to compare different views.
-
-* Enhanced sparklines                                               :feature:
-<2021-06-27T05:42:56+0530>
-Show more information when hovering or clicking on a sparkline bar -
-1. mouse over on a bar to show the duration it represents
-2. if the bar represents time in a single day, click on it open =chronometrist-details= for that day.
+[fn:1] variable range
+[fn:2] keys - show intervals with those keys; key-values - intervals with those values; or predicate
+[fn:3]
+#+BEGIN_SRC
+"(Showing intervals|No intervals to show)
+[(with (<keyword>*|<keyword-value>*)|
+matching <predicate>)]
+(for <date>|
+between (<date>|<datetime>) and (<date>|<datetime>)|
+for <predicate>)"
+#+END_SRC
