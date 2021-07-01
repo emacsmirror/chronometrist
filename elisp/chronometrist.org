@@ -3418,7 +3418,8 @@ TABLE must be a hash table similar to `chronometrist-events'."
                   ((pred stringp)
                    (format "%s" chronometrist-details-range))
                   (`(,begin . ,end)
-                   (format "%s,%s" begin end))))))
+                   (format "%s,%s" begin end)))
+                'chronometrist-details-range-history)))
     (pcase input
       ('nil (setq-local chronometrist-details-range nil))
       (`(,date)
@@ -3469,7 +3470,7 @@ FILTER must be a filter specifier as described by
   (let* ((input (read-from-minibuffer
                  (concat "Filter (blank, a list of keywords, "
                          "a plist, or a predicate): ")
-                 nil nil nil nil
+                 nil nil nil 'chronometrist-details-filter-history
                  (pcase chronometrist-details-filter
                    ('nil "")
                    ((pred consp) (format "%S" chronometrist-details-filter)))))
