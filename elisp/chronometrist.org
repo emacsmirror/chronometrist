@@ -3416,20 +3416,33 @@ TABLE must be a hash table similar to `chronometrist-events'."
   (let ((input (completing-read-multiple
                 (concat "Range (blank, ISO-8601 date, "
                         "or two ISO-8601 dates/timestamps): ")
-                (reverse (hash-table-keys chronometrist-events)) nil nil
-                (pcase chronometrist-details-range
-                  ('nil nil)
-                  ((pred stringp)
-                   (format "%s" chronometrist-details-range))
-                  (`(,begin . ,end)
-                   (format "%s,%s" begin end)))
+                (append '("begin" "end")
+                        (reverse (hash-table-keys chronometrist-events)))
+                nil nil (pcase chronometrist-details-range
+                          ('nil nil)
+                          ((pred stringp)
+                           (format "%s" chronometrist-details-range))
+                          (`(,begin . ,end)
+                           (format "%s,%s" begin end)))
                 'chronometrist-details-range-history)))
     (pcase input
       ('nil (setq-local chronometrist-details-range nil))
       (`(,date)
        (setq-local chronometrist-details-range date))
       (`(,begin ,end)
-       (setq-local chronometrist-details-range (cons begin end)))
+       (let* ((date-p (seq-find #'chronometrist-iso-date-p input))
+              (begin-date   (car (hash-table-keys chronometrist-events)))
+              (begin-iso-ts (ts-format
+                             "%FT%T%z" (chronometrist-iso-date-to-ts begin-date)))
+              (end-date     (car (last (hash-table-keys chronometrist-events))))
+              (end-iso-ts   (chronometrist-format-time-iso8601))
+              (begin (if (equal begin "begin")
+                         (if date-p begin-date begin-iso-ts)
+                       begin))
+              (end   (if (equal end "end")
+                         (if date-p end-date end-iso-ts)
+                       end)))
+         (setq-local chronometrist-details-range (cons begin end))))
       (_ (error "Unsupported range.")))
     (tabulated-list-revert)))
 

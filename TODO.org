@@ -610,16 +610,18 @@ list of tasks, one day, durations and graphs
 list of tasks, one week, durations only
 *** statistics
 list of tasks, one week/month/year [fn:1]
-*** details (intervals for a day) [0%]
+*** details (intervals for a day) [25%]
 list of intervals, one day [fn:1]
 + [-] commands [50%]
   1. [X] set [task/key-value] filter [fn:2]
   2. [X] set range
+     1. implement timestamp ranges (e.g. =2021-06-01T12:00+05:30= to =2021-07-03T00:10:29+0530=)
   3. [ ] previous/next day
   4. [ ] set duration format
 + [ ] with =spark= - vertical sparkline for each interval
 + [ ] non-tabular text [fn:3]
-+ [ ] when range is a pair with the =car= or the =cdr= being blank, set the respective date to the earliest (if =car= is blank) or the latest (if =cdr= is blank) date available.
++ [X] when range is a pair with the =car= or the =cdr= being blank, set the start/stop date to the earliest/latest date available.
+  * not possible with =completing-read-multiple=, which removes blank strings; the simplest solution was to allow "begin"/"end" as inputs.
 
 ** New frontends I want
 *** task-key-values
