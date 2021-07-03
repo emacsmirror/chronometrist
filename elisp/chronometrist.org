@@ -3234,9 +3234,11 @@ LIST is either tags (a list of symbols) or a plist."
     (if (and contents custom)
         (pcase custom
           ((pred stringp)
-           (mapconcat
-            (lambda (elt) (format custom elt))
-            contents " "))
+           (--> (flatten-list contents)
+             (seq-remove #'keywordp it)
+             (mapconcat
+              (lambda (elt) (format custom elt))
+              it ", ")))
           ((pred functionp)
            (funcall custom list)))
       "")))
