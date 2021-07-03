@@ -122,12 +122,12 @@ EVENTS must be a list of valid Chronometrist property lists (see
 Return 0 if EVENTS is nil."
   (if events
       (cl-loop for plist in events collect
-        (let* ((start-ts (chronometrist-iso-timestamp-to-ts
+        (let* ((start-ts (chronometrist-iso-to-ts
                           (plist-get plist :start)))
                (stop-iso (plist-get plist :stop))
                ;; Add a stop time if it does not exist.
                (stop-ts  (if stop-iso
-                             (chronometrist-iso-timestamp-to-ts stop-iso)
+                             (chronometrist-iso-to-ts stop-iso)
                            (ts-now))))
           (ts-diff stop-ts start-ts)))
     0))
@@ -707,7 +707,7 @@ TIMESTAMP must be a time string in the ISO-8601 format.
 Return value is a ts struct (see `ts.el')."
   (-let [(h m s) (mapcar #'string-to-number (split-string time ":"))]
     (ts-apply :hour h :minute m :second s
-              (chronometrist-iso-timestamp-to-ts timestamp))))
+              (chronometrist-iso-to-ts timestamp))))
 
 (defun chronometrist-events-maybe-split (event)
   "Split EVENT if it spans midnight.
@@ -745,7 +745,7 @@ were none."
   "Add PLIST to the end of `chronometrist-events'.
 If REPLACE is non-nil, replace the last event with PLIST."
   (let* ((date (->> (plist-get plist :start)
-                    (chronometrist-iso-timestamp-to-ts )
+                    (chronometrist-iso-to-ts )
                     (ts-format "%F" )))
          (events-today (gethash date chronometrist-events)))
     (--> (if replace (-drop-last 1 events-today) events-today)
@@ -775,7 +775,7 @@ treated as though their time is 00:00:00."
         (start  (chronometrist-date start))
         (end    (chronometrist-date end)))
     (maphash (lambda (key value)
-               (when (ts-in start end (chronometrist-iso-date-to-ts key))
+               (when (ts-in start end (chronometrist-iso-to-ts key))
                  (puthash key value subset)))
              chronometrist-events)
     subset))
@@ -867,7 +867,7 @@ unchanged."
       ;; The only interval for TASK is the last expression
       (setq chronometrist-task-list (remove task chronometrist-task-list)))))
 
-(defun chronometrist-iso-timestamp-to-ts (timestamp)
+(defun chronometrist-iso-to-ts (timestamp)
   "Convert TIMESTAMP to a TS struct. (see `ts.el')
 TIMESTAMP must be an ISO-8601 timestamp, as handled by
 `parse-iso8601-time-string'."
@@ -878,15 +878,6 @@ TIMESTAMP must be an ISO-8601 timestamp, as handled by
      (make-ts :hour hour :minute minute :second second
               :day day   :month month   :year year
               :dow dow   :tz-offset utcoff))))
-
-(defun chronometrist-iso-date-to-ts (date)
-  "Return a ts struct (see `ts.el') representing DATE.
-DATE should be an ISO-8601 date string (\"YYYY-MM-DD\")."
-  (-let [(year month day) (mapcar #'string-to-number
-                                  (split-string date "-"))]
-    (ts-update
-     (make-ts :hour 0 :minute 0 :second 0
-              :day day :month month :year year))))
 
 (cl-defun chronometrist-date (&optional (ts (ts-now)))
   "Return a ts struct representing the time 00:00:00 on today's date.
@@ -919,8 +910,8 @@ Return a list in the form
   ;; time-zone-spanning events
 
   ;; The time on which the first provided day starts (according to `chronometrist-day-start-time')
-  (let* ((start-ts        (chronometrist-iso-timestamp-to-ts start-time))
-         (stop-ts         (chronometrist-iso-timestamp-to-ts stop-time))
+  (let* ((start-ts        (chronometrist-iso-to-ts start-time))
+         (stop-ts         (chronometrist-iso-to-ts stop-time))
          (first-day-start (chronometrist-apply-time day-start-time start-time))
          (next-day-start  (ts-adjust 'hour 24 first-day-start)))
     ;; Does the event stop time exceed the next day start time?
@@ -1763,7 +1754,7 @@ TABLE should be a hash table - if not supplied,
     with events-in-day
     for date being the hash-keys of table
     when (setq events-in-day
-               (chronometrist-task-events-in-day task (chronometrist-iso-date-to-ts date)))
+               (chronometrist-task-events-in-day task (chronometrist-iso-to-ts date)))
     do (cl-incf days) and
     collect
     (-reduce #'+ (chronometrist-events-to-durations events-in-day))
@@ -2058,9 +2049,9 @@ Return value is a list as specified by `tabulated-list-entries'."
             (key-values (chronometrist-details-rows-helper plist))
             ;; resetting seconds with `ts-apply' is necessary to
             ;; prevent situations like "1 hour  from 00:08 to 01:09"
-            (start   (ts-apply :second 0 (chronometrist-iso-timestamp-to-ts start)))
+            (start   (ts-apply :second 0 (chronometrist-iso-to-ts start)))
             (stop    (ts-apply :second 0 (if stop
-                                             (chronometrist-iso-timestamp-to-ts stop)
+                                             (chronometrist-iso-to-ts stop)
                                            (ts-now))))
             (interval      (floor (ts-diff stop start)))
             (index-string  (format "%s" index))
@@ -2146,9 +2137,9 @@ TABLE must be a hash table similar to `chronometrist-events'."
     ((pred stringp)
      (gethash range table))
     (`(,begin . ,end)
-     ;; `chronometrist-iso-timestamp-to-ts' also accepts ISO dates
-     (let ((begin-ts (chronometrist-iso-timestamp-to-ts begin))
-           (end-ts   (chronometrist-iso-timestamp-to-ts end)))
+     ;; `chronometrist-iso-to-ts' also accepts ISO dates
+     (let ((begin-ts (chronometrist-iso-to-ts begin))
+           (end-ts   (chronometrist-iso-to-ts end)))
        (if (and (chronometrist-iso-date-p begin) (chronometrist-iso-date-p end))
            (cl-loop while (not (ts> begin-ts end-ts))
              append (gethash (ts-format "%F" begin-ts) table)
@@ -2157,10 +2148,8 @@ TABLE must be a hash table similar to `chronometrist-events'."
            append
            (cl-loop for plist in (gethash (ts-format "%F" begin-ts) table)
              when
-             (let ((start-ts (chronometrist-iso-timestamp-to-ts
-                              (plist-get plist :start)))
-                   (stop-ts  (chronometrist-iso-timestamp-to-ts
-                              (plist-get plist :stop))))
+             (let ((start-ts (chronometrist-iso-to-ts (plist-get plist :start)))
+                   (stop-ts  (chronometrist-iso-to-ts (plist-get plist :stop))))
                (and (ts>= start-ts begin-ts)
                     (ts<= stop-ts end-ts)))
              collect plist)
@@ -2194,7 +2183,7 @@ TABLE must be a hash table similar to `chronometrist-events'."
        (let* ((date-p (seq-find #'chronometrist-iso-date-p input))
               (begin-date   (car (hash-table-keys chronometrist-events)))
               (begin-iso-ts (ts-format
-                             "%FT%T%z" (chronometrist-iso-date-to-ts begin-date)))
+                             "%FT%T%z" (chronometrist-iso-to-ts begin-date)))
               (end-date     (car (last (hash-table-keys chronometrist-events))))
               (end-iso-ts   (chronometrist-format-time-iso8601))
               (begin (if (equal begin "begin")
