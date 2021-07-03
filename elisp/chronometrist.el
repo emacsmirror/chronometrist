@@ -2146,16 +2146,30 @@ TABLE must be a hash table similar to `chronometrist-events'."
     ((pred stringp)
      (gethash range table))
     (`(,begin . ,end)
-     (if (and (chronometrist-iso-date-p begin) (chronometrist-iso-date-p end))
-         (let ((begin-ts (chronometrist-iso-timestamp-to-ts begin))
-               (end-ts   (chronometrist-iso-timestamp-to-ts end)))
+     ;; `chronometrist-iso-timestamp-to-ts' also accepts ISO dates
+     (let ((begin-ts (chronometrist-iso-timestamp-to-ts begin))
+           (end-ts   (chronometrist-iso-timestamp-to-ts end)))
+       (if (and (chronometrist-iso-date-p begin) (chronometrist-iso-date-p end))
            (cl-loop while (not (ts> begin-ts end-ts))
              append (gethash (ts-format "%F" begin-ts) table)
-             do (ts-adjustf begin-ts 'day 1)))))))
+             do (ts-adjustf begin-ts 'day 1))
+         (cl-loop while (not (ts> begin-ts end-ts))
+           append
+           (cl-loop for plist in (gethash (ts-format "%F" begin-ts) table)
+             when
+             (let ((start-ts (chronometrist-iso-timestamp-to-ts
+                              (plist-get plist :start)))
+                   (stop-ts  (chronometrist-iso-timestamp-to-ts
+                              (plist-get plist :stop))))
+               (and (ts>= start-ts begin-ts)
+                    (ts<= stop-ts end-ts)))
+             collect plist)
+           do (ts-adjustf begin-ts 'day 1)))))))
 
 ;; (chronometrist-details-intervals-for-range nil chronometrist-events)
 ;; (chronometrist-details-intervals-for-range "2021-06-01" chronometrist-events)
 ;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
+;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30") chronometrist-events)
 
 (defun chronometrist-details-set-range ()
   "Prompt user for range for current `chronometrist-details' buffer."
