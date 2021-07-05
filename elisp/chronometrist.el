@@ -1954,9 +1954,14 @@ If ARG is a numeric argument, go forward that many times."
   "Details buffer for the `chronometrist' time tracker."
   :group 'chronometrist)
 
-(defcustom chronometrist-details-buffer-name "*chronometrist-details*"
+(defcustom chronometrist-details-buffer-name-base "chronometrist-details"
   "Name of buffer created by `chronometrist-details'."
   :type 'string)
+
+(defun chronometrist-details-buffer-name (&optional suffix)
+  (if suffix
+      (format "*%s_%s*" chronometrist-details-buffer-name-base suffix)
+    (format "*%s*" chronometrist-details-buffer-name-base)))
 
 (defcustom chronometrist-details-display-tags "%s"
   "How to display tags in `chronometrist-details' buffers.
@@ -2098,16 +2103,21 @@ Return value is a list as specified by `tabulated-list-entries'."
   (tabulated-list-init-header)
   (run-hooks 'chronometrist-mode-hook))
 
+(defun chronometrist-details-setup-buffer (buffer-or-name)
+  "Enable `chronometrist-details-mode' in BUFFER-OR-NAME and switch to it.
+BUFFER-OR-NAME must be an existing buffer."
+  (with-current-buffer buffer-or-name
+    (switch-to-buffer buffer-or-name)
+    (chronometrist-details-mode)
+    (tabulated-list-print)))
+
 (defun chronometrist-details ()
   (interactive)
-  (let ((buffer (get-buffer-create chronometrist-details-buffer-name))
-        (window (save-excursion
-                  (get-buffer-window chronometrist-details-buffer-name t))))
-    (cond (window (kill-buffer chronometrist-details-buffer-name))
-          (t (with-current-buffer buffer
-               (switch-to-buffer buffer)
-               (chronometrist-details-mode)
-               (tabulated-list-print))))))
+  (let* ((buffer (get-buffer-create (chronometrist-details-buffer-name)))
+         (window (save-excursion
+                   (get-buffer-window buffer t))))
+    (cond (window (kill-buffer buffer))
+          (t (chronometrist-details-setup-buffer buffer)))))
 
 (defvar chronometrist-details-range nil
   "Time range for intervals displayed by `chronometrist-details'.
@@ -2115,8 +2125,9 @@ Values can be one of -
 nil - no range. Display all intervals for today.
 An ISO date string - display intervals for this date.
 A cons cell in the form (BEGIN . END), where BEGIN and END are
-ISO date or date-time strings - display intervals in this range.
-Dates are inclusive.")
+ISO date strings (inclusive) or date-time strings (\"BEGIN\"
+inclusive, \"END\" exclusive) - display intervals in this
+range.")
 (make-variable-buffer-local 'chronometrist-details-range)
 
 (defun chronometrist-iso-date-p (string)
@@ -2160,41 +2171,51 @@ TABLE must be a hash table similar to `chronometrist-events'."
 ;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
 ;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30") chronometrist-events)
 
+(defun chronometrist-details-input-to-value (input)
+  (pcase input
+    ('nil nil)
+    (`(,date) date)
+    (`(,begin ,end)
+     (let* ((date-p (seq-find #'chronometrist-iso-date-p input))
+            (begin-date   (car (hash-table-keys chronometrist-events)))
+            (begin-iso-ts (ts-format
+                           "%FT%T%z" (chronometrist-iso-to-ts begin-date)))
+            (end-date     (car (last (hash-table-keys chronometrist-events))))
+            (end-iso-ts   (chronometrist-format-time-iso8601))
+            (begin (if (equal begin "begin")
+                       (if date-p begin-date begin-iso-ts)
+                     begin))
+            (end   (if (equal end "end")
+                       (if date-p end-date end-iso-ts)
+                     end)))
+       (cons begin end)))
+    (_ (error "Unsupported range."))))
+
 (defun chronometrist-details-set-range ()
   "Prompt user for range for current `chronometrist-details' buffer."
   (interactive)
-  (let ((input (completing-read-multiple
-                (concat "Range (blank, ISO-8601 date, "
-                        "or two ISO-8601 dates/timestamps): ")
-                (append '("begin" "end")
-                        (reverse (hash-table-keys chronometrist-events)))
-                nil nil (pcase chronometrist-details-range
-                          ('nil nil)
-                          ((pred stringp)
-                           (format "%s" chronometrist-details-range))
-                          (`(,begin . ,end)
-                           (format "%s,%s" begin end)))
-                'chronometrist-details-range-history)))
-    (pcase input
-      ('nil (setq-local chronometrist-details-range nil))
-      (`(,date)
-       (setq-local chronometrist-details-range date))
-      (`(,begin ,end)
-       (let* ((date-p (seq-find #'chronometrist-iso-date-p input))
-              (begin-date   (car (hash-table-keys chronometrist-events)))
-              (begin-iso-ts (ts-format
-                             "%FT%T%z" (chronometrist-iso-to-ts begin-date)))
-              (end-date     (car (last (hash-table-keys chronometrist-events))))
-              (end-iso-ts   (chronometrist-format-time-iso8601))
-              (begin (if (equal begin "begin")
-                         (if date-p begin-date begin-iso-ts)
-                       begin))
-              (end   (if (equal end "end")
-                         (if date-p end-date end-iso-ts)
-                       end)))
-         (setq-local chronometrist-details-range (cons begin end))))
-      (_ (error "Unsupported range.")))
-    (tabulated-list-revert)))
+  (let* ((input (completing-read-multiple
+                 (concat "Range (blank, ISO-8601 date, "
+                         "or two ISO-8601 dates/timestamps): ")
+                 (append '("begin" "end")
+                         (reverse (hash-table-keys chronometrist-events)))
+                 nil nil (pcase chronometrist-details-range
+                           ('nil nil)
+                           ((pred stringp)
+                            (format "%s" chronometrist-details-range))
+                           (`(,begin . ,end)
+                            (format "%s,%s" begin end)))
+                 'chronometrist-details-range-history))
+         (new-value (chronometrist-details-input-to-value input))
+         (buffer-name (pcase new-value
+                        (`(,begin . ,end)
+                         (chronometrist-details-buffer-name (format "%s_%s" begin end)))
+                        ((pred stringp)
+                         (chronometrist-details-buffer-name new-value)))))
+    (chronometrist-details-setup-buffer (get-buffer-create buffer-name))
+    (with-current-buffer buffer-name
+      (setq-local chronometrist-details-range new-value)
+      (tabulated-list-revert))))
 
 (defvar chronometrist-details-filter nil
   "Parameters to filter intervals displayed by `chronometrist-details'.
