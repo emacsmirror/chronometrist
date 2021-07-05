@@ -115,7 +115,7 @@
 ** Maybe
 1. Add a new kind of plist - =(:name "NAME" :time "TIME" ...)=
    To record events for which the time interval is not relevant. These won't be shown in =chronometrist= - perhaps in a different buffer.
-* Optimization [33%]
+* Optimization [20%]
 Some options and ideas -
 1. [X] Defer (tag/key/value) history generation from file-change-time to prompt-time, and make it per-task instead of all tasks at once
    * The biggest resource hog is splitting of midnight-spanning intervals, however.
@@ -160,6 +160,18 @@ Some options and ideas -
        ...)
     #+END_SRC
     1. Users will have to be disciplined while editing, and ensure that events are split on day boundaries. If not, we will have to check each time the file changes, defeating the entire optimization.
+       * Not quite - it's less work to test when the intervals are grouped by date.
+11. Instead of storing plists in the file, persist the hash table itself.
+    * Pros -
+      + No more expensive operations on each startup (date checking, splitting of midnight spanning intervals).
+      + May be easier to check for midnight-spanning intervals - plists are already grouped by date, just check the first and the last plist per date. Which means, if a user neglects to split a midnight-spanning interval, we can do it for them.
+        - Make this checking - and also checking for ordering of keys and plists - a command which the user can run at will, rather than something being run automatically.
+      + May reduce memory and disk use - hash table already contains dates, so =:start= and =:stop= can just be ISO times rather than date-times.
+      + When editing manually, the whole file can be reindented with a single =sp-indent-defun=.
+      + Stored data can be modified by any Emacs Lisp functions rather than functions specific to our file format.
+    * Cons -
+      - Slightly noisier syntax.
+      - Opting to remove dates may make it difficult for users to recover from erroneous edits.
 ** Cache
    + Lessons from the parsimonious-reading branch - iterating =read= over the whole file is fast; splitting the intervals is not.
    + Things we need to read the whole file for - task list, tag/key/value history.
