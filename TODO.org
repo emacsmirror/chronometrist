@@ -135,6 +135,7 @@ Some options and ideas -
    * Will (probably) greatly speed up time parsing and interval splitting.
    * Will greatly impede human editing of the file, too. 🤔
      + An editing UI could help - pretty sure every timestamp edit I've ever made has been for the last interval, or at most an interval in today's data.
+       - The editing UI could have commands for next/previous interval; one could also have a command which, in the file, opens the plist at point for editing.
 7. [ ] Use an SQL database instead of a text file. Assuming SQL can
    1. find the difference between ISO-8601 timestamps
    2. compare ISO-8601 timestamps, and
