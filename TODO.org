@@ -167,12 +167,20 @@ Some options and ideas -
       + No more expensive operations on each startup (date checking, splitting of midnight spanning intervals).
       + May be easier to check for midnight-spanning intervals - plists are already grouped by date, just check the first and the last plist per date. Which means, if a user neglects to split a midnight-spanning interval, we can do it for them.
         - Make this checking - and also checking for ordering of keys and plists - a command which the user can run at will, rather than something being run automatically.
-      + May reduce memory and disk use - hash table already contains dates, so =:start= and =:stop= can just be ISO times rather than date-times.
+      + May reduce memory and disk use - hash table keys are already dates, so =:start= and =:stop= can just be ISO times rather than date-times.
       + When editing manually, the whole file can be reindented with a single =sp-indent-defun=.
       + Stored data can be modified by any Emacs Lisp functions rather than functions specific to our file format.
+        - This could be achieved by #10 too, if we persist the hash table rather than adding expressions to the file.
     * Cons -
-      - Slightly noisier syntax.
-      - Opting to remove dates may make it difficult for users to recover from erroneous edits.
+      1. Read syntax not portable to other dialects or languages, e.g. if one wants to make an Android frontend in LambdaNative (Gambit Scheme)
+         * A language with reader macros, such as Common Lisp, might work.
+         * Or, use #10.
+      2. Slightly noisier syntax than plain plists.
+      3. Opting to remove dates may make it difficult for users to recover from erroneous edits.
+      4. Users cannot create comments within the hash table expression.
+         * Use plist keys instead? 🤔
+      5. May increase memory consumption. The entire hash table will be loaded into memory.
+         * May not be an issue with #10. Easy to only load data from specific dates.
 ** Cache
    + Lessons from the parsimonious-reading branch - iterating =read= over the whole file is fast; splitting the intervals is not.
    + Things we need to read the whole file for - task list, tag/key/value history.
