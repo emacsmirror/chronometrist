@@ -5,7 +5,7 @@
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "25.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
-;; Version: 0.7.2
+;; Version: 0.9.0
 
 ;; This is free and unencumbered software released into the public domain.
 ;;
