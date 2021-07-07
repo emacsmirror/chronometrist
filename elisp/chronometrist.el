@@ -1298,6 +1298,7 @@ PREFIX is ignored."
     (define-key map (kbd "r")          #'chronometrist-report)
     (define-key map (kbd "l")          #'chronometrist-open-log)
     (define-key map (kbd "G")          #'chronometrist-reset)
+    (define-key map (kbd "T")          #'chronometrist-force-restart-timer)
     map)
   "Keymap used by `chronometrist-mode'.")
 
@@ -1316,6 +1317,7 @@ PREFIX is ignored."
     ["View details of today's data" chronometrist-details]
     ["View weekly report" chronometrist-report]
     ["View/edit log file" chronometrist-open-log]
+    ["Restart timer" chronometrist-force-restart-timer]
     ["Reset state" chronometrist-reset]))
 
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
