@@ -58,7 +58,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 
 1. Set up MELPA - https://melpa.org/#/getting-started
 
-   (Chronometrist uses semantic versioning and only releases are pushed to the master branch, so using MELPA Stable is recommended and has no effect on frequency of updates.)
+   (Chronometrist uses Semantic Versioning and the developer is accident-prone, so using MELPA Stable is suggested 😏)
 2. =M-x package-install RET chronometrist RET=
 
 ** from Git
@@ -72,8 +72,6 @@ You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometris
 + Emacs v25 or higher
 + [[https://github.com/magnars/dash.el][dash.el]]
 + [[https://github.com/alphapapa/ts.el][ts.el]]
-
-The optional extension =chronometrist-key-values= requires =choice.el=, apart from =chronometrist= itself.
 
 Add the "elisp/" subdirectory to your load-path, and =(require 'chronometrist)=.
 
