@@ -644,6 +644,7 @@ list of intervals, one day [fn:1]
 + [ ] non-tabular text [fn:3]
 + [X] when range is a pair with the =car= or the =cdr= being blank, set the start/stop date to the earliest/latest date available.
   * not possible with =completing-read-multiple=, which removes blank strings; the simplest solution was to allow "begin"/"end" as inputs.
++ [ ] when range is bigger than a day, you also want to see the date of each interval
 
 ** New frontends I want
 *** task-key-values
