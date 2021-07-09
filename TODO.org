@@ -653,7 +653,10 @@ list of unique key-values for a task, one day [fn:1], durations and graphs
   1. [ ] set task
   2. [ ] set range
 *** task-graph [0%]
-list of weeks or months [fn:1], one task (with optional key-value filter [fn:2]), horizontal graph (and durations/stats?)
+list of days, weeks, or months [fn:1], one task (with optional key-value filter [fn:2]), horizontal graph (and durations/stats?)
++ columns
+  1. range (ISO date, week, or year-month)
+  2. per-range graph (vertical/interals if days, horizontal/days if weeks or months)
 + [ ] commands [0%]
   1. [ ] toggle week/month
   2. [ ] set [task/key-value] filter
