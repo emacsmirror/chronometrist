@@ -4,13 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [0.9.0] - 2021-07-08
 ### Added
 1. New commands `chronometrist-restart-task`, `chronometrist-extend-task`
-2. Menus for `chronometrist` and `chronometrist-key-values`
+2. Menus for `chronometrist`, `chronometrist-key-values`, and `chronometrist-details`
+3. Custom ranges and filters for `chronometrist-details`. See command `chronometrist-details-set-range` and `chronometrist-details-set-filter`.
 ### Changed
-3. Display graph ranges in `chronometrist-spark` column
-4. `chronometrist-tags-add` and `chronometrist-key-values-unified-prompt` now also work interactively.
+4. Display graph ranges in `chronometrist-spark` column
+5. `chronometrist-tags-add` and `chronometrist-key-values-unified-prompt` now also work interactively.
 
 ## [0.8.1] - 2021-06-01
 ### Changed

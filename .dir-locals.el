@@ -20,17 +20,4 @@
      (org-html-head
       . (concat "<link rel=\"stylesheet\" "
                 "type=\"text/css\" "
-                "href=\"../org-doom-molokai.css\" />"))
-     (eval
-      . (add-hook
-         'after-save-hook
-         (lambda ()
-           (let ((fn (buffer-file-name)))
-             (when (y-or-n-p (format "Tangle file %s?" fn))
-               (compile
-                (mapconcat #'shell-quote-argument
-                           `("emacs" "-q" "-Q" "--batch" "--eval=(require 'ob-tangle)"
-                             ,(format "--eval=(org-babel-tangle-file \"%s\")" fn))
-                           " ")))))
-         nil t))
-     (eval . (add-hook 'before-save-hook (lambda nil (org-align-all-tags)) nil t)))))
+                "href=\"../org-doom-molokai.css\" />")))))
