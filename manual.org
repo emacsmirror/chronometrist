@@ -2,7 +2,11 @@
 #+SUBTITLE: User Manual
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
-[[https://melpa.org/#/chronometrist][file:https://melpa.org/packages/chronometrist-badge.svg]]
+#+BEGIN_EXPORT html
+<a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
+
+<a href="https://melpa.org/#/chronometrist"><img src="https://melpa.org/packages/chronometrist-badge.svg"></a>
+#+END_EXPORT
 
 A time tracker in Emacs with a nice interface
 
@@ -14,6 +18,7 @@ Largely modelled after the Android application, [[https://github.com/netmackan/A
 3. Support for both mouse and keyboard
 4. Human errors in tracking are easily fixed by editing a plain text file
 5. Hooks to let you perform arbitrary actions when starting/stopping tasks
+6. Fancy graphs with chronometrist-sparkline extension
 
 * Limitations
 1. No support (yet) for adding a task without clocking into it.
