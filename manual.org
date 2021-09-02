@@ -2,7 +2,11 @@
 #+SUBTITLE: User Manual
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
-[[https://melpa.org/#/chronometrist][file:https://melpa.org/packages/chronometrist-badge.svg]]
+#+BEGIN_EXPORT html
+<a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
+
+<a href="https://melpa.org/#/chronometrist"><img src="https://melpa.org/packages/chronometrist-badge.svg"></a>
+#+END_EXPORT
 
 A time tracker in Emacs with a nice interface
 
@@ -14,6 +18,7 @@ Largely modelled after the Android application, [[https://github.com/netmackan/A
 3. Support for both mouse and keyboard
 4. Human errors in tracking are easily fixed by editing a plain text file
 5. Hooks to let you perform arbitrary actions when starting/stopping tasks
+6. Fancy graphs with chronometrist-sparkline extension
 
 * Limitations
 1. No support (yet) for adding a task without clocking into it.
@@ -58,7 +63,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 
 1. Set up MELPA - https://melpa.org/#/getting-started
 
-   (Chronometrist uses semantic versioning and only releases are pushed to the master branch, so using MELPA Stable is recommended and has no effect on frequency of updates.)
+   (Chronometrist uses Semantic Versioning and the developer is accident-prone, so using MELPA Stable is suggested 😏)
 2. =M-x package-install RET chronometrist RET=
 
 ** from Git
@@ -72,8 +77,6 @@ You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometris
 + Emacs v25 or higher
 + [[https://github.com/magnars/dash.el][dash.el]]
 + [[https://github.com/alphapapa/ts.el][ts.el]]
-
-The optional extension =chronometrist-key-values= requires =choice.el=, apart from =chronometrist= itself.
 
 Add the "elisp/" subdirectory to your load-path, and =(require 'chronometrist)=.
 
