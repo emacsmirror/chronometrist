@@ -1031,7 +1031,7 @@ STREAM (which is the value of `current-buffer')."
 #+BEGIN_SRC emacs-lisp
 (defmacro chronometrist-loop-file (_for expr _in file &rest loop-clauses)
   "`cl-loop' LOOP-CLAUSES over s-expressions in FILE, in reverse.
-VAR is bound to each s-expression."
+EXPR is bound to each s-expression."
   (declare (indent defun)
            (debug nil)
            ;; FIXME
@@ -2191,8 +2191,8 @@ is the name of the task to be clocked out of."
            (indicator   (if (chronometrist-task-active-p task)
                             (chronometrist-activity-indicator) "")))
       (--> (vector index task-button task-time indicator)
-        (list task it)
-        (chronometrist-run-transformers chronometrist-row-transformers it)))
+           (list task it)
+           (chronometrist-run-transformers chronometrist-row-transformers it)))
     do (cl-incf index)))
 #+END_SRC
 **** task-at-point                                             :procedure:
