@@ -115,32 +115,36 @@
 ** Maybe
 1. Add a new kind of plist - =(:name "NAME" :time "TIME" ...)=
    To record events for which the time interval is not relevant. These won't be shown in =chronometrist= - perhaps in a different buffer.
-* Optimization [20%]
-Some options and ideas -
-1. [X] Defer (tag/key/value) history generation from file-change-time to prompt-time, and make it per-task instead of all tasks at once
-   * The biggest resource hog is splitting of midnight-spanning intervals, however.
-   * Reduce memory use by allowing user to restrict number of s-expressions read.
-   * Per-task history generation will create problems - e.g. values for a given key for one task won't be suggested for values for the same key in another 🤦
-     + Tags and keys are already task-sensitive; just don't make values task-sensitive.
-2. [X] Compare partial hashes of file to know what has changed - only update memory when necessary.
-3. [ ] In-memory cache - don't store entire file into memory; instead, split midnight-spanning intervals just for the requested data.
-   * Will increase load time for each forward/backward command in =chronometrist-report= and =chronometrist-statistics=
-   * Will reduce memory used by =chronometrist-events=.
-     + Further reductions can take place, if we automatically discard cache entries past a certain limit. (perhaps excluding data for the current day, week, or month)
-4. [ ] Mix of 2 and 3 - in-memory cache with partial updates
-5. [ ] Split and save midnight-spanning intervals to disk - remove the need for an in-memory version of data with split midnight-spanning intervals.
-   * Least memory use?
-   * Might make the file harder for a user to edit.
-6. [ ] Save timestamps as UNIX epoch time.
-   * Will (probably) greatly speed up time parsing and interval splitting.
-   * Will greatly impede human editing of the file, too. 🤔
-     + An editing UI could help - pretty sure every timestamp edit I've ever made has been for the last interval, or at most an interval in today's data.
-       - The editing UI could have commands for next/previous interval; one could also have a command which, in the file, opens the plist at point for editing.
-7. [ ] Use an SQL database instead of a text file. Assuming SQL can
-   1. find the difference between ISO-8601 timestamps
-   2. compare ISO-8601 timestamps, and
-   3. do 1 and 2 faster than Elisp.
-8. [ ] Change data structure - instead of storing each plist as-is, split each into two, one with the =:start= and one with the =:end=. Now we have the elegance of the one-plist-is-a-complete-interval schema in the file, and the ease and speed of detection of midnight spanning intervals in memory.
+* Optimization
+** DONE Deferred (tag/key/value) history generation
+Defer (tag/key/value) history generation from file-change-time to prompt-time, and make it per-task instead of all tasks at once
++ The biggest resource hog is splitting of midnight-spanning intervals, however.
++ Reduce memory use by allowing user to restrict number of s-expressions read.
++ Per-task history generation will create problems - e.g. values for a given key for one task won't be suggested for values for the same key in another 🤦
+  * Tags and keys are already task-sensitive; just don't make values task-sensitive.
+** DONE Hash file contents to optimize for common changes
+Compare partial hashes of file to know what has changed - only update memory when necessary.
+** In-memory cache
+Don't store entire file into memory; instead, split midnight-spanning intervals just for the requested data.
++ Will increase load time for each forward/backward command in =chronometrist-report= and =chronometrist-statistics=
++ Will reduce memory used by =chronometrist-events=.
+  * Further reductions can take place, if we automatically discard cache entries past a certain limit. (perhaps excluding data for the current day, week, or month)
+** Split and save midnight-spanning intervals to disk
+It will remove the need for an in-memory version of data with split midnight-spanning intervals.
++ Least memory use?
++ Might make the file harder for a user to edit.
+** Save timestamps as UNIX epoch time
++ Will (probably) greatly speed up time parsing and interval splitting.
++ Will greatly impede human editing of the file, too. 🤔
+  * An editing UI could help - pretty sure every timestamp edit I've ever made has been for the last interval, or at most an interval in today's data.
+    - The editing UI could have commands for next/previous interval; one could also have a command which, in the file, opens the plist at point for editing.
+** Use an SQL database instead of a text file
+That is, assuming SQL can
+1. find the difference between ISO-8601 timestamps
+2. compare ISO-8601 timestamps, and
+3. do 1 and 2 faster than Elisp.
+** Change data structure
+Instead of storing each plist as-is, split each into two, one with the =:start= and one with the =:end=. Now we have the elegance of the one-plist-is-a-complete-interval schema in the file, and the ease and speed of detection of midnight spanning intervals in memory.
 
    So this
    : (:name "Task" ... :start "<timestamp>" :stop "<timestamp>")
@@ -150,28 +154,30 @@ Some options and ideas -
     (:stop "<timestamp>")
     ...)
    #+END_SRC
-9. [ ] Change file timestamp format to =("<iso-date>" "<iso-time>")=
-10. [ ] Change file schema to be date-aware -
+** Change file timestamp format to =("<iso-date>" "<iso-time>")=
+** Change file schema
+*** Store plists grouped by date
     #+BEGIN_SRC emacs-lisp
 (:date "YYYY-MM-DD"
-       (:name "task 1"
-              ...
-              :start "HH:MM:SSZ"
-              :stop "HH:MM:SSZ")
-       ...)
-    #+END_SRC
-    1. Users will have to be disciplined while editing, and ensure that events are split on day boundaries. If not, we will have to check each time the file changes, defeating the entire optimization.
-       * Not quite - it's less work to test when the intervals are grouped by date.
-11. Instead of storing plists in the file, persist the hash table itself.
-    * Pros -
-      + No more expensive operations on each startup (date checking, splitting of midnight spanning intervals).
-      + May be easier to check for midnight-spanning intervals - plists are already grouped by date, just check the first and the last plist per date. Which means, if a user neglects to split a midnight-spanning interval, we can do it for them.
-        - Make this checking - and also checking for ordering of keys and plists - a command which the user can run at will, rather than something being run automatically.
-      + May reduce memory and disk use - hash table keys are already dates, so =:start= and =:stop= can just be ISO times rather than date-times.
-      + When editing manually, the whole file can be reindented with a single =sp-indent-defun=.
-      + Stored data can be modified by any Emacs Lisp functions rather than functions specific to our file format.
-        - This could be achieved by #10 too, if we persist the hash table rather than adding expressions to the file.
-    * Cons -
+   (:name "task 1"
+          ...
+          :start "HH:MM:SSZ"
+          :stop "HH:MM:SSZ")
+   ...)
+#+END_SRC
+  1. Users will have to be disciplined while editing, and ensure that events are split on day boundaries. If not, we will have to check each time the file changes, defeating the entire optimization.
+     * Not quite - it's less work to test that, when the intervals are grouped by date.
+*** Persist hash table to file
+Instead of storing plists in the file, persist the hash table itself.
+**** Pros
++ No more expensive operations on each startup (date checking, splitting of midnight spanning intervals).
++ May be easier to check for midnight-spanning intervals - plists are already grouped by date, just check the first and the last plist per date. Which means, if a user neglects to split a midnight-spanning interval, we can do it for them.
+  - Make this checking - and also checking for ordering of keys and plists - a command which the user can run at will, rather than something being run automatically.
++ May reduce memory and disk use - hash table keys are already dates, so =:start= and =:stop= can just be ISO times rather than date-times.
++ When editing manually, the whole file can be reindented with a single =sp-indent-defun=.
++ Stored data can be modified by any Emacs Lisp functions rather than functions specific to our file format.
+  - This could be achieved by #10 too, if we persist the hash table rather than adding expressions to the file.
+**** Cons
       1. Read syntax not portable to other dialects or languages, e.g. if one wants to make an Android frontend in LambdaNative (Gambit Scheme)
          * A language with reader macros, such as Common Lisp, might work.
          * Or, use #10.
@@ -181,7 +187,6 @@ Some options and ideas -
          * Use plist keys instead? 🤔
       5. May increase memory consumption. The entire hash table will be loaded into memory.
          * May not be an issue with #10. Easy to only load data from specific dates.
-
 ** Cache
    + Lessons from the parsimonious-reading branch - iterating =read= over the whole file is fast; splitting the intervals is not.
    + Things we need to read the whole file for - task list, tag/key/value history.
@@ -189,7 +194,7 @@ Some options and ideas -
    + Anything requiring split intervals will first look in =chronometrist-events=, and if not found, will read from the file and update =chronometrist-events=.
    + When the file changes, use the file byte length and hash strategy described below to know whether to keep the cache.
    + Save cache to a file, so that event splitting is avoided by reading from that.
-** Ideas to make -refresh-file faster
+** (old) ideas to make -refresh-file faster
    1. Support multiple files, so we read and process lesser data when one of them changes.
    2. Make file writing async
    3. Don't refresh from file when clocking in.
