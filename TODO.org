@@ -662,5 +662,11 @@ between (<date>|<datetime>) and (<date>|<datetime>)|
 for <predicate>)"
 #+END_SRC
 
+* STARTED customizable duration output                              :feature:
+See branch =format-seconds=.
+1. [X] define =chronometrist-duration-formats= to hold duration formats for different use cases in Chronometrist.
+2. [ ] define customization type for =chronometrist-duration-formats= to create user-friendly Custom interface
+3. [ ] make non-tabular parts of Chronometrist buffers adapt to column widths, to accomodate changes in duration formats
+
 * Incorrect time displayed when midnight crossed with a task active     :bug:
 Midnight-spanning intervals are split in the hash table when the file is read, but not when a task is started and not stopped before midnight. Run a function to check at midnight?
