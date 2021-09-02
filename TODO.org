@@ -661,3 +661,6 @@ matching <predicate>)]
 between (<date>|<datetime>) and (<date>|<datetime>)|
 for <predicate>)"
 #+END_SRC
+
+* Incorrect time displayed when midnight crossed with a task active     :bug:
+Midnight-spanning intervals are split in the hash table when the file is read, but not when a task is started and not stopped before midnight. Run a function to check at midnight?
