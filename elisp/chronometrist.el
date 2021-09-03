@@ -76,10 +76,6 @@
 Used to prevent more than one watch being added for the same
 file.")
 
-(defun chronometrist-current-task ()
-  "Return the name of the currently clocked-in task, or nil if not clocked in."
-  (chronometrist-sexp-current-task))
-
 (cl-defun chronometrist-format-duration (seconds &optional (blank (make-string 3 ?\s)))
   "Format SECONDS as a string suitable for display in Chronometrist buffers.
 SECONDS must be a positive integer.
@@ -328,6 +324,56 @@ The list must be on a single line, as emitted by `prin1'."
   (princ (chronometrist-plist-pp-to-string object)
          (or stream standard-output)))
 
+(defclass chronometrist-backend ()
+  ((path :initarg :path
+         :accessor path
+         :custom 'file
+         :documentation
+         "Path to file associated with a backend object.")))
+
+(defvar chronometrist--active-backend
+  (make-instance 'chronometrist-plist-backend))
+
+(defcustom chronometrist-active-backend)
+
+(cl-defgeneric chronometrist-current-task (backend)
+  "Return the name of the active task, or nil if not clocked in.")
+
+(cl-defgeneric chronometrist-latest-record (backend)
+  "Return the latest entry from BACKEND as a plist.")
+
+(cl-defgeneric chronometrist-list-tasks (backend &key start end)
+  "Return a list of tasks from BACKEND.")
+
+(cl-defgeneric chronometrist-task-records (backend task date)
+  "From BACKEND, return a list of records for TASK on DATE.")
+
+(cl-defgeneric chronometrist-task-time (backend task date)
+  "From BACKEND, return time recorded for TASK on DATE as integer seconds.")
+
+(cl-defgeneric chronometrist-active-time (backend date)
+  "From BACKEND, return total time recorded on DATE as integer seconds.")
+
+(cl-defgeneric chronometrist-active-days (backend task &key start end)
+  "From BACKEND, return total time recorded on DATE as integer seconds.")
+
+(cl-defgeneric chronometrist-insert (backend plist)
+  "Insert PLIST as new record in BACKEND.")
+
+(cl-defgeneric chronometrist-replace-last (backend plist)
+  "Replace last record in BACKEND with PLIST.")
+
+(cl-defgeneric chronometrist-create-file (backend)
+  "Create file associated with BACKEND.")
+
+(cl-defgeneric chronometrist-view-file (backend)
+  "Open file associated with BACKEND for interactive viewing.")
+
+(cl-defgeneric chronometrist-edit-file (backend)
+  "Open file associated with BACKEND for interactive editing.")
+
+(defclass chronometrist-plist-backend (chronometrist-backend) ())
+
 (defcustom chronometrist-file
   (locate-user-emacs-file "chronometrist.sexp")
   "Default path and name of the Chronometrist database.
@@ -402,8 +448,7 @@ EXPR is bound to each s-expression."
     (backward-list)
     (ignore-errors (read (current-buffer)))))
 
-(defun chronometrist-sexp-current-task ()
-  "Return the name of the currently clocked-in task, or nil if not clocked in."
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
   (let ((last-event (chronometrist-sexp-last)))
     (if (plist-member last-event :stop)
         nil
@@ -485,10 +530,6 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (funcall chronometrist-sexp-pretty-print-function expr (current-buffer))
       (insert "\n")
       (unless (eobp) (insert "\n")))))
-
-(defun chronometrist-last ()
-  "Return the last entry from `chronometrist-file' as a plist."
-  (chronometrist-sexp-last))
 
 (defun chronometrist-task-list ()
   "Return a list of tasks from `chronometrist-file'."
@@ -976,7 +1017,7 @@ is clocked in to a task."
     ;; No need to update the buffer if there is no active task, or if
     ;; the file is being edited by the user. (The file may be in an
     ;; invalid state, and reading it then may result in a read error.)
-    (when (and (chronometrist-current-task)
+    (when (and (chronometrist-current-task chronometrist--active-backend)
                (not (buffer-modified-p file-buffer)))
       (when (get-buffer-window chronometrist-buffer-name)
         (chronometrist-refresh))

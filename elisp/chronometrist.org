@@ -419,12 +419,6 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 Used to prevent more than one watch being added for the same
 file.")
 #+END_SRC
-*** current-task                                                   :reader:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-current-task ()
-  "Return the name of the currently clocked-in task, or nil if not clocked in."
-  (chronometrist-sexp-current-task))
-#+END_SRC
 *** format-time                                                  :function:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-format-duration (seconds &optional (blank (make-string 3 ?\s)))
@@ -898,7 +892,99 @@ The reasons I like this format are -
    * =chronometrist-loop-file= is provided as an additional convenience, to iterate through each expression in the file.
 3. It is easy to diff and version control.
 
-*** tests
+*** protocol
+**** backend                                                       :class:
+#+BEGIN_SRC emacs-lisp
+(defclass chronometrist-backend ()
+  ((path :initarg :path
+         :accessor path
+         :custom 'file
+         :documentation
+         "Path to file associated with a backend object.")))
+#+END_SRC
+**** -active-backend                                   :internal:variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist--active-backend
+  (make-instance 'chronometrist-plist-backend))
+#+END_SRC
+**** active-backend                                      :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-active-backend)
+#+END_SRC
+**** current-task                                         :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-current-task (backend)
+  "Return the name of the active task, or nil if not clocked in.")
+#+END_SRC
+
+**** latest-record                                        :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-latest-record (backend)
+  "Return the latest entry from BACKEND as a plist.")
+#+END_SRC
+
+**** list-tasks                                           :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-list-tasks (backend &key start end)
+  "Return a list of tasks from BACKEND.")
+#+END_SRC
+
+**** task-records                                         :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-task-records (backend task date)
+  "From BACKEND, return a list of records for TASK on DATE.")
+#+END_SRC
+
+**** task-time                                            :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-task-time (backend task date)
+  "From BACKEND, return time recorded for TASK on DATE as integer seconds.")
+#+END_SRC
+
+**** active-time                                          :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-active-time (backend date)
+  "From BACKEND, return total time recorded on DATE as integer seconds.")
+#+END_SRC
+
+**** active-days                                          :generic:reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-active-days (backend task &key start end)
+  "From BACKEND, return total time recorded on DATE as integer seconds.")
+#+END_SRC
+
+**** insert                                               :generic:writer:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-insert (backend plist)
+  "Insert PLIST as new record in BACKEND.")
+#+END_SRC
+
+**** replace-last                                         :generic:writer:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-replace-last (backend plist)
+  "Replace last record in BACKEND with PLIST.")
+#+END_SRC
+
+**** create-file                                        :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-create-file (backend)
+  "Create file associated with BACKEND.")
+#+END_SRC
+
+**** view-file                                          :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-view-file (backend)
+  "Open file associated with BACKEND for interactive viewing.")
+#+END_SRC
+
+**** edit-file                                          :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-edit-file (backend)
+  "Open file associated with BACKEND for interactive editing.")
+#+END_SRC
+
+*** plist
+**** tests
 :PROPERTIES:
 :header-args:   :tangle chronometrist-tests.el
 :END:
@@ -976,7 +1062,11 @@ Boilerplate for updating state between file operations in tests.
            (list :last (chronometrist-file-hash :before-last nil)
                  :rest (chronometrist-file-hash nil :before-last t)))))
 #+END_SRC
-*** chronometrist-file                                                :custom:variable:
+**** backend                                                       :class:
+#+BEGIN_SRC emacs-lisp
+(defclass chronometrist-plist-backend (chronometrist-backend) ())
+#+END_SRC
+**** chronometrist-file                                               :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-file
   (locate-user-emacs-file "chronometrist.sexp")
@@ -1003,7 +1093,7 @@ TIME must be an ISO-8601 time string.
 vectors.\)"
   :type 'file)
 #+END_SRC
-*** pretty-print-function                                 :custom:variable:
+**** pretty-print-function                               :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
   "Function used to pretty print plists in `chronometrist-file'.
@@ -1012,14 +1102,14 @@ STREAM (which is the value of `current-buffer')."
   :type 'function
   :group 'chronometrist)
 #+END_SRC
-*** sexp-mode                                                  :major:mode:
+**** sexp-mode                                                :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-sexp-mode
   ;; fundamental-mode
   emacs-lisp-mode
   "chronometrist-sexp")
 #+END_SRC
-*** in-file                                                         :macro:
+**** in-file                                                       :macro:
 #+BEGIN_SRC emacs-lisp
 (defmacro chronometrist-sexp-in-file (file &rest body)
   "Run BODY in a buffer visiting FILE, restoring point afterwards."
@@ -1027,7 +1117,7 @@ STREAM (which is the value of `current-buffer')."
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
 #+END_SRC
-*** loop-file                                                       :macro:
+**** loop-file                                                     :macro:
 #+BEGIN_SRC emacs-lisp
 (defmacro chronometrist-loop-file (_for expr _in file &rest loop-clauses)
   "`cl-loop' LOOP-CLAUSES over s-expressions in FILE, in reverse.
@@ -1048,14 +1138,14 @@ EXPR is bound to each s-expression."
                   (backward-list))
        ,@loop-clauses)))
 #+END_SRC
-*** open-log                                                    :procedure:
+**** open-log                                                  :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-open-log ()
   "Open `chronometrist-file' in another window."
   (find-file-other-window chronometrist-file)
   (goto-char (point-max)))
 #+END_SRC
-*** last                                                           :reader:
+**** last                                                         :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-last ()
   "Return last s-expression from `chronometrist-file'."
@@ -1064,16 +1154,15 @@ EXPR is bound to each s-expression."
     (backward-list)
     (ignore-errors (read (current-buffer)))))
 #+END_SRC
-*** current-task                                                   :reader:
+**** current-task                                                 :reader:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-sexp-current-task ()
-  "Return the name of the currently clocked-in task, or nil if not clocked in."
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
   (let ((last-event (chronometrist-sexp-last)))
     (if (plist-member last-event :stop)
         nil
       (plist-get last-event :name))))
 #+END_SRC
-*** events-populate                                                :writer:
+**** events-populate                                              :writer:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-events)
 (defun chronometrist-sexp-events-populate ()
@@ -1108,7 +1197,7 @@ were none."
                    chronometrist-events)))
       (unless (zerop index) index))))
 #+END_SRC
-*** create-file                                                    :writer:
+**** create-file                                                  :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-create-file ()
   "Create `chronometrist-file' if it doesn't already exist."
@@ -1118,7 +1207,7 @@ were none."
       (insert ";;; -*- mode: chronometrist-sexp; -*-")
       (write-file chronometrist-file))))
 #+END_SRC
-*** new                                                            :writer:
+**** new                                                          :writer:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-sexp-new (plist)
   "Add new PLIST at the end of `chronometrist-file'."
@@ -1131,7 +1220,7 @@ were none."
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
     (save-buffer)))
 #+END_SRC
-*** replace-last                                                   :writer:
+**** replace-last                                                 :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-replace-last (plist)
   "Replace the last s-expression in `chronometrist-file' with PLIST."
@@ -1143,7 +1232,7 @@ were none."
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
     (save-buffer)))
 #+END_SRC
-*** reindent-buffer                                               :command:
+**** reindent-buffer                                             :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-reindent-buffer ()
   "Reindent the current buffer.
@@ -1160,13 +1249,8 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (insert "\n")
       (unless (eobp) (insert "\n")))))
 #+END_SRC
-*** last                                                           :reader:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-last ()
-  "Return the last entry from `chronometrist-file' as a plist."
-  (chronometrist-sexp-last))
-#+END_SRC
-*** task-list                                                      :reader:
+
+**** task-list                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-task-list ()
   "Return a list of tasks from `chronometrist-file'."
@@ -1174,14 +1258,14 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 #+END_SRC
-**** tests
+***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest task-list ()
   (let ((task-list (chronometrist-task-list)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
 #+END_SRC
-*** file-state                                          :internal:variable:
+**** file-state                                        :internal:variable:
 :PROPERTIES:
 :VALUE:    list
 :END:
@@ -1200,7 +1284,7 @@ last s-expression.
 REST-START and REST-END represent the start of the file and the
 end of the second-last s-expression.")
 #+END_SRC
-*** file-hash                                                      :reader:
+**** file-hash                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-file-hash (&optional start end hash)
   "Calculate hash of `chronometrist-file' between START and END.
@@ -1238,7 +1322,7 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                (list start end it))
         (list start end)))))
 #+END_SRC
-**** tests
+***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest file-hash ()
   (-let* ((chronometrist-file chronometrist-test-file)
@@ -1253,7 +1337,7 @@ in `chronometrist-file' describing the region for which HASH was calculated."
     (should (= 1256 last-start))
     (should (= 1426 last-end))))
 #+END_SRC
-*** read-from                                                      :reader:
+**** read-from                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-read-from (position)
   (chronometrist-sexp-in-file chronometrist-file
@@ -1262,7 +1346,7 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                  (funcall position)))
     (ignore-errors (read (current-buffer)))))
 #+END_SRC
-*** TODO file-change-type                                          :reader:
+**** TODO file-change-type                                        :reader:
 1. [ ] add newline after last expression and save => nil
 2. [ ] remove newline after last expession and save => nil
 
@@ -1317,7 +1401,7 @@ Return
                           (forward-list)))))
            :modify))))
 #+END_SRC
-**** tests
+***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-file-change-type ()
   (let* ((chronometrist-file            chronometrist-test-file)
@@ -1955,7 +2039,7 @@ is clocked in to a task."
     ;; No need to update the buffer if there is no active task, or if
     ;; the file is being edited by the user. (The file may be in an
     ;; invalid state, and reading it then may result in a read error.)
-    (when (and (chronometrist-current-task)
+    (when (and (chronometrist-current-task chronometrist--active-backend)
                (not (buffer-modified-p file-buffer)))
       (when (get-buffer-window chronometrist-buffer-name)
         (chronometrist-refresh))
@@ -3545,9 +3629,15 @@ be a hash table similar to `chronometrist-events'."
     collect plist))
 
 #+END_SRC
+
 ** Provide
 #+BEGIN_SRC emacs-lisp
 (provide 'chronometrist)
 
 ;;; chronometrist.el ends here
 #+END_SRC
+
+** Local variables                                                :NOEXPORT:
+# Local Variables:
+# nameless-current-name: "chronometrist"
+# End:
