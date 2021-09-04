@@ -931,55 +931,56 @@ Value must be a keyword corresponding to a key in
 (defun chronometrist-active-backend ()
   (alist-get chronometrist-active-backend chronometrist-backends-alist))
 #+END_SRC
-**** current-task                                         :generic:reader:
+
+**** current-task                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-current-task (backend)
   "Return the name of the active task, or nil if not clocked in.")
 #+END_SRC
 
-**** latest-record                                        :generic:reader:
+**** latest-record                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 #+END_SRC
 
-**** list-tasks                                           :generic:reader:
+**** list-tasks                                         :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of tasks from BACKEND.")
 #+END_SRC
 
-**** task-records                                         :generic:reader:
+**** task-records                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-task-records (backend task date)
   "From BACKEND, return a list of records for TASK on DATE.")
 #+END_SRC
 
-**** task-time                                            :generic:reader:
+**** task-time                                          :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-task-time (backend task date)
   "From BACKEND, return time recorded for TASK on DATE as integer seconds.")
 #+END_SRC
 
-**** active-time                                          :generic:reader:
+**** active-time                                        :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-active-time (backend date)
   "From BACKEND, return total time recorded on DATE as integer seconds.")
 #+END_SRC
 
-**** active-days                                          :generic:reader:
+**** active-days                                        :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-active-days (backend task &key start end)
   "From BACKEND, return total time recorded on DATE as integer seconds.")
 #+END_SRC
 
-**** insert                                               :generic:writer:
+**** insert                                             :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.")
 #+END_SRC
 
-**** replace-last                                         :generic:writer:
+**** replace-last                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-replace-last (backend plist)
   "Replace last record in BACKEND with PLIST.")
