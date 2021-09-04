@@ -324,17 +324,34 @@ The list must be on a single line, as emitted by `prin1'."
   (princ (chronometrist-plist-pp-to-string object)
          (or stream standard-output)))
 
-(defclass chronometrist-backend ()
-  ((path :initarg :path
-         :accessor path
-         :custom 'file
-         :documentation
-         "Path to file associated with a backend object.")))
+(defcustom chronometrist-file
+  (locate-user-emacs-file "chronometrist")
+  "Name (without extension) and full path of the Chronometrist database."
+  :type 'file)
 
-(defvar chronometrist-backends-alist
-  `((:plist "Store records as plists."
-            ,(make-instance 'chronometrist-plist-backend
-                            :path chronometrist-file)))
+(defclass chronometrist-backend ()
+  ((path ;; :initform (error "Path is required")
+         :initarg :path
+         :accessor path
+         :custom 'string
+         :documentation
+         "Path to backend file, without extension.")
+   (extension ;; :initform (error "Extension is required")
+              :initarg :ext
+              :accessor ext
+              :custom 'string
+              :documentation
+              "Extension of backend file.")
+   (file :initarg :file
+         :accessor file
+         :custom 'string
+         :documentation "Full path to backend file, with extension.")))
+
+(cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
+  (setf (file backend)
+        (concat (path backend) "." (ext backend))))
+
+(defvar chronometrist-backends-alist nil
   "Alist of Chronometrist backends.
 Each element must be in the form `(KEYWORD TAG OBJECT)', where
 TAG is a string used as a tag in customization, and OBJECT is an
@@ -391,10 +408,11 @@ Value must be a keyword corresponding to a key in
 
 (defclass chronometrist-plist-backend (chronometrist-backend) ())
 
-(defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist")
-  "Name (without extension) and full path of the Chronometrist database."
-  :type 'file)
+(add-to-list 'chronometrist-backends-alist
+             `(:plist "Store records as plists."
+                      ,(make-instance 'chronometrist-plist-backend
+                                      :path chronometrist-file
+                                      :ext "plist")))
 
 (defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
   "Function used to pretty print plists in `chronometrist-file'.

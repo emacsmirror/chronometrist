@@ -892,23 +892,46 @@ The reasons I like this format are -
    * =chronometrist-loop-file= is provided as an additional convenience, to iterate through each expression in the file.
 3. It is easy to diff and version control.
 
+*** chronometrist-file                                                 :custom:variable:
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-file
+  (locate-user-emacs-file "chronometrist")
+  "Name (without extension) and full path of the Chronometrist database."
+  :type 'file)
+#+END_SRC
 *** protocol
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-backend ()
-  ((path :initarg :path
+  ((path ;; :initform (error "Path is required")
+         :initarg :path
          :accessor path
-         :custom 'file
+         :custom 'string
          :documentation
-         "Path to file associated with a backend object.")))
+         "Path to backend file, without extension.")
+   (extension ;; :initform (error "Extension is required")
+              :initarg :ext
+              :accessor ext
+              :custom 'string
+              :documentation
+              "Extension of backend file.")
+   (file :initarg :file
+         :accessor file
+         :custom 'string
+         :documentation "Full path to backend file, with extension.")))
+#+END_SRC
+
+**** make-instance
+Initialize FILE based on PATH and EXTENSION.
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
+  (setf (file backend)
+        (concat (path backend) "." (ext backend))))
 #+END_SRC
 
 **** backends-alist                                             :variable:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-backends-alist
-  `((:plist "Store records as plists."
-            ,(make-instance 'chronometrist-plist-backend
-                            :path chronometrist-file)))
+(defvar chronometrist-backends-alist nil
   "Alist of Chronometrist backends.
 Each element must be in the form `(KEYWORD TAG OBJECT)', where
 TAG is a string used as a tag in customization, and OBJECT is an
@@ -1088,13 +1111,12 @@ Boilerplate for updating state between file operations in tests.
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-plist-backend (chronometrist-backend) ())
-#+END_SRC
-**** chronometrist-file                                               :custom:variable:
-#+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist")
-  "Name (without extension) and full path of the Chronometrist database."
-  :type 'file)
+
+(add-to-list 'chronometrist-backends-alist
+             `(:plist "Store records as plists."
+                      ,(make-instance 'chronometrist-plist-backend
+                                      :path chronometrist-file
+                                      :ext "plist")))
 #+END_SRC
 **** pretty-print-function                               :custom:variable:
 #+BEGIN_SRC emacs-lisp
