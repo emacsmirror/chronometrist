@@ -868,7 +868,7 @@ The list must be on a single line, as emitted by `prin1'."
   (princ (chronometrist-plist-pp-to-string object)
          (or stream standard-output)))
 #+END_SRC
-** Backend
+** Backends
 :PROPERTIES:
 :CUSTOM_ID: program-backend
 :END:
@@ -921,7 +921,7 @@ The reasons I like this format are -
          :documentation "Full path to backend file, with extension.")))
 #+END_SRC
 
-**** make-instance
+**** initialize-instance
 Initialize FILE based on PATH and EXTENSION.
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
@@ -1030,7 +1030,7 @@ Value must be a keyword corresponding to a key in
   "Open file associated with BACKEND for interactive editing.")
 #+END_SRC
 
-*** plist
+*** plist backend
 **** tests
 :PROPERTIES:
 :header-args:   :tangle chronometrist-tests.el
