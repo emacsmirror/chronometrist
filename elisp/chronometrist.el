@@ -1096,10 +1096,6 @@ button action."
   (interactive)
   (chronometrist-sexp-open-log))
 
-(defun chronometrist-common-create-file ()
-  "Create `chronometrist-file' if it doesn't already exist."
-  (chronometrist-sexp-create-file))
-
 (defun chronometrist-task-active-p (task)
   "Return t if TASK is currently clocked in, else nil."
   (equal (chronometrist-current-task (chronometrist-active-backend)) task))
@@ -1523,7 +1519,7 @@ run `chronometrist-statistics'."
           (cond ((or (not (file-exists-p chronometrist-file))
                      (chronometrist-common-file-empty-p chronometrist-file))
                  ;; first run
-                 (chronometrist-common-create-file)
+                 (chronometrist-create-file (chronometrist-active-backend))
                  (let ((inhibit-read-only t))
                    (erase-buffer)
                    (insert "Welcome to Chronometrist! Hit RET to ")
@@ -1734,7 +1730,7 @@ current week. Otherwise, display data from the week specified by
              (kill-buffer buffer))
             (t (unless keep-date
                  (setq chronometrist-report--ui-date nil))
-               (chronometrist-common-create-file)
+               (chronometrist-create-file (chronometrist-active-backend))
                (chronometrist-report-mode)
                (switch-to-buffer buffer)
                (chronometrist-report-refresh-file nil)
@@ -1965,7 +1961,7 @@ specified by `chronometrist-statistics--ui-state'."
                (setq chronometrist-statistics--ui-state `(:mode week
                                          :start ,week-start
                                          :end   ,week-end)))
-             (chronometrist-common-create-file)
+             (chronometrist-create-file (chronometrist-active-backend))
              (chronometrist-statistics-mode)
              (switch-to-buffer buffer)
              (chronometrist-statistics-refresh))))))
