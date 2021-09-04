@@ -1104,7 +1104,7 @@ button action."
 
 (defun chronometrist-task-active-p (task)
   "Return t if TASK is currently clocked in, else nil."
-  (equal (chronometrist-current-task) task))
+  (equal (chronometrist-current-task (chronometrist-active-backend)) task))
 
 (defun chronometrist-activity-indicator ()
   "Return a string to indicate that a task is active.
@@ -1308,7 +1308,7 @@ refresh the `chronometrist' buffer."
 
 (defun chronometrist-query-stop ()
   "Ask the user if they would like to clock out."
-  (let ((task (chronometrist-current-task)))
+  (let ((task (chronometrist-current-task (chronometrist-active-backend))))
     (and task
          (yes-or-no-p (format "Stop tracking time for %s? " task))
          (chronometrist-out))
@@ -1395,7 +1395,7 @@ Argument _BUTTON is for the purpose of using this as a button
 action, and is ignored."
   (when current-prefix-arg
     (chronometrist-goto-nth-task (prefix-numeric-value current-prefix-arg)))
-  (let ((current  (chronometrist-current-task))
+  (let ((current  (chronometrist-current-task (chronometrist-active-backend)))
         (at-point (chronometrist-task-at-point)))
     ;; clocked in + point on current    = clock out
     ;; clocked in + point on some other task = clock out, clock in to task
@@ -1409,7 +1409,7 @@ action, and is ignored."
   "Button action to add a new task.
 Argument _BUTTON is for the purpose of using this as a button
 action, and is ignored."
-  (let ((current (chronometrist-current-task)))
+  (let ((current (chronometrist-current-task (chronometrist-active-backend))))
     (when current
       (chronometrist-run-functions-and-clock-out current))
     (let ((task (read-from-minibuffer "New task name: " nil nil nil nil nil t)))
@@ -1434,7 +1434,7 @@ If INHIBIT-HOOKS is non-nil, the hooks
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
          (target       (or nth at-point))
-         (current      (chronometrist-current-task))
+         (current      (chronometrist-current-task (chronometrist-active-backend)))
          (in-function  (if inhibit-hooks
                            #'chronometrist-in
                          #'chronometrist-run-functions-and-clock-in))
@@ -1476,7 +1476,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if no task is active."
   (interactive "P")
-  (if (chronometrist-current-task)
+  (if (chronometrist-current-task (chronometrist-active-backend))
       (let* ((plist (plist-put (chronometrist-last) :start (chronometrist-format-time-iso8601)))
              (task  (plist-get plist :name)))
         (unless inhibit-hooks
@@ -1494,7 +1494,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if a task is active."
   (interactive "P")
-  (if (chronometrist-current-task)
+  (if (chronometrist-current-task (chronometrist-active-backend))
       (message "Cannot extend an active task - use this after clocking out.")
     (let* ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601)))
            (task  (plist-get plist :name)))
