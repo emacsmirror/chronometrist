@@ -1030,6 +1030,18 @@ Value must be a keyword corresponding to a key in
   "Open file associated with BACKEND for interactive editing.")
 #+END_SRC
 
+**** to-hash-table                                      :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-to-hash-table (backend)
+  "Return data in BACKEND as a hash table.")
+#+END_SRC
+
+**** from-hash-table                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-from-hash-table (backend hash-table)
+  "Save data from HASH-TABLE to BACKEND.")
+#+END_SRC
+
 *** plist backend
 **** tests
 :PROPERTIES:

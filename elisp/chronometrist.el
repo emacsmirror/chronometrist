@@ -407,6 +407,12 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-edit-file (backend)
   "Open file associated with BACKEND for interactive editing.")
 
+(cl-defgeneric chronometrist-to-hash-table (backend)
+  "Return data in BACKEND as a hash table.")
+
+(cl-defgeneric chronometrist-from-hash-table (backend hash-table)
+  "Save data from HASH-TABLE to BACKEND.")
+
 (defclass chronometrist-plist-backend (chronometrist-backend) ())
 
 (add-to-list 'chronometrist-backends-alist
