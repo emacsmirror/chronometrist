@@ -1030,6 +1030,12 @@ Value must be a keyword corresponding to a key in
   "Open file associated with BACKEND for interactive editing.")
 #+END_SRC
 
+**** count-records                                      :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-count-records (backend)
+  "Return number of records in BACKEND.")
+#+END_SRC
+
 **** to-hash-table                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-to-hash-table (backend)
@@ -1184,6 +1190,17 @@ EXPR is bound to each s-expression."
   (find-file-other-window (path backend))
   (goto-char (point-max)))
 #+END_SRC
+**** count-records                                         :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (file backend)
+    (goto-char (point-min))
+    (cl-loop with count = 0
+      while (ignore-errors (read (current-buffer)))
+      do (cl-incf count)
+      finally return count)))
+#+END_SRC
+
 **** latest-record                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))

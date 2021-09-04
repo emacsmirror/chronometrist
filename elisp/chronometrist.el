@@ -407,6 +407,9 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-edit-file (backend)
   "Open file associated with BACKEND for interactive editing.")
 
+(cl-defgeneric chronometrist-count-records (backend)
+  "Return number of records in BACKEND.")
+
 (cl-defgeneric chronometrist-to-hash-table (backend)
   "Return data in BACKEND as a hash table.")
 
@@ -461,6 +464,14 @@ EXPR is bound to each s-expression."
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
   (find-file-other-window (path backend))
   (goto-char (point-max)))
+
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (file backend)
+    (goto-char (point-min))
+    (cl-loop with count = 0
+      while (ignore-errors (read (current-buffer)))
+      do (cl-incf count)
+      finally return count)))
 
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (file backend)
