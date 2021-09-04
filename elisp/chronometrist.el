@@ -508,9 +508,9 @@ were none."
         (insert ";;; -*- mode: chronometrist-sexp; -*-")
         (write-file file)))))
 
-(cl-defun chronometrist-sexp-new (plist)
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   "Add new PLIST at the end of `chronometrist-file'."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file (file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
     ;; newline before it
@@ -1313,7 +1313,7 @@ refresh the `chronometrist' buffer."
 TASK is the name of the task, a string. PREFIX is ignored."
   (interactive "P")
   (let ((plist `(:name ,task :start ,(chronometrist-format-time-iso8601))))
-    (chronometrist-sexp-new plist)
+    (chronometrist-insert plist)
     (chronometrist-refresh)))
 
 (defun chronometrist-out (&optional _prefix)
