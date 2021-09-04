@@ -332,25 +332,25 @@ The list must be on a single line, as emitted by `prin1'."
 (defclass chronometrist-backend ()
   ((path ;; :initform (error "Path is required")
          :initarg :path
-         :accessor path
+         :accessor chronometrist-backend-path
          :custom 'string
          :documentation
          "Path to backend file, without extension.")
    (extension ;; :initform (error "Extension is required")
               :initarg :ext
-              :accessor ext
+              :accessor chronometrist-backend-ext
               :custom 'string
               :documentation
               "Extension of backend file.")
    (file :initarg :file
-         :accessor file
+         :accessor chronometrist-backend-file
          :custom 'string
          :documentation "Full path to backend file, with extension.")))
 
 (cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
-  (when (and (path backend) (ext backend) (not (file backend)))
-    (setf (file backend)
-          (concat (path backend) "." (ext backend)))))
+  (when (and (chronometrist-backend-path backend) (chronometrist-backend-ext backend) (not (chronometrist-backend-file backend)))
+    (setf (chronometrist-backend-file backend)
+          (concat (chronometrist-backend-path backend) "." (chronometrist-backend-ext backend)))))
 
 (defvar chronometrist-backends-alist nil
   "Alist of Chronometrist backends.
@@ -465,11 +465,11 @@ EXPR is bound to each s-expression."
        ,@loop-clauses)))
 
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
-  (find-file-other-window (file backend))
+  (find-file-other-window (chronometrist-backend-file backend))
   (goto-char (point-max)))
 
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (file backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-min))
     (cl-loop with count = 0
       while (ignore-errors (read (current-buffer)))
@@ -477,7 +477,7 @@ EXPR is bound to each s-expression."
       finally return count)))
 
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (file backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (backward-list)
     (ignore-errors (read (current-buffer)))))
@@ -495,7 +495,7 @@ The data is acquired from `chronometrist-file'.
 
 Return final number of events read from file, or nil if there
 were none."
-  (chronometrist-sexp-in-file (file (chronometrist-active-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file (chronometrist-active-backend))
     (goto-char (point-min))
     (let ((index 0) expr pending-expr)
       (while (or pending-expr
@@ -522,7 +522,7 @@ were none."
       (unless (zerop index) index))))
 
 (cl-defmethod chronometrist-create-file ((backend chronometrist-plist-backend))
-  (let ((file (file backend)))
+  (let ((file (chronometrist-backend-file backend)))
     (unless (file-exists-p file)
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
@@ -531,7 +531,7 @@ were none."
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   "Add new PLIST at the end of `chronometrist-file'."
-  (chronometrist-sexp-in-file (file backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
     ;; newline before it
@@ -542,7 +542,7 @@ were none."
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
   "Replace the last s-expression in `chronometrist-file' with PLIST."
-  (chronometrist-sexp-in-file (file backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (unless (and (bobp) (bolp)) (insert "\n"))
     (backward-list 1)
@@ -566,13 +566,13 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (--> (chronometrist-loop-file for plist in (file backend)
+  (--> (chronometrist-loop-file for plist in (chronometrist-backend-file backend)
          collect (plist-get plist :name))
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 
 (cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-loop-file for plist in (file backend) collect plist))
+  (chronometrist-loop-file for plist in (chronometrist-backend-file backend) collect plist))
 
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.

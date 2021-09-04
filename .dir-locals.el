@@ -5,6 +5,7 @@
 ;; makes all aliases not take effect - probably specific to Org
 ;; literate programs
 ((nil . ((nameless-aliases . (("c" . "chronometrist")
+                              ("cb" . "chronometrist-backend")
                               ("cc" . "chronometrist-common")
                               ("cd" . "chronometrist-details")
                               ("ce" . "chronometrist-events")
