@@ -390,7 +390,7 @@ Value must be a keyword corresponding to a key in
   "From BACKEND, return total time recorded on DATE as integer seconds.")
 
 (cl-defgeneric chronometrist-active-days (backend task &key start end)
-  "From BACKEND, return total time recorded on DATE as integer seconds.")
+  "From BACKEND, return number of days on which TASK had recorded time.")
 
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.")
