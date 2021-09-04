@@ -925,8 +925,9 @@ The reasons I like this format are -
 Initialize FILE based on PATH and EXTENSION.
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
-  (setf (file backend)
-        (concat (path backend) "." (ext backend))))
+  (when (and (path backend) (ext backend) (not (file backend)))
+    (setf (file backend)
+          (concat (path backend) "." (ext backend)))))
 #+END_SRC
 
 **** backends-alist                                             :variable:
@@ -1036,64 +1037,66 @@ Value must be a keyword corresponding to a key in
 :END:
 
 #+BEGIN_SRC emacs-lisp :load test
-(defvar chronometrist-test-file
-  (make-temp-file
-   "chronometrist-test-" nil ".sexp"
-   (with-output-to-string
-     (mapcar
-      (lambda (plist)
-        ;; to use this, we'd have to move `chronometrist-plist-pp' before this
-        ;; definition, and I'm perfectly content with where it is
-        ;; right now
-        (chronometrist-plist-pp plist) (princ "\n\n")
-        ;; (print plist) (princ "\n")
-        )
-      '((:name "Programming"
-               :start "2018-01-01T00:00:00+0530"
-               :stop  "2018-01-01T01:00:00+0530")
-        (:name "Swimming"
-               :start "2018-01-01T02:00:00+0530"
-               :stop  "2018-01-01T03:00:00+0530")
-        (:name "Cooking"
-               :start "2018-01-01T04:00:00+0530"
-               :stop  "2018-01-01T05:00:00+0530")
-        (:name "Guitar"
-               :start "2018-01-01T06:00:00+0530"
-               :stop  "2018-01-01T07:00:00+0530")
-        (:name "Cycling"
-               :start "2018-01-01T08:00:00+0530"
-               :stop  "2018-01-01T09:00:00+0530")
-        (:name "Programming"
-               :start "2018-01-02T23:00:00+0530"
-               :stop  "2018-01-03T01:00:00+0530")
-        (:name "Cooking"
-               :start "2018-01-03T23:00:00+0530"
-               :stop  "2018-01-04T01:00:00+0530")
-        (:name "Programming"
-               :tags      (bug-hunting)
-               :project   "Chronometrist"
-               :component "goals"
-               :start     "2020-05-09T20:03:25+0530"
-               :stop      "2020-05-09T20:05:55+0530")
-        (:name "Arrangement/new edition"
-               :tags     (new edition)
-               :song     "Songs of Travel"
-               :composer "Vaughan Williams, Ralph"
-               :start    "2020-05-10T00:04:14+0530"
-               :stop     "2020-05-10T00:25:48+0530")
-        (:name "Guitar"
-               :tags  (classical warm-up)
-               :start "2020-05-10T15:41:14+0530"
-               :stop  "2020-05-10T15:55:42+0530")
-        (:name "Guitar"
-               :tags  (classical solo)
-               :start "2020-05-10T16:00:00+0530"
-               :stop  "2020-05-10T16:30:00+0530")
-        (:name "Programming"
-               :tags  (reading)
-               :book  "Smalltalk-80: The Language and Its Implementation"
-               :start "2020-05-10T16:33:17+0530"
-               :stop  "2020-05-10T17:10:48+0530"))))))
+(defvar chronometrist-plist-test-backend
+  (make-instance 'chronometrist-plist-backend
+                 :file (make-temp-file "chronometrist-plist-test-" nil ".sexp")))
+
+(with-current-buffer (find-file-noselect)
+  (mapcar
+   (lambda (plist)
+     ;; to use this, we'd have to move `chronometrist-plist-pp' before this
+     ;; definition, and I'm perfectly content with where it is
+     ;; right now
+     (chronometrist-plist-pp plist (current-buffer))
+     (insert "\n\n")
+     ;; (print plist) (princ "\n")
+     )
+   '((:name "Programming"
+            :start "2018-01-01T00:00:00+0530"
+            :stop  "2018-01-01T01:00:00+0530")
+     (:name "Swimming"
+            :start "2018-01-01T02:00:00+0530"
+            :stop  "2018-01-01T03:00:00+0530")
+     (:name "Cooking"
+            :start "2018-01-01T04:00:00+0530"
+            :stop  "2018-01-01T05:00:00+0530")
+     (:name "Guitar"
+            :start "2018-01-01T06:00:00+0530"
+            :stop  "2018-01-01T07:00:00+0530")
+     (:name "Cycling"
+            :start "2018-01-01T08:00:00+0530"
+            :stop  "2018-01-01T09:00:00+0530")
+     (:name "Programming"
+            :start "2018-01-02T23:00:00+0530"
+            :stop  "2018-01-03T01:00:00+0530")
+     (:name "Cooking"
+            :start "2018-01-03T23:00:00+0530"
+            :stop  "2018-01-04T01:00:00+0530")
+     (:name "Programming"
+            :tags      (bug-hunting)
+            :project   "Chronometrist"
+            :component "goals"
+            :start     "2020-05-09T20:03:25+0530"
+            :stop      "2020-05-09T20:05:55+0530")
+     (:name "Arrangement/new edition"
+            :tags     (new edition)
+            :song     "Songs of Travel"
+            :composer "Vaughan Williams, Ralph"
+            :start    "2020-05-10T00:04:14+0530"
+            :stop     "2020-05-10T00:25:48+0530")
+     (:name "Guitar"
+            :tags  (classical warm-up)
+            :start "2020-05-10T15:41:14+0530"
+            :stop  "2020-05-10T15:55:42+0530")
+     (:name "Guitar"
+            :tags  (classical solo)
+            :start "2020-05-10T16:00:00+0530"
+            :stop  "2020-05-10T16:30:00+0530")
+     (:name "Programming"
+            :tags  (reading)
+            :book  "Smalltalk-80: The Language and Its Implementation"
+            :start "2020-05-10T16:33:17+0530"
+            :stop  "2020-05-10T17:10:48+0530"))))
 #+END_SRC
 
 1. [X] finding the test input file
@@ -1194,7 +1197,7 @@ The data is acquired from `chronometrist-file'.
 
 Return final number of events read from file, or nil if there
 were none."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file (file (chronometrist-active-backend))
     (goto-char (point-min))
     (let ((index 0) expr pending-expr)
       (while (or pending-expr
@@ -1245,9 +1248,9 @@ were none."
 #+END_SRC
 **** replace-last                                                 :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-sexp-replace-last (plist)
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
   "Replace the last s-expression in `chronometrist-file' with PLIST."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file (file backend)
     (goto-char (point-max))
     (unless (and (bobp) (bolp)) (insert "\n"))
     (backward-list 1)
@@ -1427,12 +1430,12 @@ Return
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-file-change-type ()
-  (let* ((chronometrist-file            chronometrist-test-file)
-         (test-contents    (with-current-buffer (find-file-noselect chronometrist-file)
-                             (buffer-substring (point-min) (point-max))))
+  (let* ((test-contents (with-current-buffer (find-file-noselect
+                                              (file chronometrist-plist-test-backend))
+                          (buffer-substring (point-min) (point-max))))
          (chronometrist--file-state-old chronometrist--file-state)
          (chronometrist--file-state     (list :last (chronometrist-file-hash :before-last nil)
-                                  :rest (chronometrist-file-hash nil :before-last t)))
+                                 :rest (chronometrist-file-hash nil :before-last t)))
          (chronometrist-events-old      chronometrist-events))
     (chronometrist-events-populate)
     (unwind-protect
@@ -1442,19 +1445,19 @@ Return
           (should
            (eq :append
                (progn
-                 (chronometrist-insert
-                  '(:name "Append Test"
-                          :start "2021-02-01T13:06:46+0530"
-                          :stop "2021-02-01T13:06:49+0530"))
+                 (chronometrist-insert chronometrist-plist-test-backend
+                          '(:name "Append Test"
+                                  :start "2021-02-01T13:06:46+0530"
+                                  :stop "2021-02-01T13:06:49+0530"))
                  (chronometrist-tests--change-type-and-update chronometrist--file-state))))
           (should
            (eq :modify
                (progn
-                 (chronometrist-sexp-replace-last
-                  '(:name "Modify Test"
-                          :tags (some tags)
-                          :start "2021-02-01T13:06:46+0530"
-                          :stop "2021-02-01T13:06:49+0530"))
+                 (chronometrist-replace-last chronometrist-plist-test-backend
+                                '(:name "Modify Test"
+                                        :tags (some tags)
+                                        :start "2021-02-01T13:06:46+0530"
+                                        :stop "2021-02-01T13:06:49+0530"))
                  (chronometrist-tests--change-type-and-update chronometrist--file-state))))
           (should
            (eq :remove
@@ -1468,15 +1471,16 @@ Return
           (should
            (eq t
                (progn
-                 (chronometrist-sexp-in-file chronometrist-file
+                 (chronometrist-sexp-in-file chronometrist-plist-test-backend
                    (goto-char (point-min))
                    (chronometrist-plist-pp '(:name "Other Change Test"
-                                       :start "2021-02-02T17:39:40+0530"
-                                       :stop "2021-02-02T17:39:44+0530")
-                               (current-buffer))
+                                      :start "2021-02-02T17:39:40+0530"
+                                      :stop "2021-02-02T17:39:44+0530")
+                              (current-buffer))
                    (save-buffer))
                  (chronometrist-tests--change-type-and-update chronometrist--file-state)))))
-      (with-current-buffer (find-file-noselect chronometrist-file)
+      (with-current-buffer
+          (find-file-noselect (file chronometrist-plist-test-backend))
         (delete-region (point-min) (point-max))
         (insert test-contents)
         (save-buffer))
@@ -2425,7 +2429,7 @@ refresh the `chronometrist' buffer."
 TASK is the name of the task, a string. PREFIX is ignored."
   (interactive "P")
   (let ((plist `(:name ,task :start ,(chronometrist-format-time-iso8601))))
-    (chronometrist-insert plist)
+    (chronometrist-insert (chronometrist-active-backend) plist)
     (chronometrist-refresh)))
 #+END_SRC
 **** chronometrist-out                                                       :command:
@@ -2435,7 +2439,7 @@ TASK is the name of the task, a string. PREFIX is ignored."
 PREFIX is ignored."
   (interactive "P")
   (let ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601))))
-    (chronometrist-sexp-replace-last plist)))
+    (chronometrist-replace-last (chronometrist-active-backend) plist)))
 #+END_SRC
 **** run-functions-and-clock-in                                   :writer:
 #+BEGIN_SRC emacs-lisp
@@ -2611,7 +2615,7 @@ Has no effect if no task is active."
              (task  (plist-get plist :name)))
         (unless inhibit-hooks
          (run-hook-with-args 'chronometrist-before-in-functions task))
-        (chronometrist-sexp-replace-last plist)
+        (chronometrist-replace-last (chronometrist-active-backend) plist)
         (unless inhibit-hooks
          (run-hook-with-args 'chronometrist-after-in-functions task)))
     (message "Can only restart an active task - use this when clocked in.")))
@@ -2632,7 +2636,7 @@ Has no effect if a task is active."
            (task  (plist-get plist :name)))
       (unless inhibit-hooks
          (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
-      (chronometrist-sexp-replace-last plist)
+      (chronometrist-replace-last (chronometrist-active-backend) plist)
       (unless inhibit-hooks
         (run-hook-with-args 'chronometrist-after-out-functions task)))))
 #+END_SRC

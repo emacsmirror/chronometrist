@@ -348,8 +348,9 @@ The list must be on a single line, as emitted by `prin1'."
          :documentation "Full path to backend file, with extension.")))
 
 (cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
-  (setf (file backend)
-        (concat (path backend) "." (ext backend))))
+  (when (and (path backend) (ext backend) (not (file backend)))
+    (setf (file backend)
+          (concat (path backend) "." (ext backend)))))
 
 (defvar chronometrist-backends-alist nil
   "Alist of Chronometrist backends.
@@ -474,7 +475,7 @@ The data is acquired from `chronometrist-file'.
 
 Return final number of events read from file, or nil if there
 were none."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file (file (chronometrist-active-backend))
     (goto-char (point-min))
     (let ((index 0) expr pending-expr)
       (while (or pending-expr
@@ -519,9 +520,9 @@ were none."
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
     (save-buffer)))
 
-(defun chronometrist-sexp-replace-last (plist)
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
   "Replace the last s-expression in `chronometrist-file' with PLIST."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file (file backend)
     (goto-char (point-max))
     (unless (and (bobp) (bolp)) (insert "\n"))
     (backward-list 1)
@@ -1313,7 +1314,7 @@ refresh the `chronometrist' buffer."
 TASK is the name of the task, a string. PREFIX is ignored."
   (interactive "P")
   (let ((plist `(:name ,task :start ,(chronometrist-format-time-iso8601))))
-    (chronometrist-insert plist)
+    (chronometrist-insert (chronometrist-active-backend) plist)
     (chronometrist-refresh)))
 
 (defun chronometrist-out (&optional _prefix)
@@ -1321,7 +1322,7 @@ TASK is the name of the task, a string. PREFIX is ignored."
 PREFIX is ignored."
   (interactive "P")
   (let ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601))))
-    (chronometrist-sexp-replace-last plist)))
+    (chronometrist-replace-last (chronometrist-active-backend) plist)))
 
 (defun chronometrist-run-functions-and-clock-in (task)
   "Run hooks and clock in to TASK."
@@ -1475,7 +1476,7 @@ Has no effect if no task is active."
              (task  (plist-get plist :name)))
         (unless inhibit-hooks
          (run-hook-with-args 'chronometrist-before-in-functions task))
-        (chronometrist-sexp-replace-last plist)
+        (chronometrist-replace-last (chronometrist-active-backend) plist)
         (unless inhibit-hooks
          (run-hook-with-args 'chronometrist-after-in-functions task)))
     (message "Can only restart an active task - use this when clocked in.")))
@@ -1494,7 +1495,7 @@ Has no effect if a task is active."
            (task  (plist-get plist :name)))
       (unless inhibit-hooks
          (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
-      (chronometrist-sexp-replace-last plist)
+      (chronometrist-replace-last (chronometrist-active-backend) plist)
       (unless inhibit-hooks
         (run-hook-with-args 'chronometrist-after-out-functions task)))))
 
