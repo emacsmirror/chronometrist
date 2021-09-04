@@ -906,12 +906,13 @@ The reasons I like this format are -
 **** backends-alist                                             :variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-backends-alist
+  `((:plist "Store records as plists."
+            ,(make-instance 'chronometrist-plist-backend
+                            :path chronometrist-file)))
   "Alist of Chronometrist backends.
 Each element must be in the form `(KEYWORD TAG OBJECT)', where
 TAG is a string used as a tag in customization, and OBJECT is an
-EIEIO object such as one returned by `make-instance'."
-  `((:plist "Store records as plists."
-            ,(make-instance 'chronometrist-plist-backend))))
+EIEIO object such as one returned by `make-instance'.")
 #+END_SRC
 
 **** active-backend                                      :custom:variable:
@@ -929,7 +930,8 @@ Value must be a keyword corresponding to a key in
 **** active-backend                                               :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-active-backend ()
-  (alist-get chronometrist-active-backend chronometrist-backends-alist))
+  "Return an object representing the currently active backend."
+  (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 #+END_SRC
 
 **** current-task                                       :generic:function:
@@ -1090,28 +1092,8 @@ Boilerplate for updating state between file operations in tests.
 **** chronometrist-file                                               :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist.sexp")
-  "Default path and name of the Chronometrist database.
-
-It should be a text file containing plists in the form -
-\(:name \"task name\"
- [:tags TAGS]
- [:comment \"comment\"]
- [KEY-VALUE-PAIR ...]
- :start \"TIME\"
- :stop \"TIME\"\)
-
-Where -
-
-TAGS is a list. It can contain any strings and symbols.
-
-KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
-Chronometrist ignores them.
-
-TIME must be an ISO-8601 time string.
-
-\(The square brackets here refer to optional elements, not
-vectors.\)"
+  (locate-user-emacs-file "chronometrist")
+  "Name (without extension) and full path of the Chronometrist database."
   :type 'file)
 #+END_SRC
 **** pretty-print-function                               :custom:variable:
@@ -1159,11 +1141,10 @@ EXPR is bound to each s-expression."
                   (backward-list))
        ,@loop-clauses)))
 #+END_SRC
-**** open-log                                                  :procedure:
+**** edit-file                                                    :method:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-sexp-open-log ()
-  "Open `chronometrist-file' in another window."
-  (find-file-other-window chronometrist-file)
+(cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
+  (find-file-other-window (path backend))
   (goto-char (point-max)))
 #+END_SRC
 **** last                                                         :reader:

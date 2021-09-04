@@ -332,12 +332,13 @@ The list must be on a single line, as emitted by `prin1'."
          "Path to file associated with a backend object.")))
 
 (defvar chronometrist-backends-alist
+  `((:plist "Store records as plists."
+            ,(make-instance 'chronometrist-plist-backend
+                            :path chronometrist-file)))
   "Alist of Chronometrist backends.
 Each element must be in the form `(KEYWORD TAG OBJECT)', where
 TAG is a string used as a tag in customization, and OBJECT is an
-EIEIO object such as one returned by `make-instance'."
-  `((:plist "Store records as plists."
-            ,(make-instance 'chronometrist-plist-backend))))
+EIEIO object such as one returned by `make-instance'.")
 
 (defcustom chronometrist-active-backend :plist
   "The backend currently in use.
@@ -349,7 +350,8 @@ Value must be a keyword corresponding to a key in
                               ,(first elt)))))
 
 (defun chronometrist-active-backend ()
-  (alist-get chronometrist-active-backend chronometrist-backends-alist))
+  "Return an object representing the currently active backend."
+  (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 
 (cl-defgeneric chronometrist-current-task (backend)
   "Return the name of the active task, or nil if not clocked in.")
@@ -390,28 +392,8 @@ Value must be a keyword corresponding to a key in
 (defclass chronometrist-plist-backend (chronometrist-backend) ())
 
 (defcustom chronometrist-file
-  (locate-user-emacs-file "chronometrist.sexp")
-  "Default path and name of the Chronometrist database.
-
-It should be a text file containing plists in the form -
-\(:name \"task name\"
- [:tags TAGS]
- [:comment \"comment\"]
- [KEY-VALUE-PAIR ...]
- :start \"TIME\"
- :stop \"TIME\"\)
-
-Where -
-
-TAGS is a list. It can contain any strings and symbols.
-
-KEY-VALUE-PAIR can be any keyword-value pairs. Currently,
-Chronometrist ignores them.
-
-TIME must be an ISO-8601 time string.
-
-\(The square brackets here refer to optional elements, not
-vectors.\)"
+  (locate-user-emacs-file "chronometrist")
+  "Name (without extension) and full path of the Chronometrist database."
   :type 'file)
 
 (defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
@@ -451,9 +433,8 @@ EXPR is bound to each s-expression."
                   (backward-list))
        ,@loop-clauses)))
 
-(defun chronometrist-sexp-open-log ()
-  "Open `chronometrist-file' in another window."
-  (find-file-other-window chronometrist-file)
+(cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
+  (find-file-other-window (path backend))
   (goto-char (point-max)))
 
 (defun chronometrist-sexp-last ()
