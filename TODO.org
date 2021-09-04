@@ -705,3 +705,6 @@ See branch =format-seconds=.
 
 * Incorrect time displayed when midnight crossed with a task active     :bug:
 Midnight-spanning intervals are split in the hash table when the file is read, but not when a task is started and not stopped before midnight. Run a function to check at midnight?
+
+* Duplication - accessing the latest-record                            :code:
+Many functions use the latest record. A =(chronometrist-with-latest-record var &rest body)= might help...

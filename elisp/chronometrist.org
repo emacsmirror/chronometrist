@@ -1183,7 +1183,7 @@ EXPR is bound to each s-expression."
 **** current-task                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
-  (let ((last-event (chronometrist-sexp-last)))
+  (let ((last-event (chronometrist-latest-record (chronometrist-active-backend))))
     (if (plist-member last-event :stop)
         nil
       (plist-get last-event :name))))
@@ -1836,7 +1836,7 @@ which span midnights."
 *** reset-task-list                                                :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset-task-list ()
-  (setq chronometrist-task-list (chronometrist-list-tasks backend)))
+  (setq chronometrist-task-list (chronometrist-list-tasks (chronometrist-active-backend))))
 #+END_SRC
 *** add-to-task-list                                               :writer:
 #+BEGIN_SRC emacs-lisp
@@ -2163,7 +2163,7 @@ The default is \"*\""
 Argument _BUTTON is for the purpose of using this command as a
 button action."
   (interactive)
-  (chronometrist-sexp-open-log))
+  (chronometrist-edit-file (chronometrist-active-backend)))
 #+END_SRC
 **** task-active-p                                                :reader:
 #+BEGIN_SRC emacs-lisp
@@ -2314,7 +2314,7 @@ is the name of the task to be clocked out of."
 (defun chronometrist-goto-last-task ()
   "In the `chronometrist' buffer, move point to the line containing the last active task."
   (goto-char (point-min))
-  (re-search-forward (plist-get (chronometrist-last) :name) nil t)
+  (re-search-forward (plist-get (chronometrist-latest-record (chronometrist-active-backend)) :name) nil t)
   (beginning-of-line))
 #+END_SRC
 **** CLEANUP print-non-tabular                                 :procedure:
@@ -2386,13 +2386,13 @@ refresh the `chronometrist' buffer."
            (chronometrist-reset-task-list))
           (chronometrist--file-state
            (-let* (((&plist :name old-task)  (chronometrist-events-last))
-                   ((&plist :name new-task)  (chronometrist-sexp-last)))
+                   ((&plist :name new-task)  (chronometrist-latest-record (chronometrist-active-backend))))
              (pcase change
                (:append ;; a new plist was added at the end of the file
-                (chronometrist-events-update (chronometrist-sexp-last))
+                (chronometrist-events-update (chronometrist-latest-record (chronometrist-active-backend)))
                 (chronometrist-add-to-task-list new-task))
                (:modify ;; the last plist in the file was changed
-                (chronometrist-events-update (chronometrist-sexp-last) t)
+                (chronometrist-events-update (chronometrist-latest-record (chronometrist-active-backend)) t)
                 (chronometrist-remove-from-task-list old-task)
                 (chronometrist-add-to-task-list new-task))
                (:remove ;; the last plist in the file was removed
@@ -2438,7 +2438,8 @@ TASK is the name of the task, a string. PREFIX is ignored."
   "Record current moment as stop time to last s-exp in `chronometrist-file'.
 PREFIX is ignored."
   (interactive "P")
-  (let ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601))))
+  (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
+         (plist  (plist-put latest :stop (chronometrist-format-time-iso8601))))
     (chronometrist-replace-last (chronometrist-active-backend) plist)))
 #+END_SRC
 **** run-functions-and-clock-in                                   :writer:
@@ -2611,8 +2612,9 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 Has no effect if no task is active."
   (interactive "P")
   (if (chronometrist-current-task (chronometrist-active-backend))
-      (let* ((plist (plist-put (chronometrist-last) :start (chronometrist-format-time-iso8601)))
-             (task  (plist-get plist :name)))
+      (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
+             (plist  (plist-put latest :start (chronometrist-format-time-iso8601)))
+             (task   (plist-get plist :name)))
         (unless inhibit-hooks
          (run-hook-with-args 'chronometrist-before-in-functions task))
         (chronometrist-replace-last (chronometrist-active-backend) plist)
@@ -2632,8 +2634,9 @@ Has no effect if a task is active."
   (interactive "P")
   (if (chronometrist-current-task (chronometrist-active-backend))
       (message "Cannot extend an active task - use this after clocking out.")
-    (let* ((plist (plist-put (chronometrist-last) :stop (chronometrist-format-time-iso8601)))
-           (task  (plist-get plist :name)))
+    (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
+           (plist  (plist-put latest :stop (chronometrist-format-time-iso8601)))
+           (task   (plist-get plist :name)))
       (unless inhibit-hooks
          (run-hook-with-args-until-failure 'chronometrist-before-out-functions task))
       (chronometrist-replace-last (chronometrist-active-backend) plist)
