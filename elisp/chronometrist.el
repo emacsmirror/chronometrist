@@ -420,6 +420,9 @@ Hash table keys are ISO-8601 date strings. Hash table values are lists of record
 (cl-defgeneric chronometrist-list-records (backend)
   "Return all records in BACKEND as a list of plists, in reverse chronological order.")
 
+(cl-defgeneric chronometrist-on-file-change (backend)
+  "Function to be run when file for BACKEND changes.")
+
 (defclass chronometrist-plist-backend (chronometrist-backend) ())
 
 (add-to-list 'chronometrist-backends-alist

@@ -1035,6 +1035,11 @@ Hash table keys are ISO-8601 date strings. Hash table values are lists of record
 (cl-defgeneric chronometrist-list-records (backend)
   "Return all records in BACKEND as a list of plists, in reverse chronological order.")
 #+END_SRC
+**** on-file-change                                     :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-on-file-change (backend)
+  "Function to be run when file for BACKEND changes.")
+#+END_SRC
 *** plist backend
 In this format, user data is stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
 
