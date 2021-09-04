@@ -873,25 +873,6 @@ The list must be on a single line, as emitted by `prin1'."
 :CUSTOM_ID: program-backend
 :END:
 
-All file-related operations are grouped here. There has been some work towards creating a multiple-backend system in the =sql= branch, based on the [[elisp:(find-library "eieio")][=eieio=]] library.
-
-User data is currently stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
-
-#+BEGIN_SRC emacs-lisp :tangle no :load no
-(:name "Task Name"
- [:keyword <value>]*
- :start "<ISO-8601 timestamp>"
- :stop "<ISO-8601 timestamp>")
-#+END_SRC
-
-=:name= and =:start= are essential. =:stop= may be missing if the task is currently active.
-
-The reasons I like this format are -
-1. Users can browse and edit the data using the Emacs setup they are accustomed to. We get things like swiper, undo-tree, and a host of other features for free.
-2. It is trivial to parse using the =read= built-in to Emacs.
-   * =chronometrist-loop-file= is provided as an additional convenience, to iterate through each expression in the file.
-3. It is easy to diff and version control.
-
 *** chronometrist-file                                                 :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-file
@@ -1049,6 +1030,23 @@ Value must be a keyword corresponding to a key in
 #+END_SRC
 
 *** plist backend
+In this format, user data is stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
+
+#+BEGIN_SRC emacs-lisp :tangle no :load no
+(:name "Task Name"
+ [:keyword <value>]*
+ :start "<ISO-8601 timestamp>"
+ :stop "<ISO-8601 timestamp>")
+#+END_SRC
+
+=:name= and =:start= are essential. =:stop= may be missing if the task is currently active.
+
+The reasons I like this format are -
+1. Users can browse and edit the data using the Emacs setup they are accustomed to. We get things like swiper, undo-tree, and a host of other features for free.
+2. It is trivial to parse using the =read= built-in to Emacs.
+   * =chronometrist-loop-file= is provided as an additional convenience, to iterate through each expression in the file.
+3. It is easy to diff and version control.
+
 **** tests
 :PROPERTIES:
 :header-args:   :tangle chronometrist-tests.el
