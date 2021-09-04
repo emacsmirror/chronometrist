@@ -411,7 +411,8 @@ Value must be a keyword corresponding to a key in
   "Return number of records in BACKEND.")
 
 (cl-defgeneric chronometrist-to-hash-table (backend)
-  "Return data in BACKEND as a hash table.")
+  "Return data in BACKEND as a hash table in chronological order.
+Hash table keys are ISO-8601 date strings. Hash table values are lists of records, represented by plists. Both hash table keys and hash table values must be in chronological order.")
 
 (cl-defgeneric chronometrist-from-hash-table (backend hash-table)
   "Save data from HASH-TABLE to BACKEND.")
@@ -489,15 +490,11 @@ EXPR is bound to each s-expression."
       (plist-get last-event :name))))
 
 (defvar chronometrist-events)
-(defun chronometrist-sexp-events-populate ()
-  "Populate hash table `chronometrist-events'.
-The data is acquired from `chronometrist-file'.
-
-Return final number of events read from file, or nil if there
-were none."
-  (chronometrist-sexp-in-file (chronometrist-backend-file (chronometrist-active-backend))
+(cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-min))
-    (let ((index 0) expr pending-expr)
+    (let ((table chronometrist-events)
+          expr pending-expr)
       (while (or pending-expr
                  (setq expr (ignore-errors (read (current-buffer)))))
         ;; find and split midnight-spanning events during deserialization itself
@@ -511,15 +508,14 @@ were none."
                                  (t expr)))
                (new-value-date (--> (plist-get new-value :start)
                                     (substring it 0 10)))
-               (existing-value (gethash new-value-date chronometrist-events)))
-          (unless pending-expr (cl-incf index))
+               (existing-value (gethash new-value-date table)))
           (puthash new-value-date
                    (if existing-value
                        (append existing-value
                                (list new-value))
                      (list new-value))
-                   chronometrist-events)))
-      (unless (zerop index) index))))
+                   table)))
+      table)))
 
 (cl-defmethod chronometrist-create-file ((backend chronometrist-plist-backend))
   (let ((file (chronometrist-backend-file backend)))
@@ -817,7 +813,7 @@ The data is acquired from `chronometrist-file'.
 Return final number of events read from file, or nil if there
 were none."
   (clrhash chronometrist-events)
-  (chronometrist-sexp-events-populate))
+  (chronometrist-to-hash-table (chronometrist-active-backend)))
 
 (defun chronometrist-events-update (plist &optional replace)
   "Add PLIST to the end of `chronometrist-events'.
