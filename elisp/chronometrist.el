@@ -500,13 +500,13 @@ were none."
                    chronometrist-events)))
       (unless (zerop index) index))))
 
-(defun chronometrist-sexp-create-file ()
-  "Create `chronometrist-file' if it doesn't already exist."
-  (unless (file-exists-p chronometrist-file)
-    (with-current-buffer (find-file-noselect chronometrist-file)
-      (goto-char (point-min))
-      (insert ";;; -*- mode: chronometrist-sexp; -*-")
-      (write-file chronometrist-file))))
+(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-backend))
+  (let ((file (file backend)))
+    (unless (file-exists-p file)
+      (with-current-buffer (find-file-noselect file)
+        (goto-char (point-min))
+        (insert ";;; -*- mode: chronometrist-sexp; -*-")
+        (write-file file)))))
 
 (cl-defun chronometrist-sexp-new (plist)
   "Add new PLIST at the end of `chronometrist-file'."
