@@ -167,7 +167,7 @@ INITIAL-INPUT is as used in `completing-read'."
 _ARGS are ignored. This function always returns t, so it can be
 used in `chronometrist-before-out-functions'."
   (interactive)
-  (let* ((last-expr (chronometrist-last))
+  (let* ((last-expr (chronometrist-latest-record (chronometrist-active-backend)))
          (last-name (plist-get last-expr :name))
          (_history  (chronometrist-tags-history-populate last-name
                                              chronometrist-tags-history chronometrist-file))
@@ -179,12 +179,13 @@ used in `chronometrist-before-out-functions'."
                          (chronometrist-maybe-string-to-symbol))))
     (when input
       (--> (append last-tags input)
-        (reverse it)
-        (cl-remove-duplicates it :test #'equal)
-        (reverse it)
-        (list :tags it)
-        (chronometrist-plist-update (chronometrist-sexp-last) it)
-        (chronometrist-sexp-replace-last it)))
+           (reverse it)
+           (cl-remove-duplicates it :test #'equal)
+           (reverse it)
+           (list :tags it)
+           (chronometrist-plist-update
+            (chronometrist-latest-record (chronometrist-active-backend)) it)
+           (chronometrist-replace-last (chronometrist-active-backend) it)))
     t))
 
 (defgroup chronometrist-key-values nil
@@ -288,7 +289,7 @@ It currently supports ido, ido-ubiquitous, ivy, and helm."
   "Prompt the user to enter keys.
 USED-KEYS are keys they have already added since the invocation
 of `chronometrist-kv-add'."
-  (let ((key-suggestions (--> (chronometrist-last)
+  (let ((key-suggestions (--> (chronometrist-latest-record (chronometrist-active-backend))
                            (plist-get it :name)
                            (gethash it chronometrist-key-history))))
     (completing-read (format "Key (%s to quit): "
@@ -335,18 +336,19 @@ used in `chronometrist-before-out-functions'."
   (interactive)
   (let* ((buffer      (get-buffer-create chronometrist-kv-buffer-name))
          (first-key-p t)
-         (last-sexp   (chronometrist-last))
+         (last-sexp   (chronometrist-latest-record (chronometrist-active-backend)))
          (last-name   (plist-get last-sexp :name))
          (last-kvs    (chronometrist-plist-key-values last-sexp))
          (used-keys   (--map (chronometrist-keyword-to-string it)
-                             (seq-filter #'keywordp last-kvs))))
-    (chronometrist-key-history-populate last-name chronometrist-key-history chronometrist-file)
-    (chronometrist-value-history-populate chronometrist-value-history chronometrist-file)
+                             (seq-filter #'keywordp last-kvs)))
+         (file        (file (chronometrist-active-backend))))
+    (chronometrist-key-history-populate last-name chronometrist-key-history file)
+    (chronometrist-value-history-populate chronometrist-value-history file)
     (switch-to-buffer buffer)
     (with-current-buffer buffer
       (erase-buffer)
       (chronometrist-kv-read-mode)
-      (if (and (chronometrist-current-task) last-kvs)
+      (if (and (chronometrist-current-task (chronometrist-active-backend)) last-kvs)
           (progn
             (funcall chronometrist-sexp-pretty-print-function last-kvs buffer)
             (down-list -1)
@@ -377,14 +379,15 @@ used in `chronometrist-before-out-functions'."
 (defun chronometrist-kv-accept ()
   "Accept the plist in `chronometrist-kv-buffer-name' and add it to `chronometrist-file'."
   (interactive)
-  (let (user-kv-expr)
+  (let ((latest (chronometrist-latest-record (chronometrist-active-backend)))
+        user-kv-expr)
     (with-current-buffer (get-buffer chronometrist-kv-buffer-name)
       (goto-char (point-min))
       (setq user-kv-expr (ignore-errors (read (current-buffer))))
       (kill-buffer chronometrist-kv-buffer-name))
     (if user-kv-expr
-        (chronometrist-sexp-replace-last
-         (chronometrist-plist-update (chronometrist-sexp-last) user-kv-expr))
+        (chronometrist-replace-last (chronometrist-active-backend)
+                        (chronometrist-plist-update latest user-kv-expr))
       (chronometrist-refresh))))
 
 (defun chronometrist-kv-reject ()
@@ -401,25 +404,30 @@ used in `chronometrist-before-out-functions'."
     ["Change tags and key-values for active/last interval"
      chronometrist-key-values-unified-prompt]))
 
-(cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-sexp-last) :name)))
+(cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-latest-record (chronometrist-active-backend)) :name)))
   "Query user for tags and key-values to be added for TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
   (interactive)
-  (let ((key-values (chronometrist-loop-file for plist in chronometrist-file
-                      when (equal (plist-get plist :name) task)
-                      collect
-                      (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
-                        (when plist (format "%S" plist)))
-                      into key-value-plists
-                      finally return
-                      (--> (seq-filter #'identity key-value-plists)
-                        (cl-remove-duplicates it :test #'equal :from-end t)))))
+  (let* ((backend (chronometrist-active-backend))
+         (key-values
+          (cl-loop for plist in (chronometrist-list-records backend)
+            when (equal (plist-get plist :name) task)
+            collect
+            (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
+              (when plist (format "%S" plist)))
+            into key-value-plists
+            finally return
+            (--> (seq-filter #'identity key-value-plists)
+                 (cl-remove-duplicates it :test #'equal :from-end t))))
+         (latest (chronometrist-latest-record backend)))
     (if (null key-values)
         (progn (chronometrist-tags-add) (chronometrist-kv-add))
-      (chronometrist-sexp-replace-last
-       (chronometrist-plist-update (chronometrist-sexp-last)
-                       (read (completing-read (format "Key-values for %s: " task)
-                                              key-values))))))
+      (chronometrist-replace-last
+       backend
+       (chronometrist-plist-update
+        latest
+        (read (completing-read (format "Key-values for %s: " task)
+                               key-values))))))
   t)
 
 (provide 'chronometrist-key-values)

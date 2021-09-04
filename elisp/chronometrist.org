@@ -1029,6 +1029,11 @@ Value must be a keyword corresponding to a key in
   "Save data from HASH-TABLE to BACKEND.")
 #+END_SRC
 
+**** list-records                                       :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-list-records (backend)
+  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
+#+END_SRC
 *** plist backend
 In this format, user data is stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
 
@@ -1185,7 +1190,7 @@ EXPR is bound to each s-expression."
 **** edit-file                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
-  (find-file-other-window (path backend))
+  (find-file-other-window (file backend))
   (goto-char (point-max)))
 #+END_SRC
 **** count-records                                         :reader:method:
@@ -1317,6 +1322,11 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
   (let ((task-list (chronometrist-list-tasks backend)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
+#+END_SRC
+**** list-records                                          :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
+  (chronometrist-loop-file for plist in (file backend) collect plist))
 #+END_SRC
 **** file-state                                        :internal:variable:
 :PROPERTIES:

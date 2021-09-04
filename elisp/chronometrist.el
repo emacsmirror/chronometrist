@@ -416,6 +416,9 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-from-hash-table (backend hash-table)
   "Save data from HASH-TABLE to BACKEND.")
 
+(cl-defgeneric chronometrist-list-records (backend)
+  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
+
 (defclass chronometrist-plist-backend (chronometrist-backend) ())
 
 (add-to-list 'chronometrist-backends-alist
@@ -462,7 +465,7 @@ EXPR is bound to each s-expression."
        ,@loop-clauses)))
 
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
-  (find-file-other-window (path backend))
+  (find-file-other-window (file backend))
   (goto-char (point-max)))
 
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
@@ -567,6 +570,9 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
          collect (plist-get plist :name))
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
+
+(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
+  (chronometrist-loop-file for plist in (file backend) collect plist))
 
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.
