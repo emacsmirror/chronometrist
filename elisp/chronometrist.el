@@ -455,9 +455,8 @@ EXPR is bound to each s-expression."
   (find-file-other-window (path backend))
   (goto-char (point-max)))
 
-(defun chronometrist-sexp-last ()
-  "Return last s-expression from `chronometrist-file'."
-  (chronometrist-sexp-in-file chronometrist-file
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (file backend)
     (goto-char (point-max))
     (backward-list)
     (ignore-errors (read (current-buffer)))))
