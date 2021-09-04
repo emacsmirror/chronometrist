@@ -331,10 +331,25 @@ The list must be on a single line, as emitted by `prin1'."
          :documentation
          "Path to file associated with a backend object.")))
 
-(defvar chronometrist--active-backend
-  (make-instance 'chronometrist-plist-backend))
+(defvar chronometrist-backends-alist
+  "Alist of Chronometrist backends.
+Each element must be in the form `(KEYWORD TAG OBJECT)', where
+TAG is a string used as a tag in customization, and OBJECT is an
+EIEIO object such as one returned by `make-instance'."
+  `((:plist "Store records as plists."
+            ,(make-instance 'chronometrist-plist-backend))))
 
-(defcustom chronometrist-active-backend)
+(defcustom chronometrist-active-backend :plist
+  "The backend currently in use.
+Value must be a keyword corresponding to a key in
+`chronometrist-backends-alist'."
+  :type `(choice
+          ,@(cl-loop for elt in chronometrist-backends-alist
+              collect `(const :tag ,(second elt)
+                              ,(first elt)))))
+
+(defun chronometrist-active-backend ()
+  (alist-get chronometrist-active-backend chronometrist-backends-alist))
 
 (cl-defgeneric chronometrist-current-task (backend)
   "Return the name of the active task, or nil if not clocked in.")
@@ -1017,7 +1032,7 @@ is clocked in to a task."
     ;; No need to update the buffer if there is no active task, or if
     ;; the file is being edited by the user. (The file may be in an
     ;; invalid state, and reading it then may result in a read error.)
-    (when (and (chronometrist-current-task chronometrist--active-backend)
+    (when (and (chronometrist-current-task (chronometrist-active-backend))
                (not (buffer-modified-p file-buffer)))
       (when (get-buffer-window chronometrist-buffer-name)
         (chronometrist-refresh))
