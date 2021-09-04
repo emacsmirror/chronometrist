@@ -545,9 +545,9 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (insert "\n")
       (unless (eobp) (insert "\n")))))
 
-(defun chronometrist-task-list ()
-  "Return a list of tasks from `chronometrist-file'."
-  (--> (chronometrist-loop-file for plist in chronometrist-file collect (plist-get plist :name))
+(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
+  (--> (chronometrist-loop-file for plist in (file backend)
+         collect (plist-get plist :name))
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 
@@ -891,7 +891,7 @@ which span midnights."
   "List of tasks in `chronometrist-file'.")
 
 (defun chronometrist-reset-task-list ()
-  (setq chronometrist-task-list (chronometrist-task-list)))
+  (setq chronometrist-task-list (chronometrist-list-tasks backend)))
 
 (defun chronometrist-add-to-task-list (task)
   (unless (cl-member task chronometrist-task-list :test #'equal)

@@ -1172,7 +1172,7 @@ EXPR is bound to each s-expression."
   (find-file-other-window (path backend))
   (goto-char (point-max)))
 #+END_SRC
-**** latest-record                                                :reader:
+**** latest-record                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (file backend)
@@ -1180,7 +1180,7 @@ EXPR is bound to each s-expression."
     (backward-list)
     (ignore-errors (read (current-buffer)))))
 #+END_SRC
-**** current-task                                                 :reader:
+**** current-task                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
   (let ((last-event (chronometrist-sexp-last)))
@@ -1223,7 +1223,7 @@ were none."
                    chronometrist-events)))
       (unless (zerop index) index))))
 #+END_SRC
-**** create-file                                                  :writer:
+**** create-file                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-create-file ((backend chronometrist-plist-backend))
   (let ((file (file backend)))
@@ -1233,7 +1233,7 @@ were none."
         (insert ";;; -*- mode: chronometrist-sexp; -*-")
         (write-file file)))))
 #+END_SRC
-**** insert                                                       :writer:
+**** insert                                                :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   "Add new PLIST at the end of `chronometrist-file'."
@@ -1246,7 +1246,7 @@ were none."
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
     (save-buffer)))
 #+END_SRC
-**** replace-last                                                 :writer:
+**** replace-last                                          :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
   "Replace the last s-expression in `chronometrist-file' with PLIST."
@@ -1276,18 +1276,18 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 #+END_SRC
 
-**** task-list                                                    :reader:
+**** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-task-list ()
-  "Return a list of tasks from `chronometrist-file'."
-  (--> (chronometrist-loop-file for plist in chronometrist-file collect (plist-get plist :name))
+(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
+  (--> (chronometrist-loop-file for plist in (file backend)
+         collect (plist-get plist :name))
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 #+END_SRC
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest task-list ()
-  (let ((task-list (chronometrist-task-list)))
+  (let ((task-list (chronometrist-list-tasks backend)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
 #+END_SRC
@@ -1836,7 +1836,7 @@ which span midnights."
 *** reset-task-list                                                :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset-task-list ()
-  (setq chronometrist-task-list (chronometrist-task-list)))
+  (setq chronometrist-task-list (chronometrist-list-tasks backend)))
 #+END_SRC
 *** add-to-task-list                                               :writer:
 #+BEGIN_SRC emacs-lisp
