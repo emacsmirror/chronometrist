@@ -412,10 +412,15 @@ Value must be a keyword corresponding to a key in
 
 (cl-defgeneric chronometrist-to-hash-table (backend)
   "Return data in BACKEND as a hash table in chronological order.
-Hash table keys are ISO-8601 date strings. Hash table values are lists of records, represented by plists. Both hash table keys and hash table values must be in chronological order.")
+Hash table keys are ISO-8601 date strings. Hash table values are
+lists of records, represented by plists. Both hash table keys and
+hash table values must be in chronological order.")
 
 (cl-defgeneric chronometrist-to-file (backend hash-table)
-  "Save data from HASH-TABLE to BACKEND.")
+  "Save data in HASH-TABLE to BACKEND.
+Hash table keys are ISO-8601 date strings. Hash table values are
+lists of records, represented by plists. Both hash table keys and
+hash table values must be in chronological order.")
 
 (cl-defgeneric chronometrist-list-records (backend)
   "Return all records in BACKEND as a list of plists, in reverse chronological order.")

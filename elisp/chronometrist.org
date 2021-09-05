@@ -1020,13 +1020,18 @@ Value must be a keyword corresponding to a key in
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-to-hash-table (backend)
   "Return data in BACKEND as a hash table in chronological order.
-Hash table keys are ISO-8601 date strings. Hash table values are lists of records, represented by plists. Both hash table keys and hash table values must be in chronological order.")
+Hash table keys are ISO-8601 date strings. Hash table values are
+lists of records, represented by plists. Both hash table keys and
+hash table values must be in chronological order.")
 #+END_SRC
 
 **** to-file                                            :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-to-file (backend hash-table)
-  "Save data from HASH-TABLE to BACKEND.")
+  "Save data in HASH-TABLE to BACKEND.
+Hash table keys are ISO-8601 date strings. Hash table values are
+lists of records, represented by plists. Both hash table keys and
+hash table values must be in chronological order.")
 #+END_SRC
 
 **** list-records                                       :generic:function:
