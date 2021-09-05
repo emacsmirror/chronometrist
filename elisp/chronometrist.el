@@ -414,7 +414,7 @@ Value must be a keyword corresponding to a key in
   "Return data in BACKEND as a hash table in chronological order.
 Hash table keys are ISO-8601 date strings. Hash table values are lists of records, represented by plists. Both hash table keys and hash table values must be in chronological order.")
 
-(cl-defgeneric chronometrist-from-hash-table (backend hash-table)
+(cl-defgeneric chronometrist-to-file (backend hash-table)
   "Save data from HASH-TABLE to BACKEND.")
 
 (cl-defgeneric chronometrist-list-records (backend)
@@ -666,6 +666,69 @@ Return
                    (progn (goto-char last-start)
                           (forward-list)))))
            :modify))))
+
+(defclass chronometrist-plist-group-backend (chronometrist-backend)
+  ((extension :initform "plg"
+              :accessor chronometrist-backend-ext
+              :custom 'string)))
+
+(add-to-list 'chronometrist-backends-alist
+             `(:plist-groups "Store records as plists grouped by date."
+                      ,(make-instance 'chronometrist-plist-group-backend
+                                      :path chronometrist-file
+                                      :ext "plg")))
+
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (backward-list)
+    (let ((latest-date
+           (ignore-errors (read (current-buffer)))))
+      (first (last latest-date)))))
+
+(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end))
+
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date))
+
+(cl-defmethod chronometrist-task-time ((backend chronometrist-plist-group-backend) task date))
+
+(cl-defmethod chronometrist-active-time ((backend chronometrist-plist-group-backend) date))
+
+(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
+
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist))
+
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist))
+
+(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-group-backend))
+  (unless (file-exists-p (chronometrist-backend-file backend))))
+
+(cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (cl-loop for date being the hash-keys of hash-table
+      using (hash-values plists) do
+      (insert
+       (chronometrist-plist-pp (apply #'list date plists))
+       "\n")
+      finally do (save-buffer))))
+
+(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod chronometrist-on-file-change ((backend chronometrist-plist-group-backend)))
+
+(defun chronometrist-migrate (&optional from-backend to-backend)
+  (interactive "SFrom: \nSTo: ")
+  (chronometrist-to-file to-backend (chronometrist-to-hash-table from-backend)))
 
 (defvar chronometrist-migrate-table (make-hash-table))
 

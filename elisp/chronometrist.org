@@ -872,7 +872,6 @@ The list must be on a single line, as emitted by `prin1'."
 :PROPERTIES:
 :CUSTOM_ID: program-backend
 :END:
-
 *** chronometrist-file                                                 :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-file
@@ -1026,7 +1025,7 @@ Hash table keys are ISO-8601 date strings. Hash table values are lists of record
 
 **** from-hash-table                                    :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-from-hash-table (backend hash-table)
+(cl-defgeneric chronometrist-to-file (backend hash-table)
   "Save data from HASH-TABLE to BACKEND.")
 #+END_SRC
 
@@ -1209,7 +1208,6 @@ EXPR is bound to each s-expression."
       do (cl-incf count)
       finally return count)))
 #+END_SRC
-
 **** latest-record                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
@@ -1525,10 +1523,113 @@ Return
       (setq chronometrist--file-state chronometrist--file-state-old
             chronometrist-events chronometrist-events-old))))
 #+END_SRC
+*** plist group backend
+**** backend                                                       :class:
+#+BEGIN_SRC emacs-lisp
+(defclass chronometrist-plist-group-backend (chronometrist-backend)
+  ((extension :initform "plg"
+              :accessor chronometrist-backend-ext
+              :custom 'string)))
+
+(add-to-list 'chronometrist-backends-alist
+             `(:plist-groups "Store records as plists grouped by date."
+                      ,(make-instance 'chronometrist-plist-group-backend
+                                      :path chronometrist-file
+                                      :ext "plg")))
+#+END_SRC
+**** current-task                                          :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+**** latest-record                                         :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (backward-list)
+    (let ((latest-date
+           (ignore-errors (read (current-buffer)))))
+      (first (last latest-date)))))
+#+END_SRC
+**** list-tasks                                            :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end))
+#+END_SRC
+**** task-records                                          :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date))
+#+END_SRC
+**** task-time                                             :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-task-time ((backend chronometrist-plist-group-backend) task date))
+#+END_SRC
+**** active-time                                           :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-active-time ((backend chronometrist-plist-group-backend) date))
+#+END_SRC
+**** active-days                                           :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
+#+END_SRC
+**** insert                                                :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist))
+#+END_SRC
+**** replace-last                                          :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist))
+#+END_SRC
+**** create-file                                           :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-group-backend))
+  (unless (file-exists-p (chronometrist-backend-file backend))))
+#+END_SRC
+**** view-file                                                    :method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+**** edit-file                                                    :method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+**** count-records                                         :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+**** to-hash-table                                         :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+**** from-hash-table                                       :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (cl-loop for date being the hash-keys of hash-table
+      using (hash-values plists) do
+      (insert
+       (chronometrist-plist-pp (apply #'list date plists))
+       "\n")
+      finally do (save-buffer))))
+#+END_SRC
+
+**** list-records                                          :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+**** on-file-change                                               :method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-file-change ((backend chronometrist-plist-group-backend)))
+#+END_SRC
 ** TODO Migration
 1. [ ] Use EIEIO to make a =chronometrist-migrate= command which calls a generic function.
 2. [ ] Write importer for Org time tracking.
 
+*** migrate
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-migrate (&optional from-backend to-backend)
+  (interactive "SFrom: \nSTo: ")
+  (chronometrist-to-file to-backend (chronometrist-to-hash-table from-backend)))
+#+END_SRC
 *** table                                                        :variable:
 :PROPERTIES:
 :VALUE:    hash table
@@ -3689,9 +3790,7 @@ be a hash table similar to `chronometrist-events'."
   (cl-loop for plist in (chronometrist-details-intervals-for-range range table)
     when (chronometrist-details-filter-match-p plist filter)
     collect plist))
-
 #+END_SRC
-
 ** Provide
 #+BEGIN_SRC emacs-lisp
 (provide 'chronometrist)
