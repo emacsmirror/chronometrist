@@ -1023,7 +1023,7 @@ Value must be a keyword corresponding to a key in
 Hash table keys are ISO-8601 date strings. Hash table values are lists of records, represented by plists. Both hash table keys and hash table values must be in chronological order.")
 #+END_SRC
 
-**** from-hash-table                                    :generic:function:
+**** to-file                                            :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-to-file (backend hash-table)
   "Save data from HASH-TABLE to BACKEND.")
@@ -1600,7 +1600,7 @@ Return
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
 #+END_SRC
-**** from-hash-table                                       :writer:method:
+**** to-file                                               :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
