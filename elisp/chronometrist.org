@@ -1221,7 +1221,7 @@ EXPR is bound to each s-expression."
 **** current-task                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
-  (let ((last-event (chronometrist-latest-record (chronometrist-active-backend))))
+  (let ((last-event (chronometrist-latest-record backend)))
     (if (plist-member last-event :stop)
         nil
       (plist-get last-event :name))))
@@ -3702,4 +3702,5 @@ be a hash table similar to `chronometrist-events'."
 ** Local variables                                                :NOEXPORT:
 # Local Variables:
 # nameless-aliases: (("cb" . "chronometrist-backend") ("c" . "chronometrist"))
+# nameless-current-name: "chronometrist"
 # End:

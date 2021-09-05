@@ -487,7 +487,7 @@ EXPR is bound to each s-expression."
     (ignore-errors (read (current-buffer)))))
 
 (cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
-  (let ((last-event (chronometrist-latest-record (chronometrist-active-backend))))
+  (let ((last-event (chronometrist-latest-record backend)))
     (if (plist-member last-event :stop)
         nil
       (plist-get last-event :name))))
