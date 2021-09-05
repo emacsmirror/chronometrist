@@ -1524,6 +1524,8 @@ Return
             chronometrist-events chronometrist-events-old))))
 #+END_SRC
 *** plist group backend
+This is largely like the plist backend, but plists are grouped by date. This makes it easy and computationally cheap to perform our most common query - getting the plists on a given day. [[#explanation-midnight-spanning-intervals][Midnight-spanning intervals]] are split in the file itself. The downside is that the user, if editing it by hand, must take care to split the intervals.
+
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-plist-group-backend (chronometrist-backend)
