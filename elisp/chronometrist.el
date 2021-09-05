@@ -587,7 +587,7 @@ last s-expression.
 REST-START and REST-END represent the start of the file and the
 end of the second-last s-expression.")
 
-(defun chronometrist-file-hash (&optional start end hash)
+(defun chronometrist-file-hash (file &optional start end hash)
   "Calculate hash of `chronometrist-file' between START and END.
 START can be
 a number or marker,
@@ -603,7 +603,7 @@ Return (START END) if HASH is nil, else (START END HASH).
 
 Return a list in the form (A B HASH), where A and B are markers
 in `chronometrist-file' describing the region for which HASH was calculated."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file file
     (let* ((start (cond ((number-or-marker-p start) start)
                         ((eq :before-last start)
                          (goto-char (point-max))
@@ -630,8 +630,8 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                  (funcall position)))
     (ignore-errors (read (current-buffer)))))
 
-(defun chronometrist-file-change-type (state)
-  "Determine the type of change made to `chronometrist-file'.
+(defun chronometrist-file-change-type (file state)
+  "Determine the type of change made to FILE.
 STATE must be a plist. (see `chronometrist--file-state')
 
 Return
@@ -646,9 +646,9 @@ Return
        (last-expr-file  (chronometrist-read-from last-start))
        (last-expr-ht    (chronometrist-events-last))
        (last-same-p     (equal last-expr-ht last-expr-file))
-       (file-new-length (chronometrist-sexp-in-file chronometrist-file (point-max)))
+       (file-new-length (chronometrist-sexp-in-file file (point-max)))
        (rest-same-p     (unless (< file-new-length rest-end)
-                          (--> (chronometrist-file-hash rest-start rest-end t)
+                          (--> (chronometrist-file-hash file rest-start rest-end t)
                             (cl-third it)
                             (equal rest-hash it)))))
     ;; (message "chronometrist - last-start\nlast-expr-file - %S\nlast-expr-ht - %S"
@@ -1277,9 +1277,10 @@ Re-read `chronometrist-file', update `chronometrist-events', and
 refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
-  (-let* (((descriptor action _ _) fs-event)
+  (-let* ((file (chronometrist-backend-file (chronometrist-active-backend)))
+          ((descriptor action _ _) fs-event)
           (change      (when chronometrist--file-state
-                         (chronometrist-file-change-type chronometrist--file-state)))
+                         (chronometrist-file-change-type file chronometrist--file-state)))
           (reset-watch (or (eq action 'deleted)
                            (eq action 'renamed))))
     ;; (message "chronometrist - file change type is %s" change)
@@ -1318,8 +1319,8 @@ refresh the `chronometrist' buffer."
                     (puthash date it chronometrist-events))))
                ((pred null) nil)))))
     (setq chronometrist--file-state
-          (list :last (chronometrist-file-hash :before-last nil)
-                :rest (chronometrist-file-hash nil :before-last t)))
+          (list :last (chronometrist-file-hash file :before-last nil)
+                :rest (chronometrist-file-hash file nil :before-last t)))
     ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
     (chronometrist-refresh)))
 
