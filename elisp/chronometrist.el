@@ -423,7 +423,26 @@ Hash table keys are ISO-8601 date strings. Hash table values are lists of record
 (cl-defgeneric chronometrist-on-file-change (backend)
   "Function to be run when file for BACKEND changes.")
 
-(defclass chronometrist-plist-backend (chronometrist-backend) ())
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend) ()
+  :documentation "Base class for any text file backend which stores s-expressions readable by Emacs Lisp.")
+
+(define-derived-mode chronometrist-sexp-mode
+  ;; fundamental-mode
+  emacs-lisp-mode
+  "chronometrist-sexp")
+
+(cl-defmethod chronometrist-create-file ((backend chronometrist-elisp-sexp-backend))
+  (let ((file (chronometrist-backend-file backend)))
+    (unless (file-exists-p file)
+      (with-current-buffer (find-file-noselect file)
+        (goto-char (point-min))
+        (insert ";;; -*- mode: chronometrist-sexp; -*-")
+        (write-file file)))))
+
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
+  (extension :initform "plist"
+             :accessor chronometrist-backend-ext
+             :custom 'string))
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
@@ -437,11 +456,6 @@ Like `pp', it must accept an OBJECT and optionally a
 STREAM (which is the value of `current-buffer')."
   :type 'function
   :group 'chronometrist)
-
-(define-derived-mode chronometrist-sexp-mode
-  ;; fundamental-mode
-  emacs-lisp-mode
-  "chronometrist-sexp")
 
 (defmacro chronometrist-sexp-in-file (file &rest body)
   "Run BODY in a buffer visiting FILE, restoring point afterwards."
@@ -519,14 +533,6 @@ EXPR is bound to each s-expression."
                      (list new-value))
                    table)))
       table)))
-
-(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-backend))
-  (let ((file (chronometrist-backend-file backend)))
-    (unless (file-exists-p file)
-      (with-current-buffer (find-file-noselect file)
-        (goto-char (point-min))
-        (insert ";;; -*- mode: chronometrist-sexp; -*-")
-        (write-file file)))))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   "Add new PLIST at the end of `chronometrist-file'."
@@ -667,7 +673,7 @@ Return
                           (forward-list)))))
            :modify))))
 
-(defclass chronometrist-plist-group-backend (chronometrist-backend)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -678,8 +684,6 @@ Return
                                       :path chronometrist-file
                                       :ext "plg")))
 
-(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
-
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
@@ -687,6 +691,8 @@ Return
     (let ((latest-date
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
+
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end))
 
@@ -702,9 +708,6 @@ Return
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist))
 
-(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-group-backend))
-  (unless (file-exists-p (chronometrist-backend-file backend))))
-
 (cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-group-backend)))
@@ -714,6 +717,7 @@ Return
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
+  (chronometrist-create-file backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (cl-loop for date being the hash-keys of hash-table
       using (hash-values plists) do

@@ -1039,6 +1039,29 @@ Hash table keys are ISO-8601 date strings. Hash table values are lists of record
 (cl-defgeneric chronometrist-on-file-change (backend)
   "Function to be run when file for BACKEND changes.")
 #+END_SRC
+*** plist backends common
+**** elisp-sexp-backend                                            :class:
+#+BEGIN_SRC emacs-lisp
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend) ()
+  :documentation "Base class for any text file backend which stores s-expressions readable by Emacs Lisp.")
+#+END_SRC
+**** sexp-mode                                                :major:mode:
+#+BEGIN_SRC emacs-lisp
+(define-derived-mode chronometrist-sexp-mode
+  ;; fundamental-mode
+  emacs-lisp-mode
+  "chronometrist-sexp")
+#+END_SRC
+**** create-file                                           :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-create-file ((backend chronometrist-elisp-sexp-backend))
+  (let ((file (chronometrist-backend-file backend)))
+    (unless (file-exists-p file)
+      (with-current-buffer (find-file-noselect file)
+        (goto-char (point-min))
+        (insert ";;; -*- mode: chronometrist-sexp; -*-")
+        (write-file file)))))
+#+END_SRC
 *** plist backend
 In this format, user data is stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
 
@@ -1139,7 +1162,10 @@ Boilerplate for updating state between file operations in tests.
 #+END_SRC
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-backend (chronometrist-backend) ())
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
+  (extension :initform "plist"
+             :accessor chronometrist-backend-ext
+             :custom 'string))
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
@@ -1155,13 +1181,6 @@ Like `pp', it must accept an OBJECT and optionally a
 STREAM (which is the value of `current-buffer')."
   :type 'function
   :group 'chronometrist)
-#+END_SRC
-**** sexp-mode                                                :major:mode:
-#+BEGIN_SRC emacs-lisp
-(define-derived-mode chronometrist-sexp-mode
-  ;; fundamental-mode
-  emacs-lisp-mode
-  "chronometrist-sexp")
 #+END_SRC
 **** in-file                                                       :macro:
 #+BEGIN_SRC emacs-lisp
@@ -1253,16 +1272,6 @@ EXPR is bound to each s-expression."
                      (list new-value))
                    table)))
       table)))
-#+END_SRC
-**** create-file                                           :writer:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-backend))
-  (let ((file (chronometrist-backend-file backend)))
-    (unless (file-exists-p file)
-      (with-current-buffer (find-file-noselect file)
-        (goto-char (point-min))
-        (insert ";;; -*- mode: chronometrist-sexp; -*-")
-        (write-file file)))))
 #+END_SRC
 **** insert                                                :writer:method:
 #+BEGIN_SRC emacs-lisp
@@ -1528,7 +1537,7 @@ This is largely like the plist backend, but plists are grouped by date. This mak
 
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-group-backend (chronometrist-backend)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -1539,10 +1548,6 @@ This is largely like the plist backend, but plists are grouped by date. This mak
                                       :path chronometrist-file
                                       :ext "plg")))
 #+END_SRC
-**** current-task                                          :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
-#+END_SRC
 **** latest-record                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
@@ -1552,6 +1557,10 @@ This is largely like the plist backend, but plists are grouped by date. This mak
     (let ((latest-date
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
+#+END_SRC
+**** current-task                                          :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
 #+END_SRC
 **** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
@@ -1581,11 +1590,6 @@ This is largely like the plist backend, but plists are grouped by date. This mak
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist))
 #+END_SRC
-**** create-file                                           :writer:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-create-file ((backend chronometrist-plist-group-backend))
-  (unless (file-exists-p (chronometrist-backend-file backend))))
-#+END_SRC
 **** view-file                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))
@@ -1605,6 +1609,7 @@ This is largely like the plist backend, but plists are grouped by date. This mak
 **** to-file                                               :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
+  (chronometrist-create-file backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (cl-loop for date being the hash-keys of hash-table
       using (hash-values plists) do
