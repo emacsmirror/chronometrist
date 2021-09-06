@@ -193,6 +193,9 @@ TS must be a ts struct (see `ts.el')."
     (forward-sexp (or arg 1))
     (delete-region point-1 (point))))
 
+(defun chronometrist-make-hash-table ()
+  (make-hash-table :test #'equal))
+
 (defun chronometrist-plist-pp-normalize-whitespace ()
   "Remove whitespace following point, and insert a space.
 Point is placed at the end of the space."
@@ -465,9 +468,9 @@ expression first)."
        ,@loop-clauses)))
 
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
-  (extension :initform "plist"
+  ((extension :initform "plist"
              :accessor chronometrist-backend-ext
-             :custom 'string))
+             :custom 'string)))
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
@@ -512,11 +515,10 @@ STREAM (which is the value of `current-buffer')."
         nil
       (plist-get last-event :name))))
 
-(defvar chronometrist-events)
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-min))
-    (let ((table chronometrist-events)
+    (let ((table (chronometrist-make-hash-table))
           expr pending-expr)
       (while (or pending-expr
                  (setq expr (ignore-errors (read (current-buffer)))))
@@ -942,8 +944,8 @@ The data is acquired from `chronometrist-file'.
 
 Return final number of events read from file, or nil if there
 were none."
-  (clrhash chronometrist-events)
-  (chronometrist-to-hash-table (chronometrist-active-backend)))
+  (setq chronometrist-events
+        (chronometrist-to-hash-table (chronometrist-active-backend))))
 
 (defun chronometrist-events-update (plist &optional replace)
   "Add PLIST to the end of `chronometrist-events'.
