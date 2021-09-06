@@ -965,7 +965,7 @@ Value must be a keyword corresponding to a key in
 **** task-records                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-task-records (backend task date)
-  "From BACKEND, return a list of records for TASK on DATE.")
+  "From BACKEND, return records for TASK on DATE as a list of plists.")
 #+END_SRC
 
 **** task-time                                          :generic:function:
@@ -1070,7 +1070,7 @@ hash table values must be in chronological order.")
     (unless (file-exists-p file)
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
-        (insert ";;; -*- mode: chronometrist-sexp; -*-")
+        (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file)))))
 #+END_SRC
 **** loop-sexp-file                                                :macro:
@@ -1347,7 +1347,7 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 **** list-records                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-plist-loop-sexp for plist in (chronometrist-backend-file backend) collect plist))
+  (chronometrist-loop-sexp-file for plist in (chronometrist-backend-file backend) collect plist))
 #+END_SRC
 **** file-state                                        :internal:variable:
 :PROPERTIES:
@@ -1594,8 +1594,15 @@ This is largely like the plist backend, but plists are grouped by date. This mak
 
 **** task-records                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date))
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date)
+  (chronometrist-loop-sexp-file for plist-group in (chronometrist-backend-file backend)
+    when (equal date (first plist-group))
+    do (cl-return
+        (cl-loop for plist in (rest plist-group)
+          when (equal task (plist-get plist :name))
+          collect plist))))
 #+END_SRC
+
 **** task-time                                             :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-task-time ((backend chronometrist-plist-group-backend) task date))

@@ -384,7 +384,7 @@ Value must be a keyword corresponding to a key in
   "Return a list of tasks from BACKEND.")
 
 (cl-defgeneric chronometrist-task-records (backend task date)
-  "From BACKEND, return a list of records for TASK on DATE.")
+  "From BACKEND, return records for TASK on DATE as a list of plists.")
 
 (cl-defgeneric chronometrist-task-time (backend task date)
   "From BACKEND, return time recorded for TASK on DATE as integer seconds.")
@@ -444,7 +444,7 @@ hash table values must be in chronological order.")
     (unless (file-exists-p file)
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
-        (insert ";;; -*- mode: chronometrist-sexp; -*-")
+        (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file)))))
 
 (defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
@@ -585,7 +585,7 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
        (sort it #'string-lessp)))
 
 (cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-plist-loop-sexp for plist in (chronometrist-backend-file backend) collect plist))
+  (chronometrist-loop-sexp-file for plist in (chronometrist-backend-file backend) collect plist))
 
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.
@@ -713,7 +713,13 @@ Return
          (cl-remove-duplicates it :test #'equal)
          (sort it #'string-lessp))))
 
-(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date))
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date)
+  (chronometrist-loop-sexp-file for plist-group in (chronometrist-backend-file backend)
+    when (equal date (first plist-group))
+    do (cl-return
+        (cl-loop for plist in (rest plist-group)
+          when (equal task (plist-get plist :name))
+          collect plist))))
 
 (cl-defmethod chronometrist-task-time ((backend chronometrist-plist-group-backend) task date))
 
