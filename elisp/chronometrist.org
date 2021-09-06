@@ -1044,7 +1044,7 @@ hash table values must be in chronological order.")
 (cl-defgeneric chronometrist-on-file-change (backend)
   "Function to be run when file for BACKEND changes.")
 #+END_SRC
-*** plist backends common
+*** Common definitions for s-expression backends
 **** elisp-sexp-backend                                            :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-elisp-sexp-backend (chronometrist-backend) ()
@@ -1556,6 +1556,7 @@ This is largely like the plist backend, but plists are grouped by date. This mak
                                       :path chronometrist-file
                                       :ext "plg")))
 #+END_SRC
+
 **** latest-record                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
