@@ -1632,15 +1632,63 @@ This is largely like the plist backend, but plists are grouped by date. This mak
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-file-change ((backend chronometrist-plist-group-backend)))
 #+END_SRC
-** TODO Migration
-1. [ ] Use EIEIO to make a =chronometrist-migrate= command which calls a generic function.
-2. [ ] Write importer for Org time tracking.
+** Migration
+*** read-backend-name
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-read-backend-name (prompt backend-alist &optional predicate)
+  (let ((backend-keyword
+         (read
+          (completing-read prompt
+                           (cl-loop for list in backend-alist
+                             collect (first list))
+                           predicate t))))
+    (second (alist-get backend-keyword backend-alist))))
+#+END_SRC
+
+*** remove-prefix
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-remove-prefix (string)
+  (replace-regexp-in-string "^chronometrist-" "" string))
+#+END_SRC
 
 *** migrate
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-migrate (&optional from-backend to-backend)
-  (interactive "SFrom: \nSTo: ")
-  (chronometrist-to-file to-backend (chronometrist-to-hash-table from-backend)))
+(defun chronometrist-migrate ()
+  "Convert from one Chronometrist backend to another."
+  (interactive)
+  (let* ((input-backend
+          (chronometrist-read-backend-name "Backend to convert: "
+                              chronometrist-backends-alist))
+         (input-file-suggestion (chronometrist-backend-file input-backend))
+         (input-file (read-file-name "File to convert: " nil
+                                     input-file-suggestion t
+                                     input-file-suggestion))
+         (output-backend (chronometrist-read-backend-name
+                          "Backend to write: "
+                          chronometrist-backends-alist
+                          (lambda (keyword)
+                            (not (equal (second
+                                         (alist-get keyword chronometrist-backends-alist))
+                                        input-backend)))))
+         (output-file-suggestion (chronometrist-backend-file output-backend))
+         (output-file (read-file-name "File to write: " nil
+                                      output-file-suggestion nil
+                                      output-file-suggestion))
+         (input-backend-name  (chronometrist-remove-prefix
+                               (symbol-name
+                                (eieio-object-class-name input-backend))))
+         (output-backend-name (chronometrist-remove-prefix
+                               (symbol-name
+                                (eieio-object-class-name output-backend)))))
+    (if (yes-or-no-p
+         (format "Convert %s (%s) to %s (%s)? "
+                 input-file
+                 input-backend-name
+                 output-file
+                 output-backend-name))
+        (chronometrist-to-file output-backend
+                  (chronometrist-to-hash-table input-backend))
+      (message "Conversion aborted."))))
 #+END_SRC
 *** table                                                        :variable:
 :PROPERTIES:
