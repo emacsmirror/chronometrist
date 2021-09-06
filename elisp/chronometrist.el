@@ -444,6 +444,26 @@ hash table values must be in chronological order.")
         (insert ";;; -*- mode: chronometrist-sexp; -*-")
         (write-file file)))))
 
+(defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
+  "`cl-loop' LOOP-CLAUSES over s-expressions in FILE.
+SEXP is bound to each s-expressions in reverse order (last
+expression first)."
+  (declare (indent defun)
+           (debug nil)
+           ;; FIXME
+           ;; (debug ("for" form "in" form &rest &or sexp form))
+           )
+  `(chronometrist-sexp-in-file ,file
+     (goto-char (point-max))
+     (cl-loop with ,sexp
+       while (and (not (bobp))
+                  (backward-list)
+                  (or (not (bobp))
+                      (not (looking-at-p "^[[:blank:]]*;")))
+                  (setq ,sexp (ignore-errors (read (current-buffer))))
+                  (backward-list))
+       ,@loop-clauses)))
+
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
   (extension :initform "plist"
              :accessor chronometrist-backend-ext
@@ -467,25 +487,6 @@ STREAM (which is the value of `current-buffer')."
   (declare (indent defun) (debug t))
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
-
-(defmacro chronometrist-loop-file (_for expr _in file &rest loop-clauses)
-  "`cl-loop' LOOP-CLAUSES over s-expressions in FILE, in reverse.
-EXPR is bound to each s-expression."
-  (declare (indent defun)
-           (debug nil)
-           ;; FIXME
-           ;; (debug ("for" form "in" form &rest &or sexp form))
-           )
-  `(chronometrist-sexp-in-file ,file
-     (goto-char (point-max))
-     (cl-loop with ,expr
-       while (and (not (bobp))
-                  (backward-list)
-                  (or (not (bobp))
-                      (not (looking-at-p "^[[:blank:]]*;")))
-                  (setq ,expr (ignore-errors (read (current-buffer))))
-                  (backward-list))
-       ,@loop-clauses)))
 
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
   (find-file-other-window (chronometrist-backend-file backend))
@@ -576,13 +577,13 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (--> (chronometrist-loop-file for plist in (chronometrist-backend-file backend)
+  (--> (chronometrist-loop-sexp-file for plist in (chronometrist-backend-file backend)
          collect (plist-get plist :name))
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 
 (cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-loop-file for plist in (chronometrist-backend-file backend) collect plist))
+  (chronometrist-plist-loop-sexp for plist in (chronometrist-backend-file backend) collect plist))
 
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.
@@ -697,9 +698,18 @@ Return
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
 
-(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend))
+  (plist-get (chronometrist-latest-record backend) :name))
 
-(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end))
+(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
+  (chronometrist-loop-sexp-file for plist-group in (chronometrist-backend-file backend)
+    collect (cl-loop for plist in (rest plist-group)
+              collect (plist-get plist :name))
+    into names
+    finally return
+    (--> (flatten-tree names)
+         (cl-remove-duplicates it :test #'equal)
+         (sort it #'string-lessp))))
 
 (cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date))
 

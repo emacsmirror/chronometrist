@@ -1067,6 +1067,29 @@ hash table values must be in chronological order.")
         (insert ";;; -*- mode: chronometrist-sexp; -*-")
         (write-file file)))))
 #+END_SRC
+**** loop-sexp-file                                                :macro:
+#+BEGIN_SRC emacs-lisp
+(defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
+  "`cl-loop' LOOP-CLAUSES over s-expressions in FILE.
+SEXP is bound to each s-expressions in reverse order (last
+expression first)."
+  (declare (indent defun)
+           (debug nil)
+           ;; FIXME
+           ;; (debug ("for" form "in" form &rest &or sexp form))
+           )
+  `(chronometrist-sexp-in-file ,file
+     (goto-char (point-max))
+     (cl-loop with ,sexp
+       while (and (not (bobp))
+                  (backward-list)
+                  (or (not (bobp))
+                      (not (looking-at-p "^[[:blank:]]*;")))
+                  (setq ,sexp (ignore-errors (read (current-buffer))))
+                  (backward-list))
+       ,@loop-clauses)))
+#+END_SRC
+
 *** plist backend
 In this format, user data is stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
 
@@ -1195,27 +1218,7 @@ STREAM (which is the value of `current-buffer')."
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
 #+END_SRC
-**** loop-file                                                     :macro:
-#+BEGIN_SRC emacs-lisp
-(defmacro chronometrist-loop-file (_for expr _in file &rest loop-clauses)
-  "`cl-loop' LOOP-CLAUSES over s-expressions in FILE, in reverse.
-EXPR is bound to each s-expression."
-  (declare (indent defun)
-           (debug nil)
-           ;; FIXME
-           ;; (debug ("for" form "in" form &rest &or sexp form))
-           )
-  `(chronometrist-sexp-in-file ,file
-     (goto-char (point-max))
-     (cl-loop with ,expr
-       while (and (not (bobp))
-                  (backward-list)
-                  (or (not (bobp))
-                      (not (looking-at-p "^[[:blank:]]*;")))
-                  (setq ,expr (ignore-errors (read (current-buffer))))
-                  (backward-list))
-       ,@loop-clauses)))
-#+END_SRC
+
 **** edit-file                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
@@ -1324,7 +1327,7 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 **** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (--> (chronometrist-loop-file for plist in (chronometrist-backend-file backend)
+  (--> (chronometrist-loop-sexp-file for plist in (chronometrist-backend-file backend)
          collect (plist-get plist :name))
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
@@ -1339,7 +1342,7 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 **** list-records                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-loop-file for plist in (chronometrist-backend-file backend) collect plist))
+  (chronometrist-plist-loop-sexp for plist in (chronometrist-backend-file backend) collect plist))
 #+END_SRC
 **** file-state                                        :internal:variable:
 :PROPERTIES:
@@ -1563,14 +1566,26 @@ This is largely like the plist backend, but plists are grouped by date. This mak
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
 #+END_SRC
+
 **** current-task                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend)))
+(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend))
+  (plist-get (chronometrist-latest-record backend) :name))
 #+END_SRC
+
 **** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end))
+(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
+  (chronometrist-loop-sexp-file for plist-group in (chronometrist-backend-file backend)
+    collect (cl-loop for plist in (rest plist-group)
+              collect (plist-get plist :name))
+    into names
+    finally return
+    (--> (flatten-tree names)
+         (cl-remove-duplicates it :test #'equal)
+         (sort it #'string-lessp))))
 #+END_SRC
+
 **** task-records                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date))
