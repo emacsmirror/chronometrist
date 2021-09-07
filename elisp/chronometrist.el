@@ -383,11 +383,11 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of tasks from BACKEND.")
 
+(cl-defgeneric chronometrist-list-records (backend)
+  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
+
 (cl-defgeneric chronometrist-task-records (backend task date)
   "From BACKEND, return records for TASK on DATE as a list of plists.")
-
-(cl-defgeneric chronometrist-task-time (backend task date)
-  "From BACKEND, return time recorded for TASK on DATE as integer seconds.")
 
 (cl-defgeneric chronometrist-active-time (backend date)
   "From BACKEND, return total time recorded on DATE as integer seconds.")
@@ -424,9 +424,6 @@ hash table values must be in chronological order.")
 Hash table keys are ISO-8601 date strings. Hash table values are
 lists of records, represented by plists. Both hash table keys and
 hash table values must be in chronological order.")
-
-(cl-defgeneric chronometrist-list-records (backend)
-  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
 
 (cl-defgeneric chronometrist-on-file-change (backend)
   "Function to be run when file for BACKEND changes.")
@@ -720,8 +717,6 @@ Return
         (cl-loop for plist in (rest plist-group)
           when (equal task (plist-get plist :name))
           collect plist))))
-
-(cl-defmethod chronometrist-task-time ((backend chronometrist-plist-group-backend) task date))
 
 (cl-defmethod chronometrist-active-time ((backend chronometrist-plist-group-backend) date))
 

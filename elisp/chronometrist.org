@@ -962,16 +962,15 @@ Value must be a keyword corresponding to a key in
   "Return a list of tasks from BACKEND.")
 #+END_SRC
 
+**** list-records                                       :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-list-records (backend)
+  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
+#+END_SRC
 **** task-records                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-task-records (backend task date)
   "From BACKEND, return records for TASK on DATE as a list of plists.")
-#+END_SRC
-
-**** task-time                                          :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-task-time (backend task date)
-  "From BACKEND, return time recorded for TASK on DATE as integer seconds.")
 #+END_SRC
 
 **** active-time                                        :generic:function:
@@ -1040,11 +1039,6 @@ lists of records, represented by plists. Both hash table keys and
 hash table values must be in chronological order.")
 #+END_SRC
 
-**** list-records                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-list-records (backend)
-  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
-#+END_SRC
 **** on-file-change                                     :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-on-file-change (backend)
@@ -1603,10 +1597,6 @@ This is largely like the plist backend, but plists are grouped by date. This mak
           collect plist))))
 #+END_SRC
 
-**** task-time                                             :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-task-time ((backend chronometrist-plist-group-backend) task date))
-#+END_SRC
 **** active-time                                           :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-active-time ((backend chronometrist-plist-group-backend) date))
