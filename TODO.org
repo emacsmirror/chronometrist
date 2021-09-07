@@ -714,7 +714,17 @@ See branch =grouped-plist-format=
 1. [X] Migrate backend code to use CLOS
 2. [-] Implement plist-group backend code
 3. [ ] Change hash table format - omit dates from plists
+4. [ ] Mark split intervals with =:split t=
 
 Optional
 1. define generic backend protocol for key-values package
 2. define generic =cl-loop= interface (branch =generic-record-loop=)
+
+* New backends                                                      :feature:
+1. Org time tracking
+2. timeclock
+
+* Functions doing similar things                                       :code:
+1. =task-time-one-day=
+2. =interval= (unused)
+3. =events-to-durations=
