@@ -678,6 +678,17 @@ Return
                           (forward-list)))))
            :modify))))
 
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-backend) task date)
+  "Get events for TASK on DATE.
+Returns a list of events, where each event is a property list in
+the form (:name \"NAME\" :start START :stop STOP ...), where
+START and STOP are ISO-8601 time strings."
+  (->> (gethash date chronometrist-events)
+       (mapcar (lambda (event)
+                 (when (equal task (plist-get event :name))
+                   event)))
+       (seq-filter #'identity)))
+
 (defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
@@ -979,52 +990,30 @@ inclusive).
 START and END must be ts structs (see `ts.el'). They will be
 treated as though their time is 00:00:00."
   (let ((subset (make-hash-table :test #'equal))
-        (start  (chronometrist-date start))
-        (end    (chronometrist-date end)))
+        (start  (chronometrist-date-ts start))
+        (end    (chronometrist-date-ts end)))
     (maphash (lambda (key value)
                (when (ts-in start end (chronometrist-iso-to-ts key))
                  (puthash key value subset)))
              chronometrist-events)
     subset))
 
-(cl-defun chronometrist-task-events-in-day (task &optional (ts (ts-now)))
-  "Get events for TASK on TS.
-TS should be a ts struct (see `ts.el').
-
-Returns a list of events, where each event is a property list in
-the form (:name \"NAME\" :start START :stop STOP ...), where
-START and STOP are ISO-8601 time strings.
-
-This will not return correct results if TABLE contains records
-which span midnights."
-  (->> (gethash (ts-format "%F" ts) chronometrist-events)
-       (mapcar (lambda (event)
-                 (when (equal task (plist-get event :name))
-                   event)))
-       (seq-filter #'identity)))
-
-(cl-defun chronometrist-task-time-one-day (task &optional (ts (ts-now)))
-  "Return total time spent on TASK today or (if supplied) on timestamp TS.
-The data is obtained from `chronometrist-file', via `chronometrist-events'.
-
-TS should be a ts struct (see `ts.el').
-
+(cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-iso)) (backend (chronometrist-active-backend)))
+  "Return total time spent on TASK today or on DATE, an ISO-8601 date.
 The return value is seconds, as an integer."
-  (let ((task-events (chronometrist-task-events-in-day task ts)))
+  (let ((task-events (chronometrist-task-records backend task date)))
     (if task-events
         (->> (chronometrist-events-to-durations task-events)
              (-reduce #'+)
              (truncate))
-      ;; no events for this task on TS, i.e. no time spent
+      ;; no events for this task on DATE, i.e. no time spent
       0)))
 
 (defvar chronometrist-task-list)
-(cl-defun chronometrist-active-time-one-day (&optional (ts (ts-now)))
-  "Return the total active time on TS (if non-nil) or today.
-TS must be a ts struct (see `ts.el')
-
+(cl-defun chronometrist-active-time-one-day (&optional (date (chronometrist-date-iso)))
+  "Return the total active time today, or on DATE.
 Return value is seconds as an integer."
-  (->> (--map (chronometrist-task-time-one-day it ts) chronometrist-task-list)
+  (->> (--map (chronometrist-task-time-one-day it date) chronometrist-task-list)
        (-reduce #'+)
        (truncate)))
 
@@ -1086,7 +1075,10 @@ TIMESTAMP must be an ISO-8601 timestamp, as handled by
               :day day   :month month   :year year
               :dow dow   :tz-offset utcoff))))
 
-(cl-defun chronometrist-date (&optional (ts (ts-now)))
+(cl-defun chronometrist-date-iso (&optional (ts (ts-now)))
+  (ts-format "%F" ts))
+
+(cl-defun chronometrist-date-ts (&optional (ts (ts-now)))
   "Return a ts struct representing the time 00:00:00 on today's date.
 If TS is supplied, use that date instead of today.
 TS should be a ts struct (see `ts.el')."
@@ -1734,7 +1726,7 @@ Each element is a ts struct (see `ts.el').
 The first date is the first occurrence of
 `chronometrist-report-week-start-day' before the date specified in
 `chronometrist-report--ui-date' (if non-nil) or the current date."
-  (->> (or chronometrist-report--ui-date (chronometrist-date))
+  (->> (or chronometrist-report--ui-date (chronometrist-date-ts))
        (chronometrist-previous-week-start)
        (chronometrist-report-date-to-dates-in-week)))
 
@@ -1745,7 +1737,7 @@ The first date is the first occurrence of
     with week-dates = (setq chronometrist-report--ui-week-dates
                             (chronometrist-report-date-to-week-dates))
     for task in chronometrist-task-list collect
-    (let* ((durations        (--map (chronometrist-task-time-one-day task (chronometrist-date it))
+    (let* ((durations        (--map (chronometrist-task-time-one-day task (chronometrist-date-iso it))
                                     week-dates))
            (duration-strings (mapcar #'chronometrist-format-duration durations))
            (total-duration   (->> (-reduce #'+ durations)
@@ -1771,7 +1763,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
   "Print the non-tabular part of the buffer in `chronometrist-report'."
   (let ((inhibit-read-only t)
         (w                 "\n    ")
-        (total-time-daily  (->> (mapcar #'chronometrist-date chronometrist-report--ui-week-dates)
+        (total-time-daily  (->> (mapcar #'chronometrist-date-ts chronometrist-report--ui-week-dates)
                                 (mapcar #'chronometrist-active-time-one-day))))
     (goto-char (point-min))
     (insert (make-string 25 ?\s))
@@ -1954,15 +1946,14 @@ displayed. They must be ts structs (see `ts.el').")
 
 (defvar chronometrist-statistics-mode-map)
 
-(cl-defun chronometrist-statistics-count-average-time-spent (task &optional (table chronometrist-events))
+(cl-defun chronometrist-statistics-count-average-time-spent (task &optional (table chronometrist-events) (backend (chronometrist-active-backend)))
   "Return the average time the user has spent on TASK from TABLE.
 TABLE should be a hash table - if not supplied,
 `chronometrist-events' is used."
   (cl-loop with days = 0
     with events-in-day
     for date being the hash-keys of table
-    when (setq events-in-day
-               (chronometrist-task-events-in-day task (chronometrist-iso-to-ts date)))
+    when (setq events-in-day (chronometrist-task-records backend task date))
     do (cl-incf days) and
     collect
     (-reduce #'+ (chronometrist-events-to-durations events-in-day))
@@ -2007,7 +1998,7 @@ reduced to the desired range using
             (ht    (chronometrist-events-subset start end)))
        (chronometrist-statistics-rows-internal ht)))
     (t ;; `chronometrist-statistics--ui-state' is nil, show current week's data
-     (let* ((start (chronometrist-previous-week-start (chronometrist-date)))
+     (let* ((start (chronometrist-previous-week-start (chronometrist-date-ts)))
             (end   (ts-adjust 'day 7 start))
             (ht    (chronometrist-events-subset start end)))
        (setq chronometrist-statistics--ui-state `(:mode week :start ,start :end ,end))
@@ -2106,7 +2097,7 @@ specified by `chronometrist-statistics--ui-state'."
   (interactive)
   (chronometrist-migrate-check)
   (let* ((buffer     (get-buffer-create chronometrist-statistics-buffer-name))
-         (today      (chronometrist-date))
+         (today      (chronometrist-date-ts))
          (week-start (chronometrist-previous-week-start today))
          (week-end   (ts-adjust 'day 6 week-start)))
     (with-current-buffer buffer
