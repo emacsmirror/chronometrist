@@ -386,8 +386,9 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-list-records (backend)
   "Return all records in BACKEND as a list of plists, in reverse chronological order.")
 
-(cl-defgeneric chronometrist-task-records (backend task date)
-  "From BACKEND, return records for TASK on DATE as a list of plists.")
+(cl-defgeneric chronometrist-task-records (backend task date-ts)
+  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
+DATE-TS must be a `ts.el' struct.")
 
 (cl-defgeneric chronometrist-active-time (backend date)
   "From BACKEND, return total time recorded on DATE as integer seconds.")
@@ -449,7 +450,7 @@ hash table values must be in chronological order.")
 SEXP is bound to each s-expressions in reverse order (last
 expression first)."
   (declare (indent defun)
-           (debug nil)
+           (debug 'cl-loop)
            ;; FIXME
            ;; (debug ("for" form "in" form &rest &or sexp form))
            )
@@ -678,16 +679,12 @@ Return
                           (forward-list)))))
            :modify))))
 
-(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-backend) task date)
-  "Get events for TASK on DATE.
-Returns a list of events, where each event is a property list in
-the form (:name \"NAME\" :start START :stop STOP ...), where
-START and STOP are ISO-8601 time strings."
-  (->> (gethash date chronometrist-events)
-       (mapcar (lambda (event)
-                 (when (equal task (plist-get event :name))
-                   event)))
-       (seq-filter #'identity)))
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-backend) task date-ts)
+  (let* ((date         (chronometrist-date-iso date-ts))
+         (records      (gethash date chronometrist-events)))
+    (cl-loop for record in records
+      when (equal task (plist-get record :name))
+      collect record)))
 
 (defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
@@ -721,8 +718,9 @@ START and STOP are ISO-8601 time strings."
          (cl-remove-duplicates it :test #'equal)
          (sort it #'string-lessp))))
 
-(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date)
+(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date-ts)
   (chronometrist-loop-sexp-file for plist-group in (chronometrist-backend-file backend)
+    with date = (chronometrist-date-iso date-ts)
     when (equal date (first plist-group))
     do (cl-return
         (cl-loop for plist in (rest plist-group)
@@ -998,7 +996,7 @@ treated as though their time is 00:00:00."
              chronometrist-events)
     subset))
 
-(cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-iso)) (backend (chronometrist-active-backend)))
+(cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-ts)) (backend (chronometrist-active-backend)))
   "Return total time spent on TASK today or on DATE, an ISO-8601 date.
 The return value is seconds, as an integer."
   (let ((task-events (chronometrist-task-records backend task date)))
@@ -1010,7 +1008,7 @@ The return value is seconds, as an integer."
       0)))
 
 (defvar chronometrist-task-list)
-(cl-defun chronometrist-active-time-one-day (&optional (date (chronometrist-date-iso)))
+(cl-defun chronometrist-active-time-one-day (&optional (date (chronometrist-date-ts)))
   "Return the total active time today, or on DATE.
 Return value is seconds as an integer."
   (->> (--map (chronometrist-task-time-one-day it date) chronometrist-task-list)
@@ -1737,7 +1735,7 @@ The first date is the first occurrence of
     with week-dates = (setq chronometrist-report--ui-week-dates
                             (chronometrist-report-date-to-week-dates))
     for task in chronometrist-task-list collect
-    (let* ((durations        (--map (chronometrist-task-time-one-day task (chronometrist-date-iso it))
+    (let* ((durations        (--map (chronometrist-task-time-one-day task (chronometrist-date-ts it))
                                     week-dates))
            (duration-strings (mapcar #'chronometrist-format-duration durations))
            (total-duration   (->> (-reduce #'+ durations)
