@@ -1114,12 +1114,12 @@ The reasons I like this format are -
 :header-args:   :tangle chronometrist-tests.el
 :END:
 
-#+BEGIN_SRC emacs-lisp :load test
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (defvar chronometrist-plist-test-backend
   (make-instance 'chronometrist-plist-backend
                  :file (make-temp-file "chronometrist-plist-test-" nil ".sexp")))
 
-(with-current-buffer (find-file-noselect)
+(with-current-buffer (chronometrist-backend-file chronometrist-plist-test-backend)
   (mapcar
    (lambda (plist)
      ;; to use this, we'd have to move `chronometrist-plist-pp' before this
@@ -1183,11 +1183,11 @@ The reasons I like this format are -
 
 Boilerplate for updating state between file operations in tests.
 #+BEGIN_SRC emacs-lisp :load test
-(defmacro chronometrist-tests--change-type-and-update (state)
+(defmacro chronometrist-tests--change-type-and-update (state file)
   `(prog1 (chronometrist-file-change-type ,state)
      (setq ,state
-           (list :last (chronometrist-file-hash :before-last nil)
-                 :rest (chronometrist-file-hash nil :before-last t)))))
+           (list :last (chronometrist-file-hash :before-last nil nil ,file)
+                 :rest (chronometrist-file-hash nil :before-last t ,file)))))
 #+END_SRC
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
@@ -1365,7 +1365,7 @@ end of the second-last s-expression.")
 #+END_SRC
 **** file-hash                                                    :reader:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-file-hash (&optional start end hash)
+(cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
   "Calculate hash of `chronometrist-file' between START and END.
 START can be
 a number or marker,
@@ -1381,7 +1381,7 @@ Return (START END) if HASH is nil, else (START END HASH).
 
 Return a list in the form (A B HASH), where A and B are markers
 in `chronometrist-file' describing the region for which HASH was calculated."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file file
     (let* ((start (cond ((number-or-marker-p start) start)
                         ((eq :before-last start)
                          (goto-char (point-max))
@@ -1404,13 +1404,12 @@ in `chronometrist-file' describing the region for which HASH was calculated."
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest file-hash ()
-  (-let* ((chronometrist-file chronometrist-test-file)
+  (-let* ((file chronometrist-test-file)
           ((last-start last-end)
-           (chronometrist-file-hash :before-last nil))
+           (chronometrist-file-hash :before-last nil nil file))
           ((rest-start rest-end rest-hash)
-           (chronometrist-file-hash nil :before-last t)))
-    (message "chronometrist - file-hash test - file path is %s"
-             chronometrist-test-file)
+           (chronometrist-file-hash nil :before-last t file)))
+    (message "chronometrist - file-hash test - file path is %s" file)
     (should (= 1 rest-start))
     (should (= 1254 rest-end))
     (should (= 1256 last-start))
@@ -1418,8 +1417,8 @@ in `chronometrist-file' describing the region for which HASH was calculated."
 #+END_SRC
 **** read-from                                                    :reader:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-read-from (position)
-  (chronometrist-sexp-in-file chronometrist-file
+(cl-defun chronometrist-read-from (position &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
+  (chronometrist-sexp-in-file file
     (goto-char (if (number-or-marker-p position)
                    position
                  (funcall position)))
@@ -1483,8 +1482,8 @@ Return
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-file-change-type ()
-  (let* ((test-contents (with-current-buffer (find-file-noselect
-                                              (chronometrist-backend-file chronometrist-plist-test-backend))
+  (let* ((file          (chronometrist-backend-file chronometrist-plist-test-backend))
+         (test-contents (with-current-buffer (find-file-noselect file)
                           (buffer-substring (point-min) (point-max))))
          (chronometrist--file-state-old chronometrist--file-state)
          (chronometrist--file-state     (list :last (chronometrist-file-hash :before-last nil)
@@ -1502,7 +1501,7 @@ Return
                           '(:name "Append Test"
                                   :start "2021-02-01T13:06:46+0530"
                                   :stop "2021-02-01T13:06:49+0530"))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state))))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
           (should
            (eq :modify
                (progn
@@ -1511,34 +1510,34 @@ Return
                                         :tags (some tags)
                                         :start "2021-02-01T13:06:46+0530"
                                         :stop "2021-02-01T13:06:49+0530"))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state))))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
           (should
            (eq :remove
                (progn
-                 (chronometrist-sexp-in-file chronometrist-file
+                 (chronometrist-sexp-in-file file
                    (goto-char (point-max))
                    (backward-list 1)
                    (chronometrist-sexp-delete-list 1)
                    (save-buffer))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state))))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
           (should
            (eq t
                (progn
-                 (chronometrist-sexp-in-file chronometrist-plist-test-backend
+                 (chronometrist-sexp-in-file file
                    (goto-char (point-min))
                    (chronometrist-plist-pp '(:name "Other Change Test"
                                       :start "2021-02-02T17:39:40+0530"
                                       :stop "2021-02-02T17:39:44+0530")
                               (current-buffer))
                    (save-buffer))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state)))))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file)))))
       (with-current-buffer
-          (find-file-noselect (chronometrist-backend-file chronometrist-plist-test-backend))
+          (find-file-noselect file)
         (delete-region (point-min) (point-max))
         (insert test-contents)
         (save-buffer))
       (setq chronometrist--file-state chronometrist--file-state-old
-            chronometrist-events chronometrist-events-old))))
+            chronometrist-events      chronometrist-events-old))))
 #+END_SRC
 **** task-records                                                 :reader:
 #+BEGIN_SRC emacs-lisp
@@ -1717,8 +1716,7 @@ This is largely like the plist backend, but plists are grouped by date. This mak
                  input-backend-name
                  output-file
                  output-backend-name))
-        (chronometrist-to-file output-backend
-                  (chronometrist-to-hash-table input-backend))
+        (chronometrist-to-file output-backend (chronometrist-to-hash-table input-backend))
       (message "Conversion aborted."))))
 #+END_SRC
 *** table                                                        :variable:
@@ -2876,9 +2874,11 @@ If numeric argument ARG is 1, run `chronometrist-report'; if 2,
 run `chronometrist-statistics'."
   (interactive "P")
   (chronometrist-migrate-check)
-  (let ((buffer (get-buffer-create chronometrist-buffer-name))
-        (w      (save-excursion
-                  (get-buffer-window chronometrist-buffer-name t))))
+  (let* ((buffer (get-buffer-create chronometrist-buffer-name))
+         (w      (save-excursion
+                   (get-buffer-window chronometrist-buffer-name t)))
+         (backend (chronometrist-active-backend))
+         (file    (chronometrist-backend-file backend)))
     (cond
      (arg (cl-case arg
             (1 (chronometrist-report))
@@ -2887,10 +2887,10 @@ run `chronometrist-statistics'."
           (setq chronometrist--point (point))
           (kill-buffer chronometrist-buffer-name)))
      (t (with-current-buffer buffer
-          (cond ((or (not (file-exists-p chronometrist-file))
-                     (chronometrist-common-file-empty-p chronometrist-file))
+          (cond ((or (not (file-exists-p file))
+                     (chronometrist-common-file-empty-p file))
                  ;; first run
-                 (chronometrist-create-file (chronometrist-active-backend))
+                 (chronometrist-create-file backend)
                  (let ((inhibit-read-only t))
                    (erase-buffer)
                    (insert "Welcome to Chronometrist! Hit RET to ")
@@ -3110,9 +3110,6 @@ Argument _FS-EVENT is ignored."
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
   "Display a weekly report of the data in `chronometrist-file'.
-
- This is the 'listing command' for ‘chronometrist-report-mode’.
-
 If a buffer called `chronometrist-report-buffer-name' already
 exists and is visible, kill the buffer.
 
@@ -3197,8 +3194,7 @@ This must be a plist in the form (:MODE :START :END).
 'week, 'month, and 'year mean display statistics
 weekly/monthly/yearly respectively.
 
-'full means display statistics from the beginning to the end of
-the `chronometrist-file'.
+'full means display statistics for all available data at once.
 
 'custom means display statistics from an arbitrary date range.
 
@@ -3366,9 +3362,7 @@ value of `revert-buffer-function'."
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
-  "Display statistics for data in `chronometrist-file'.
-This is the 'listing command' for `chronometrist-statistics-mode'.
-
+  "Display statistics for Chronometrist data.
 If a buffer called `chronometrist-statistics-buffer-name' already
 exists and is visible, kill the buffer.
 

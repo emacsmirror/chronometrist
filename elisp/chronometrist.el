@@ -599,7 +599,7 @@ last s-expression.
 REST-START and REST-END represent the start of the file and the
 end of the second-last s-expression.")
 
-(defun chronometrist-file-hash (&optional start end hash)
+(cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
   "Calculate hash of `chronometrist-file' between START and END.
 START can be
 a number or marker,
@@ -615,7 +615,7 @@ Return (START END) if HASH is nil, else (START END HASH).
 
 Return a list in the form (A B HASH), where A and B are markers
 in `chronometrist-file' describing the region for which HASH was calculated."
-  (chronometrist-sexp-in-file chronometrist-file
+  (chronometrist-sexp-in-file file
     (let* ((start (cond ((number-or-marker-p start) start)
                         ((eq :before-last start)
                          (goto-char (point-max))
@@ -635,8 +635,8 @@ in `chronometrist-file' describing the region for which HASH was calculated."
                (list start end it))
         (list start end)))))
 
-(defun chronometrist-read-from (position)
-  (chronometrist-sexp-in-file chronometrist-file
+(cl-defun chronometrist-read-from (position &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
+  (chronometrist-sexp-in-file file
     (goto-char (if (number-or-marker-p position)
                    position
                  (funcall position)))
@@ -802,8 +802,7 @@ Return
                  input-backend-name
                  output-file
                  output-backend-name))
-        (chronometrist-to-file output-backend
-                  (chronometrist-to-hash-table input-backend))
+        (chronometrist-to-file output-backend (chronometrist-to-hash-table input-backend))
       (message "Conversion aborted."))))
 
 (defvar chronometrist-migrate-table (make-hash-table))
@@ -1659,9 +1658,11 @@ If numeric argument ARG is 1, run `chronometrist-report'; if 2,
 run `chronometrist-statistics'."
   (interactive "P")
   (chronometrist-migrate-check)
-  (let ((buffer (get-buffer-create chronometrist-buffer-name))
-        (w      (save-excursion
-                  (get-buffer-window chronometrist-buffer-name t))))
+  (let* ((buffer (get-buffer-create chronometrist-buffer-name))
+         (w      (save-excursion
+                   (get-buffer-window chronometrist-buffer-name t)))
+         (backend (chronometrist-active-backend))
+         (file    (chronometrist-backend-file backend)))
     (cond
      (arg (cl-case arg
             (1 (chronometrist-report))
@@ -1670,10 +1671,10 @@ run `chronometrist-statistics'."
           (setq chronometrist--point (point))
           (kill-buffer chronometrist-buffer-name)))
      (t (with-current-buffer buffer
-          (cond ((or (not (file-exists-p chronometrist-file))
-                     (chronometrist-common-file-empty-p chronometrist-file))
+          (cond ((or (not (file-exists-p file))
+                     (chronometrist-common-file-empty-p file))
                  ;; first run
-                 (chronometrist-create-file (chronometrist-active-backend))
+                 (chronometrist-create-file backend)
                  (let ((inhibit-read-only t))
                    (erase-buffer)
                    (insert "Welcome to Chronometrist! Hit RET to ")
@@ -1858,9 +1859,6 @@ Argument _FS-EVENT is ignored."
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
   "Display a weekly report of the data in `chronometrist-file'.
-
- This is the 'listing command' for ‘chronometrist-report-mode’.
-
 If a buffer called `chronometrist-report-buffer-name' already
 exists and is visible, kill the buffer.
 
@@ -1934,8 +1932,7 @@ This must be a plist in the form (:MODE :START :END).
 'week, 'month, and 'year mean display statistics
 weekly/monthly/yearly respectively.
 
-'full means display statistics from the beginning to the end of
-the `chronometrist-file'.
+'full means display statistics for all available data at once.
 
 'custom means display statistics from an arbitrary date range.
 
@@ -2081,9 +2078,7 @@ value of `revert-buffer-function'."
 
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
-  "Display statistics for data in `chronometrist-file'.
-This is the 'listing command' for `chronometrist-statistics-mode'.
-
+  "Display statistics for Chronometrist data.
 If a buffer called `chronometrist-statistics-buffer-name' already
 exists and is visible, kill the buffer.
 
