@@ -1443,6 +1443,14 @@ refresh the `chronometrist' buffer."
     ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
     (chronometrist-refresh)))
 
+(cl-defun chronometrist-setup-file-watch (&optional (callback #'chronometrist-refresh-file))
+  "Arrange for CALLBACK to be called when the backend file changes."
+  (unless chronometrist--fs-watch
+    (setq chronometrist--fs-watch
+          (file-notify-add-watch (chronometrist-backend-file (chronometrist-active-backend))
+                                 '(change)
+                                 callback))))
+
 (defun chronometrist-query-stop ()
   "Ask the user if they would like to clock out."
   (let ((task (chronometrist-current-task (chronometrist-active-backend))))
@@ -1686,9 +1694,7 @@ run `chronometrist-statistics'."
                    (if chronometrist--point
                        (goto-char chronometrist--point)
                      (chronometrist-goto-last-task))))
-          (unless chronometrist--fs-watch
-            (setq chronometrist--fs-watch
-                  (file-notify-add-watch chronometrist-file '(change) #'chronometrist-refresh-file))))))))
+          (chronometrist-setup-file-watch))))))
 
 (defgroup chronometrist-report nil
   "Weekly report for the `chronometrist' time tracker."
@@ -1847,11 +1853,7 @@ Argument _FS-EVENT is ignored."
               (when (get-buffer-window chronometrist-report-buffer-name)
                 (chronometrist-report-refresh))))
   (setq revert-buffer-function #'chronometrist-report-refresh)
-  (unless chronometrist--fs-watch
-    (setq chronometrist--fs-watch
-          (file-notify-add-watch chronometrist-file
-                                 '(change)
-                                 #'chronometrist-refresh-file))))
+  (chronometrist-setup-file-watch))
 
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
@@ -2075,11 +2077,7 @@ value of `revert-buffer-function'."
               (when (get-buffer-window chronometrist-statistics-buffer-name)
                 (chronometrist-statistics-refresh))))
   (setq revert-buffer-function #'chronometrist-statistics-refresh)
-  (unless chronometrist--fs-watch
-    (setq chronometrist--fs-watch
-          (file-notify-add-watch chronometrist-file
-                                 '(change)
-                                 #'chronometrist-refresh-file))))
+  (chronometrist-setup-file-watch))
 
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)

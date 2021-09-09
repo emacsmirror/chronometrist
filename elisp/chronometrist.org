@@ -2626,6 +2626,16 @@ refresh the `chronometrist' buffer."
     ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
     (chronometrist-refresh)))
 #+END_SRC
+**** setup-file-watch                                             :writer:
+#+BEGIN_SRC emacs-lisp
+(cl-defun chronometrist-setup-file-watch (&optional (callback #'chronometrist-refresh-file))
+  "Arrange for CALLBACK to be called when the backend file changes."
+  (unless chronometrist--fs-watch
+    (setq chronometrist--fs-watch
+          (file-notify-add-watch (chronometrist-backend-file (chronometrist-active-backend))
+                                 '(change)
+                                 callback))))
+#+END_SRC
 **** query-stop                                                :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-query-stop ()
@@ -2901,9 +2911,7 @@ run `chronometrist-statistics'."
                    (if chronometrist--point
                        (goto-char chronometrist--point)
                      (chronometrist-goto-last-task))))
-          (unless chronometrist--fs-watch
-            (setq chronometrist--fs-watch
-                  (file-notify-add-watch chronometrist-file '(change) #'chronometrist-refresh-file))))))))
+          (chronometrist-setup-file-watch))))))
 #+END_SRC
 *** Report
 **** TODO [0%]
@@ -3095,11 +3103,7 @@ Argument _FS-EVENT is ignored."
               (when (get-buffer-window chronometrist-report-buffer-name)
                 (chronometrist-report-refresh))))
   (setq revert-buffer-function #'chronometrist-report-refresh)
-  (unless chronometrist--fs-watch
-    (setq chronometrist--fs-watch
-          (file-notify-add-watch chronometrist-file
-                                 '(change)
-                                 #'chronometrist-refresh-file))))
+  (chronometrist-setup-file-watch))
 #+END_SRC
 **** chronometrist-report                                        :command:
 #+BEGIN_SRC emacs-lisp
@@ -3356,11 +3360,7 @@ value of `revert-buffer-function'."
               (when (get-buffer-window chronometrist-statistics-buffer-name)
                 (chronometrist-statistics-refresh))))
   (setq revert-buffer-function #'chronometrist-statistics-refresh)
-  (unless chronometrist--fs-watch
-    (setq chronometrist--fs-watch
-          (file-notify-add-watch chronometrist-file
-                                 '(change)
-                                 #'chronometrist-refresh-file))))
+  (chronometrist-setup-file-watch))
 #+END_SRC
 **** chronometrist-statistics                                    :command:
 #+BEGIN_SRC emacs-lisp
