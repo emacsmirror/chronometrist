@@ -1030,9 +1030,11 @@ hash table values must be in chronological order.")
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-to-file (backend hash-table)
   "Save data in HASH-TABLE to BACKEND.
-Hash table keys are ISO-8601 date strings. Hash table values are
-lists of records, represented by plists. Both hash table keys and
-hash table values must be in chronological order.")
+Hash table keys must be ISO-8601 date strings. Hash table values
+must be lists of records, where each record is a plist. Both hash
+table keys and hash table values must be in chronological order.
+
+Any existing data in the BACKEND file is overwritten.")
 #+END_SRC
 
 **** on-file-change                                     :generic:function:
@@ -1063,6 +1065,15 @@ hash table values must be in chronological order.")
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file)))))
 #+END_SRC
+**** in-file                                                       :macro:
+#+BEGIN_SRC emacs-lisp
+(defmacro chronometrist-sexp-in-file (file &rest body)
+  "Run BODY in a buffer visiting FILE, restoring point afterwards."
+  (declare (indent defun) (debug t))
+  `(with-current-buffer (find-file-noselect ,file)
+     (save-excursion ,@body)))
+#+END_SRC
+
 **** loop-sexp-file                                                :macro:
 #+BEGIN_SRC emacs-lisp
 (defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
@@ -1206,15 +1217,6 @@ STREAM (which is the value of `current-buffer')."
   :type 'function
   :group 'chronometrist)
 #+END_SRC
-**** in-file                                                       :macro:
-#+BEGIN_SRC emacs-lisp
-(defmacro chronometrist-sexp-in-file (file &rest body)
-  "Run BODY in a buffer visiting FILE, restoring point afterwards."
-  (declare (indent defun) (debug t))
-  `(with-current-buffer (find-file-noselect ,file)
-     (save-excursion ,@body)))
-#+END_SRC
-
 **** edit-file                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
@@ -1635,13 +1637,16 @@ This is largely like the plist backend, but plists are grouped by date. This mak
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
   (chronometrist-create-file backend)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (cl-loop for date being the hash-keys of hash-table
-      using (hash-values plists) do
-      (insert
-       (chronometrist-plist-pp (apply #'list date plists))
-       "\n")
-      finally do (save-buffer))))
+  (let ((file (chronometrist-backend-file backend)))
+    (chronometrist-sexp-in-file file
+      (erase-buffer)
+      (goto-char (point-max))
+      (cl-loop for date being the hash-keys of hash-table
+        using (hash-values plists) do
+        (insert
+         (chronometrist-plist-pp (apply #'list date plists))
+         "\n")
+        finally do (save-buffer)))))
 #+END_SRC
 
 **** on-file-change                                               :method:
@@ -1695,13 +1700,21 @@ This is largely like the plist backend, but plists are grouped by date. This mak
                                 (eieio-object-class-name input-backend))))
          (output-backend-name (chronometrist-remove-prefix
                                (symbol-name
-                                (eieio-object-class-name output-backend)))))
-    (if (yes-or-no-p
-         (format "Convert %s (%s) to %s (%s)? "
-                 input-file
-                 input-backend-name
-                 output-file
-                 output-backend-name))
+                                (eieio-object-class-name output-backend))))
+         (confirm (yes-or-no-p
+                   (format "Convert %s (%s) to %s (%s)? "
+                           input-file
+                           input-backend-name
+                           output-file
+                           output-backend-name)))
+         (confirm-exists
+          (if (and (file-exists-p output-file)
+                   (not (chronometrist-common-file-empty-p output-file)))
+              (yes-or-no-p
+               (format "Overwrite existing non-empty file %s ?"
+                       output-file))
+            t)))
+    (if (and confirm confirm-exists)
         (chronometrist-to-file output-backend (chronometrist-to-hash-table input-backend))
       (message "Conversion aborted."))))
 #+END_SRC

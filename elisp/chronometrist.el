@@ -419,9 +419,11 @@ hash table values must be in chronological order.")
 
 (cl-defgeneric chronometrist-to-file (backend hash-table)
   "Save data in HASH-TABLE to BACKEND.
-Hash table keys are ISO-8601 date strings. Hash table values are
-lists of records, represented by plists. Both hash table keys and
-hash table values must be in chronological order.")
+Hash table keys must be ISO-8601 date strings. Hash table values
+must be lists of records, where each record is a plist. Both hash
+table keys and hash table values must be in chronological order.
+
+Any existing data in the BACKEND file is overwritten.")
 
 (cl-defgeneric chronometrist-on-file-change (backend)
   "Function to be run when file for BACKEND changes.")
@@ -441,6 +443,12 @@ hash table values must be in chronological order.")
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file)))))
+
+(defmacro chronometrist-sexp-in-file (file &rest body)
+  "Run BODY in a buffer visiting FILE, restoring point afterwards."
+  (declare (indent defun) (debug t))
+  `(with-current-buffer (find-file-noselect ,file)
+     (save-excursion ,@body)))
 
 (defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
   "`cl-loop' LOOP-CLAUSES over s-expressions in FILE.
@@ -479,12 +487,6 @@ Like `pp', it must accept an OBJECT and optionally a
 STREAM (which is the value of `current-buffer')."
   :type 'function
   :group 'chronometrist)
-
-(defmacro chronometrist-sexp-in-file (file &rest body)
-  "Run BODY in a buffer visiting FILE, restoring point afterwards."
-  (declare (indent defun) (debug t))
-  `(with-current-buffer (find-file-noselect ,file)
-     (save-excursion ,@body)))
 
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
   (find-file-other-window (chronometrist-backend-file backend))
@@ -739,13 +741,16 @@ Return
 
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
   (chronometrist-create-file backend)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (cl-loop for date being the hash-keys of hash-table
-      using (hash-values plists) do
-      (insert
-       (chronometrist-plist-pp (apply #'list date plists))
-       "\n")
-      finally do (save-buffer))))
+  (let ((file (chronometrist-backend-file backend)))
+    (chronometrist-sexp-in-file file
+      (erase-buffer)
+      (goto-char (point-max))
+      (cl-loop for date being the hash-keys of hash-table
+        using (hash-values plists) do
+        (insert
+         (chronometrist-plist-pp (apply #'list date plists))
+         "\n")
+        finally do (save-buffer)))))
 
 (cl-defmethod chronometrist-on-file-change ((backend chronometrist-plist-group-backend)))
 
@@ -787,13 +792,21 @@ Return
                                 (eieio-object-class-name input-backend))))
          (output-backend-name (chronometrist-remove-prefix
                                (symbol-name
-                                (eieio-object-class-name output-backend)))))
-    (if (yes-or-no-p
-         (format "Convert %s (%s) to %s (%s)? "
-                 input-file
-                 input-backend-name
-                 output-file
-                 output-backend-name))
+                                (eieio-object-class-name output-backend))))
+         (confirm (yes-or-no-p
+                   (format "Convert %s (%s) to %s (%s)? "
+                           input-file
+                           input-backend-name
+                           output-file
+                           output-backend-name)))
+         (confirm-exists
+          (if (and (file-exists-p output-file)
+                   (not (chronometrist-common-file-empty-p output-file)))
+              (yes-or-no-p
+               (format "Overwrite existing non-empty file %s ?"
+                       output-file))
+            t)))
+    (if (and confirm confirm-exists)
         (chronometrist-to-file output-backend (chronometrist-to-hash-table input-backend))
       (message "Conversion aborted."))))
 
