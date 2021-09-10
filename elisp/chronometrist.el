@@ -375,16 +375,13 @@ Value must be a keyword corresponding to a key in
   (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 
 (cl-defgeneric chronometrist-current-task (backend)
-  "Return the name of the active task, or nil if not clocked in.")
+  "Return the name of the active task as a string, or nil if not clocked in.")
 
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
-  "Return a list of tasks from BACKEND.")
-
-(cl-defgeneric chronometrist-list-records (backend)
-  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
+  "Return a list of all tasks recorded in BACKEND. Each task is a string.")
 
 (cl-defgeneric chronometrist-task-records (backend task date-ts)
   "From BACKEND, return records for TASK on DATE-TS as a list of plists.
@@ -582,9 +579,6 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
        (cl-remove-duplicates it :test #'equal)
        (sort it #'string-lessp)))
 
-(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-loop-sexp-file for plist in (chronometrist-backend-file backend) collect plist))
-
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.
 `chronometrist-refresh-file' sets this to a plist in the form
@@ -752,8 +746,6 @@ Return
        (chronometrist-plist-pp (apply #'list date plists))
        "\n")
       finally do (save-buffer))))
-
-(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-on-file-change ((backend chronometrist-plist-group-backend)))
 

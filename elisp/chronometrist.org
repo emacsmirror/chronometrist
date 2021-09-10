@@ -947,7 +947,7 @@ Value must be a keyword corresponding to a key in
 **** current-task                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-current-task (backend)
-  "Return the name of the active task, or nil if not clocked in.")
+  "Return the name of the active task as a string, or nil if not clocked in.")
 #+END_SRC
 
 **** latest-record                                      :generic:function:
@@ -959,14 +959,9 @@ Value must be a keyword corresponding to a key in
 **** list-tasks                                         :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
-  "Return a list of tasks from BACKEND.")
+  "Return a list of all tasks recorded in BACKEND. Each task is a string.")
 #+END_SRC
 
-**** list-records                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-list-records (backend)
-  "Return all records in BACKEND as a list of plists, in reverse chronological order.")
-#+END_SRC
 **** task-records                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-task-records (backend task date-ts)
@@ -1339,11 +1334,6 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
 #+END_SRC
-**** list-records                                          :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-backend))
-  (chronometrist-loop-sexp-file for plist in (chronometrist-backend-file backend) collect plist))
-#+END_SRC
 **** file-state                                        :internal:variable:
 :PROPERTIES:
 :VALUE:    list
@@ -1654,10 +1644,6 @@ This is largely like the plist backend, but plists are grouped by date. This mak
       finally do (save-buffer))))
 #+END_SRC
 
-**** list-records                                          :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-list-records ((backend chronometrist-plist-group-backend)))
-#+END_SRC
 **** on-file-change                                               :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-file-change ((backend chronometrist-plist-group-backend)))
