@@ -191,13 +191,13 @@ as symbol and/or strings.")
 #+END_SRC
 *** tags-history-populate                                          :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-tags-history-populate (task history-table file)
+(defun chronometrist-tags-history-populate (task history-table backend)
   "Store tag history for TASK in HISTORY-TABLE from FILE.
 Return the new value inserted into HISTORY-TABLE.
 
 HISTORY-TABLE must be a hash table. (see `chronometrist-tags-history')"
   (puthash task nil history-table)
-  (chronometrist-loop-file for plist in file do
+  (chronometrist-loop-records for plist in backend do
     (let ((new-tag-list  (plist-get plist :tags))
           (old-tag-lists (gethash task history-table)))
       (and (equal task (plist-get plist :name))
@@ -301,10 +301,10 @@ INITIAL-INPUT is as used in `completing-read'."
 _ARGS are ignored. This function always returns t, so it can be
 used in `chronometrist-before-out-functions'."
   (interactive)
-  (let* ((last-expr (chronometrist-latest-record (chronometrist-active-backend)))
+  (let* ((backend   (chronometrist-active-backend))
+         (last-expr (chronometrist-latest-record backend))
          (last-name (plist-get last-expr :name))
-         (_history  (chronometrist-tags-history-populate last-name
-                                             chronometrist-tags-history chronometrist-file))
+         (_history  (chronometrist-tags-history-populate last-name chronometrist-tags-history backend))
          (last-tags (plist-get last-expr :tags))
          (input     (->> (chronometrist-maybe-symbol-to-string last-tags)
                          (-interpose ",")
@@ -318,8 +318,8 @@ used in `chronometrist-before-out-functions'."
            (reverse it)
            (list :tags it)
            (chronometrist-plist-update
-            (chronometrist-latest-record (chronometrist-active-backend)) it)
-           (chronometrist-replace-last (chronometrist-active-backend) it)))
+            (chronometrist-latest-record backend) it)
+           (chronometrist-replace-last backend it)))
     t))
 #+END_SRC
 ** Key-Values
@@ -351,20 +351,20 @@ is removed.")
 #+END_SRC
 *** key-history-populate                                           :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-key-history-populate (task history-table file)
+(defun chronometrist-key-history-populate (task history-table backend)
   "Store key history for TASK in HISTORY-TABLE from FILE.
 Return the new value inserted into HISTORY-TABLE.
 
 HISTORY-TABLE must be a hash table (see `chronometrist-key-history')."
   (puthash task nil history-table)
-  (chronometrist-loop-file for plist in file do
+  (chronometrist-loop-records for plist in backend do
     (catch 'quit
       (let* ((name     (plist-get plist :name))
              (_check   (unless (equal name task) (throw 'quit nil)))
              (keys     (--> (chronometrist-plist-key-values plist)
-                         (seq-filter #'keywordp it)
-                         (cl-loop for key in it collect
-                           (chronometrist-keyword-to-string key))))
+                            (seq-filter #'keywordp it)
+                            (cl-loop for key in it collect
+                              (chronometrist-keyword-to-string key))))
              (_check   (unless keys (throw 'quit nil)))
              (old-keys (gethash name history-table)))
         (puthash name
@@ -397,13 +397,13 @@ values are lists containing values (as strings).")
 *** value-history-populate                                         :writer:
 We don't want values to be task-sensitive, so this does not have a KEY parameter similar to TASK for =chronometrist-tags-history-populate= or =chronometrist-key-history-populate=.
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-value-history-populate (history-table file)
+(defun chronometrist-value-history-populate (history-table backend)
   "Store value history in HISTORY-TABLE from FILE.
 HISTORY-TABLE must be a hash table. (see `chronometrist-value-history')"
   (clrhash history-table)
   ;; Note - while keys are Lisp keywords, values may be any Lisp
   ;; object, including lists
-  (chronometrist-loop-file for plist in file do
+  (chronometrist-loop-records for plist in backend do
     ;; We call them user-key-values because we filter out Chronometrist's
     ;; reserved key-values
     (let ((user-key-values (chronometrist-plist-key-values plist)))
@@ -529,14 +529,14 @@ used in `chronometrist-before-out-functions'."
   (interactive)
   (let* ((buffer      (get-buffer-create chronometrist-kv-buffer-name))
          (first-key-p t)
-         (last-sexp   (chronometrist-latest-record (chronometrist-active-backend)))
+         (backend     (chronometrist-active-backend))
+         (last-sexp   (chronometrist-latest-record backend))
          (last-name   (plist-get last-sexp :name))
          (last-kvs    (chronometrist-plist-key-values last-sexp))
          (used-keys   (--map (chronometrist-keyword-to-string it)
-                             (seq-filter #'keywordp last-kvs)))
-         (file        (file (chronometrist-active-backend))))
-    (chronometrist-key-history-populate last-name chronometrist-key-history file)
-    (chronometrist-value-history-populate chronometrist-value-history file)
+                             (seq-filter #'keywordp last-kvs))))
+    (chronometrist-key-history-populate last-name chronometrist-key-history backend)
+    (chronometrist-value-history-populate chronometrist-value-history backend)
     (switch-to-buffer buffer)
     (with-current-buffer buffer
       (erase-buffer)
@@ -574,15 +574,15 @@ used in `chronometrist-before-out-functions'."
 (defun chronometrist-kv-accept ()
   "Accept the plist in `chronometrist-kv-buffer-name' and add it to `chronometrist-file'."
   (interactive)
-  (let ((latest (chronometrist-latest-record (chronometrist-active-backend)))
+  (let ((backend (chronometrist-active-backend))
+        (latest  (chronometrist-latest-record backend))
         user-kv-expr)
     (with-current-buffer (get-buffer chronometrist-kv-buffer-name)
       (goto-char (point-min))
       (setq user-kv-expr (ignore-errors (read (current-buffer))))
       (kill-buffer chronometrist-kv-buffer-name))
     (if user-kv-expr
-        (chronometrist-replace-last (chronometrist-active-backend)
-                        (chronometrist-plist-update latest user-kv-expr))
+        (chronometrist-replace-last backend (chronometrist-plist-update latest user-kv-expr))
       (chronometrist-refresh))))
 #+END_SRC
 *** kv-reject                                                     :command:
@@ -645,15 +645,16 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
 
   LIST should be a list, with all elements being either a plists,
   or lists of symbols."
-  (cl-loop with num = 0
-    with last = (chronometrist-latest-record (chronometrist-active-backend))
+  (cl-loop with backend = (chronometrist-active-backend)
+    with num = 0
+    with last = (chronometrist-latest-record backend)
     for elt in (-take 7 list)
     do (incf num)
     if (= num 10) do (setq num 0)
     collect
     (list (format "%s" num)
           `(chronometrist-replace-last
-            (chronometrist-active-backend)
+            backend
             (chronometrist-plist-update last
                             ',(cl-case type
                                 (:tags (list :tags elt))
@@ -670,7 +671,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
   "Query user for tags to be added to TASK.
   Return t, to permit use in `chronometrist-before-out-functions'."
   (let ((table chronometrist-tags-history))
-    (chronometrist-tags-history-populate task table chronometrist-file)
+    (chronometrist-tags-history-populate task table (chronometrist-active-backend))
     (if (hash-table-empty-p table)
         (chronometrist-tags-add)
       (chronometrist-defchoice "tag" :tag (gethash task table))
@@ -683,7 +684,7 @@ Types of prompts planned (#1 and #2 are meant to be mixed and matched)
   "Query user for keys to be added to TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
   (let ((table chronometrist-key-history))
-    (chronometrist-key-history-populate task table chronometrist-file)
+    (chronometrist-key-history-populate task table (chronometrist-active-backend))
     (if (hash-table-empty-p table)
         (chronometrist-kv-add)
       (chronometrist-defchoice :key task table)
@@ -708,7 +709,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
   (interactive)
   (let* ((backend (chronometrist-active-backend))
          (key-values
-          (cl-loop for plist in (chronometrist-list-records backend)
+          (chronometrist-loop-records for plist in backend
             when (equal (plist-get plist :name) task)
             collect
             (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
@@ -734,3 +735,8 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 (provide 'chronometrist-key-values)
 ;;; chronometrist-key-values.el ends here
 #+END_SRC
+* Local variables                                                  :NOEXPORT:
+# Local Variables:
+# nameless-aliases: (("cb" . "chronometrist-backend") ("c" . "chronometrist"))
+# nameless-current-name: "chronometrist"
+# End:

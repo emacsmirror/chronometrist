@@ -715,10 +715,12 @@ See branch =grouped-plist-format=
 2. [-] Implement plist-group backend code
 3. [ ] Change hash table format - omit dates from plists
 4. [ ] Mark split intervals with =:split t=
+5. [X] make generic =cl-loop= backend interface - =chronometrist-loop-sexp-file=
+6. [ ] =chronometrist-loop-sexp-file= - optimize grouped-plist iterator for
+7. [ ] key-values code is not yet generic
 
 Optional
 1. define generic backend protocol for key-values package
-2. define generic =cl-loop= interface (branch =generic-record-loop=)
 
 * New backends                                                      :feature:
 1. Org time tracking
