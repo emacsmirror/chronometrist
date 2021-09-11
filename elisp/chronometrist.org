@@ -975,7 +975,9 @@ RECORD is bound to each record in reverse chronological order."
           (buffer (find-file-noselect file)))
      (chronometrist-sexp-in-file file
        (goto-char (point-max))
-       (cl-loop for ,record = (funcall iter file) ,@loop-clauses))))
+       (cl-loop for ,record = (funcall iter file)
+         while ,record
+         ,@loop-clauses))))
 #+END_SRC
 
 **** list-tasks                                         :generic:function:
@@ -1334,15 +1336,17 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 **** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (--> (chronometrist-loop-records for plist in backend
-         collect (plist-get plist :name))
-       (cl-remove-duplicates it :test #'equal)
-       (sort it #'string-lessp)))
+  (chronometrist-loop-records for plist in backend
+    collect (plist-get plist :name) into names
+    finally return
+    (sort (cl-remove-duplicates names :test #'equal)
+          #'string-lessp)))
 #+END_SRC
+
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest task-list ()
-  (let ((task-list (chronometrist-list-tasks backend)))
+  (let ((task-list (chronometrist-list-tasks chronometrist-plist-test-backend)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
 #+END_SRC

@@ -395,7 +395,9 @@ RECORD is bound to each record in reverse chronological order."
           (buffer (find-file-noselect file)))
      (chronometrist-sexp-in-file file
        (goto-char (point-max))
-       (cl-loop for ,record = (funcall iter file) ,@loop-clauses))))
+       (cl-loop for ,record = (funcall iter file)
+         while ,record
+         ,@loop-clauses))))
 
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of all tasks recorded in BACKEND. Each task is a string.")
@@ -584,10 +586,11 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (--> (chronometrist-loop-records for plist in backend
-         collect (plist-get plist :name))
-       (cl-remove-duplicates it :test #'equal)
-       (sort it #'string-lessp)))
+  (chronometrist-loop-records for plist in backend
+    collect (plist-get plist :name) into names
+    finally return
+    (sort (cl-remove-duplicates names :test #'equal)
+          #'string-lessp)))
 
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.
