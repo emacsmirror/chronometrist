@@ -1556,7 +1556,18 @@ Return
 #+END_SRC
 
 *** plist group backend
-This is largely like the plist backend, but plists are grouped by date. This makes it easy and computationally cheap to perform our most common query - getting the plists on a given day. [[#explanation-midnight-spanning-intervals][Midnight-spanning intervals]] are split in the file itself. The downside is that the user, if editing it by hand, must take care to split the intervals.
+This is largely like the plist backend, but plists are grouped by date by wrapping them in a tagged list -
+
+#+BEGIN_SRC emacs-lisp :tangle no :load no
+("<ISO-8601 date>"
+ (:name "Task Name"
+  [:keyword <value>]*
+  :start "<ISO-8601 time>"
+  :stop "<ISO-8601 time>")
+ ...)
+#+END_SRC
+
+This makes it easy and computationally cheap to perform our most common query - getting the plists on a given day. [[#explanation-midnight-spanning-intervals][Midnight-spanning intervals]] are split in the file itself. The downside is that the user, if editing it by hand, must take care to split the intervals.
 
 **** plist-group-read-record                                   :procedure:
 #+BEGIN_SRC emacs-lisp
@@ -1572,7 +1583,7 @@ This is largely like the plist backend, but plists are grouped by date. This mak
                  (backward-sexp)
                  (save-excursion (read buffer))))
         (cond (inside-sexp-p
-               ;; if non-nil, we have read at least the last plist in this tagged list
+               ;; we have `read' at least the last plist in this tagged list
                (cl-typecase
                    (setq sexp (backward-sexp-read buffer))
                  (string
@@ -1582,10 +1593,9 @@ This is largely like the plist backend, but plists are grouped by date. This mak
               ((and (not (bobp))
                     (backward-list)
                     (or (not (bobp))
-                        (not (looking-at-p "^[[:blank:]]*;")))
-                    ;; if we are before an s-expression (tagged list)
-                    (read buffer))
-               ;; enter it
+                        (not (looking-at-p "^[[:blank:]]*;"))))
+               ;; we are before a top-level tagged list - enter it
+               (forward-list)
                (down-list -1)
                ;; read the last plist
                (backward-sexp-read buffer)

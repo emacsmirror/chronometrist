@@ -705,7 +705,7 @@ Return
                  (backward-sexp)
                  (save-excursion (read buffer))))
         (cond (inside-sexp-p
-               ;; if non-nil, we have read at least the last plist in this tagged list
+               ;; we have `read' at least the last plist in this tagged list
                (cl-typecase
                    (setq sexp (backward-sexp-read buffer))
                  (string
@@ -715,10 +715,9 @@ Return
               ((and (not (bobp))
                     (backward-list)
                     (or (not (bobp))
-                        (not (looking-at-p "^[[:blank:]]*;")))
-                    ;; if we are before an s-expression (tagged list)
-                    (read buffer))
-               ;; enter it
+                        (not (looking-at-p "^[[:blank:]]*;"))))
+               ;; we are before a top-level tagged list - enter it
+               (forward-list)
                (down-list -1)
                ;; read the last plist
                (backward-sexp-read buffer)
