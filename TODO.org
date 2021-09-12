@@ -716,8 +716,9 @@ See branch =grouped-plist-format=
 3. [ ] Change hash table format - omit dates from plists
 4. [ ] Mark split intervals with =:split t=
 5. [X] make generic =cl-loop= backend interface - =chronometrist-loop-sexp-file=
-6. [ ] =chronometrist-loop-sexp-file= - optimize grouped-plist iterator for
-7. [ ] key-values code is not yet generic
+6. [X] =chronometrist-loop-sexp-file= - optimize grouped-plist iterator
+7. [X] key-values code is not yet generic
+8. [ ] update plist-pp to indent tagged lists differently
 
 Optional
 1. define generic backend protocol for key-values package
@@ -730,3 +731,5 @@ Optional
 1. =task-time-one-day=
 2. =interval= (unused)
 3. =events-to-durations=
+
+* Use ISO date for functions operating on dates                 :time:format:
