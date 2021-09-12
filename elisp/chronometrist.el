@@ -459,6 +459,7 @@ Any existing data in the BACKEND file is overwritten.")
   (let ((file (chronometrist-backend-file backend)))
     (unless (file-exists-p file)
       (with-current-buffer (find-file-noselect file)
+        (erase-buffer)
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file)))))
@@ -784,10 +785,10 @@ Return
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
-  (chronometrist-create-file backend)
   (let ((file (chronometrist-backend-file backend)))
+    (delete-file file)
+    (chronometrist-create-file backend)
     (chronometrist-sexp-in-file file
-      (erase-buffer)
       (goto-char (point-max))
       (cl-loop for date being the hash-keys of hash-table
         using (hash-values plists) do
