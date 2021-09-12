@@ -1126,62 +1126,63 @@ The reasons I like this format are -
   (make-instance 'chronometrist-plist-backend
                  :file (make-temp-file "chronometrist-plist-test-" nil ".sexp")))
 
-(with-current-buffer (chronometrist-backend-file chronometrist-plist-test-backend)
-  (mapcar
-   (lambda (plist)
-     ;; to use this, we'd have to move `chronometrist-plist-pp' before this
-     ;; definition, and I'm perfectly content with where it is
-     ;; right now
-     (chronometrist-plist-pp plist (current-buffer))
-     (insert "\n\n")
-     ;; (print plist) (princ "\n")
-     )
-   '((:name "Programming"
-            :start "2018-01-01T00:00:00+0530"
-            :stop  "2018-01-01T01:00:00+0530")
-     (:name "Swimming"
-            :start "2018-01-01T02:00:00+0530"
-            :stop  "2018-01-01T03:00:00+0530")
-     (:name "Cooking"
-            :start "2018-01-01T04:00:00+0530"
-            :stop  "2018-01-01T05:00:00+0530")
-     (:name "Guitar"
-            :start "2018-01-01T06:00:00+0530"
-            :stop  "2018-01-01T07:00:00+0530")
-     (:name "Cycling"
-            :start "2018-01-01T08:00:00+0530"
-            :stop  "2018-01-01T09:00:00+0530")
-     (:name "Programming"
-            :start "2018-01-02T23:00:00+0530"
-            :stop  "2018-01-03T01:00:00+0530")
-     (:name "Cooking"
-            :start "2018-01-03T23:00:00+0530"
-            :stop  "2018-01-04T01:00:00+0530")
-     (:name "Programming"
-            :tags      (bug-hunting)
-            :project   "Chronometrist"
-            :component "goals"
-            :start     "2020-05-09T20:03:25+0530"
-            :stop      "2020-05-09T20:05:55+0530")
-     (:name "Arrangement/new edition"
-            :tags     (new edition)
-            :song     "Songs of Travel"
-            :composer "Vaughan Williams, Ralph"
-            :start    "2020-05-10T00:04:14+0530"
-            :stop     "2020-05-10T00:25:48+0530")
-     (:name "Guitar"
-            :tags  (classical warm-up)
-            :start "2020-05-10T15:41:14+0530"
-            :stop  "2020-05-10T15:55:42+0530")
-     (:name "Guitar"
-            :tags  (classical solo)
-            :start "2020-05-10T16:00:00+0530"
-            :stop  "2020-05-10T16:30:00+0530")
-     (:name "Programming"
-            :tags  (reading)
-            :book  "Smalltalk-80: The Language and Its Implementation"
-            :start "2020-05-10T16:33:17+0530"
-            :stop  "2020-05-10T17:10:48+0530"))))
+(let ((file (chronometrist-backend-file chronometrist-plist-test-backend)))
+  (with-current-buffer (find-file-noselect file)
+    (mapcar
+     (lambda (plist)
+       ;; to use this, we'd have to move `chronometrist-plist-pp' before this
+       ;; definition, and I'm perfectly content with where it is
+       ;; right now
+       (chronometrist-plist-pp plist (current-buffer))
+       (insert "\n\n")
+       ;; (print plist) (princ "\n")
+       )
+     '((:name "Programming"
+              :start "2018-01-01T00:00:00+0530"
+              :stop  "2018-01-01T01:00:00+0530")
+       (:name "Swimming"
+              :start "2018-01-01T02:00:00+0530"
+              :stop  "2018-01-01T03:00:00+0530")
+       (:name "Cooking"
+              :start "2018-01-01T04:00:00+0530"
+              :stop  "2018-01-01T05:00:00+0530")
+       (:name "Guitar"
+              :start "2018-01-01T06:00:00+0530"
+              :stop  "2018-01-01T07:00:00+0530")
+       (:name "Cycling"
+              :start "2018-01-01T08:00:00+0530"
+              :stop  "2018-01-01T09:00:00+0530")
+       (:name "Programming"
+              :start "2018-01-02T23:00:00+0530"
+              :stop  "2018-01-03T01:00:00+0530")
+       (:name "Cooking"
+              :start "2018-01-03T23:00:00+0530"
+              :stop  "2018-01-04T01:00:00+0530")
+       (:name "Programming"
+              :tags      (bug-hunting)
+              :project   "Chronometrist"
+              :component "goals"
+              :start     "2020-05-09T20:03:25+0530"
+              :stop      "2020-05-09T20:05:55+0530")
+       (:name "Arrangement/new edition"
+              :tags     (new edition)
+              :song     "Songs of Travel"
+              :composer "Vaughan Williams, Ralph"
+              :start    "2020-05-10T00:04:14+0530"
+              :stop     "2020-05-10T00:25:48+0530")
+       (:name "Guitar"
+              :tags  (classical warm-up)
+              :start "2020-05-10T15:41:14+0530"
+              :stop  "2020-05-10T15:55:42+0530")
+       (:name "Guitar"
+              :tags  (classical solo)
+              :start "2020-05-10T16:00:00+0530"
+              :stop  "2020-05-10T16:30:00+0530")
+       (:name "Programming"
+              :tags  (reading)
+              :book  "Smalltalk-80: The Language and Its Implementation"
+              :start "2020-05-10T16:33:17+0530"
+              :stop  "2020-05-10T17:10:48+0530")))))
 #+END_SRC
 
 1. [X] finding the test input file
