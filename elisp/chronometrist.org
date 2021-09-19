@@ -887,29 +887,41 @@ The list must be on a single line, as emitted by `prin1'."
 
 *** protocol
 **** backend                                                       :class:
+The backend may use no files, a single file, or multiple files. Thus, =chronometrist-backend= makes no reference to files, and [[#file-backend-mixin][=chronometrist-file-backend-mixin=]] may be used by single file backends.
+
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-backend ()
-  ((path ;; :initform (error "Path is required")
-         :initarg :path
-         :accessor chronometrist-backend-path
-         :custom 'string
-         :documentation
-         "Path to backend file, without extension.")
-   (extension ;; :initform (error "Extension is required")
-              :initarg :ext
-              :accessor chronometrist-backend-ext
-              :custom 'string
-              :documentation
-              "Extension of backend file.")
-   (file :initarg :file
-         :accessor chronometrist-backend-file
-         :custom 'string
-         :documentation "Full path to backend file, with extension.")
-   (iterator :initarg :iter
+  ((iterator :initarg :iter
              :accessor chronometrist-backend-iter
              :type function
              :documentation
-             "Function which returns a record from the backend (as a plist) each time it is called, in reverse chronological order.")))
+             "Procedure which returns a record from the backend (as a plist) each time it is called, in reverse chronological order.")))
+#+END_SRC
+
+**** file-backend-mixin                                            :mixin:
+:PROPERTIES:
+:CUSTOM_ID: file-backend-mixin
+:END:
+
+#+BEGIN_SRC emacs-lisp
+(defclass chronometrist-file-backend-mixin ()
+  ((path ;; :initform (error "Path is required")
+    :initarg :path
+    :accessor chronometrist-backend-path
+    :custom 'string
+    :documentation
+    "Path to backend file, without extension.")
+   (extension ;; :initform (error "Extension is required")
+    :initarg :ext
+    :accessor chronometrist-backend-ext
+    :custom 'string
+    :documentation
+    "Extension of backend file.")
+   (file :initarg :file
+         :accessor chronometrist-backend-file
+         :custom 'string
+         :documentation "Full path to backend file, with extension."))
+  :documentation "Mixin for backends storing data in a single file.")
 #+END_SRC
 
 **** initialize-instance                                          :method:
@@ -1200,7 +1212,7 @@ Boilerplate for updating state between file operations in tests.
 #+END_SRC
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
               :custom 'string)

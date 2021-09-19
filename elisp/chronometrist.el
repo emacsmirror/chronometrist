@@ -333,27 +333,30 @@ The list must be on a single line, as emitted by `prin1'."
   :type 'file)
 
 (defclass chronometrist-backend ()
-  ((path ;; :initform (error "Path is required")
-         :initarg :path
-         :accessor chronometrist-backend-path
-         :custom 'string
-         :documentation
-         "Path to backend file, without extension.")
-   (extension ;; :initform (error "Extension is required")
-              :initarg :ext
-              :accessor chronometrist-backend-ext
-              :custom 'string
-              :documentation
-              "Extension of backend file.")
-   (file :initarg :file
-         :accessor chronometrist-backend-file
-         :custom 'string
-         :documentation "Full path to backend file, with extension.")
-   (iterator :initarg :iter
+  ((iterator :initarg :iter
              :accessor chronometrist-backend-iter
              :type function
              :documentation
-             "Function which returns a record from the backend (as a plist) each time it is called, in reverse chronological order.")))
+             "Procedure which returns a record from the backend (as a plist) each time it is called, in reverse chronological order.")))
+
+(defclass chronometrist-file-backend-mixin ()
+  ((path ;; :initform (error "Path is required")
+    :initarg :path
+    :accessor chronometrist-backend-path
+    :custom 'string
+    :documentation
+    "Path to backend file, without extension.")
+   (extension ;; :initform (error "Extension is required")
+    :initarg :ext
+    :accessor chronometrist-backend-ext
+    :custom 'string
+    :documentation
+    "Extension of backend file.")
+   (file :initarg :file
+         :accessor chronometrist-backend-file
+         :custom 'string
+         :documentation "Full path to backend file, with extension."))
+  :documentation "Mixin for backends storing data in a single file.")
 
 (cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
   (when (and (chronometrist-backend-path backend) (chronometrist-backend-ext backend) (not (chronometrist-backend-file backend)))
@@ -470,7 +473,7 @@ Any existing data in the BACKEND file is overwritten.")
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
 
-(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
               :custom 'string)
