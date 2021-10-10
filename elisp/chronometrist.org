@@ -1125,8 +1125,8 @@ In this format, user data is stored as Elisp plists in a plain text file. A basi
 #+BEGIN_SRC emacs-lisp :tangle no :load no
 (:name "Task Name"
  [:keyword <value>]*
- :start "<ISO-8601 timestamp>"
- :stop "<ISO-8601 timestamp>")
+ :start "<ISO-8601 date-time>"
+ :stop "<ISO-8601 date-time>")
 #+END_SRC
 
 =:name= and =:start= are essential. =:stop= may be missing if the task is currently active.
