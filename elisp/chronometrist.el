@@ -332,12 +332,7 @@ The list must be on a single line, as emitted by `prin1'."
   "Name (without extension) and full path of the Chronometrist database."
   :type 'file)
 
-(defclass chronometrist-backend ()
-  ((iterator :initarg :iter
-             :accessor chronometrist-backend-iter
-             :type function
-             :documentation
-             "Procedure which returns a record from the backend (as a plist) each time it is called, in reverse chronological order.")))
+(defclass chronometrist-backend () ())
 
 (defclass chronometrist-file-backend-mixin ()
   ((path ;; :initform (error "Path is required")
@@ -355,7 +350,15 @@ The list must be on a single line, as emitted by `prin1'."
    (file :initarg :file
          :accessor chronometrist-backend-file
          :custom 'string
-         :documentation "Full path to backend file, with extension."))
+         :documentation "Full path to backend file, with extension.")
+   (iterator-state :initform nil
+                   :initarg :iterator-state
+                   :accessor chronometrist-backend-iterator-state
+                   :documentation
+                   "State of iterator's progress through the backend file.
+nil means the iterator has not begun traversing the file,
+t means the iterator has finished traversing the file,
+a numerical value is the position of point in the file, and means that the iterator is traversing the file."))
   :documentation "Mixin for backends storing data in a single file.")
 
 (cl-defmethod initialize-instance :after ((backend chronometrist-backend) &rest initargs)
@@ -388,19 +391,18 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
+(cl-defgeneric chronometrist-iterator (backend)
+  "On each call, return (in reverse chronological order) a record from BACKEND as a plist.
+Return nil when there are no more records to return.")
+
 (defmacro chronometrist-loop-records (_for record _in backend &rest loop-clauses)
   "Apply LOOP-CLAUSES  (see `cl-loop') to each RECORD in BACKEND.
 RECORD is bound to each record in reverse chronological order."
   (declare (indent defun)
            (debug 'cl-loop))
-  `(let* ((file (chronometrist-backend-file ,backend))
-          (iter (chronometrist-backend-iter ,backend))
-          (buffer (find-file-noselect file)))
-     (chronometrist-sexp-in-file file
-       (goto-char (point-max))
-       (cl-loop for ,record = (funcall iter file)
-         while ,record
-         ,@loop-clauses))))
+  `(cl-loop for ,record = (chronometrist-iterator ,backend)
+     while ,record
+     ,@loop-clauses))
 
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of all tasks recorded in BACKEND. Each task is a string.")
@@ -476,18 +478,7 @@ Any existing data in the BACKEND file is overwritten.")
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
-              :custom 'string)
-   (iterator :initform
-             (lambda (file)
-               (with-current-buffer (find-file-noselect file)
-                 (let (sexp)
-                   (and (not (bobp))
-                        (backward-list)
-                        (or (not (bobp))
-                            (not (looking-at-p "^[[:blank:]]*;")))
-                        (setq sexp (ignore-errors (read (current-buffer))))
-                        (backward-list))
-                   sexp))))))
+              :custom 'string)))
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
@@ -588,6 +579,24 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (funcall chronometrist-sexp-pretty-print-function expr (current-buffer))
       (insert "\n")
       (unless (eobp) (insert "\n")))))
+
+(cl-defmethod chronometrist-iterator ((backend chronometrist-plist-backend))
+  (with-slots (file iterator-state) backend
+      (with-current-buffer (find-file-noselect file)
+        (when (eq iterator-state t)
+          (goto-char (point-max))
+          (setf iterator-state nil))
+        ;; can we progress (backward)?
+        (if (and (not (bobp))
+                 (backward-list)
+                 (or (not (bobp))
+                     (not (looking-at-p "^[[:blank:]]*;"))))
+            (prog1 (ignore-errors (read (current-buffer)))
+              (backward-list)
+              (setf iterator-state (point)))
+          ;; cannot progress - traversal is complete
+          (setf iterator-state t)
+          nil))))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
   (chronometrist-loop-records for plist in backend
@@ -730,7 +739,7 @@ Return
                ;; it may or may not be the only one in this tagged list
                ))))))
 
-(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)

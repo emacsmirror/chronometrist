@@ -890,12 +890,7 @@ The list must be on a single line, as emitted by `prin1'."
 The backend may use no files, a single file, or multiple files. Thus, =chronometrist-backend= makes no reference to files, and [[#file-backend-mixin][=chronometrist-file-backend-mixin=]] may be used by single file backends.
 
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-backend ()
-  ((iterator :initarg :iter
-             :accessor chronometrist-backend-iter
-             :type function
-             :documentation
-             "Procedure which returns a record from the backend (as a plist) each time it is called, in reverse chronological order.")))
+(defclass chronometrist-backend () ())
 #+END_SRC
 
 **** file-backend-mixin                                            :mixin:
@@ -920,7 +915,15 @@ The backend may use no files, a single file, or multiple files. Thus, =chronomet
    (file :initarg :file
          :accessor chronometrist-backend-file
          :custom 'string
-         :documentation "Full path to backend file, with extension."))
+         :documentation "Full path to backend file, with extension.")
+   (iterator-state :initform nil
+                   :initarg :iterator-state
+                   :accessor chronometrist-backend-iterator-state
+                   :documentation
+                   "State of iterator's progress through the backend file.
+nil means the iterator has not begun traversing the file,
+t means the iterator has finished traversing the file,
+a numerical value is the position of point in the file, and means that the iterator is traversing the file."))
   :documentation "Mixin for backends storing data in a single file.")
 #+END_SRC
 
@@ -973,6 +976,13 @@ Value must be a keyword corresponding to a key in
   "Return the latest entry from BACKEND as a plist.")
 #+END_SRC
 
+**** iterator                                           :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-iterator (backend)
+  "On each call, return (in reverse chronological order) a record from BACKEND as a plist.
+Return nil when there are no more records to return.")
+#+END_SRC
+
 **** loop-records                                                  :macro:
 I wanted a generic =cl-loop= interface to iterate over records in any backend, and this is the best way I could find to make it work.
 
@@ -982,14 +992,9 @@ I wanted a generic =cl-loop= interface to iterate over records in any backend, a
 RECORD is bound to each record in reverse chronological order."
   (declare (indent defun)
            (debug 'cl-loop))
-  `(let* ((file (chronometrist-backend-file ,backend))
-          (iter (chronometrist-backend-iter ,backend))
-          (buffer (find-file-noselect file)))
-     (chronometrist-sexp-in-file file
-       (goto-char (point-max))
-       (cl-loop for ,record = (funcall iter file)
-         while ,record
-         ,@loop-clauses))))
+  `(cl-loop for ,record = (chronometrist-iterator ,backend)
+     while ,record
+     ,@loop-clauses))
 #+END_SRC
 
 **** list-tasks                                         :generic:function:
@@ -1215,18 +1220,7 @@ Boilerplate for updating state between file operations in tests.
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
-              :custom 'string)
-   (iterator :initform
-             (lambda (file)
-               (with-current-buffer (find-file-noselect file)
-                 (let (sexp)
-                   (and (not (bobp))
-                        (backward-list)
-                        (or (not (bobp))
-                            (not (looking-at-p "^[[:blank:]]*;")))
-                        (setq sexp (ignore-errors (read (current-buffer))))
-                        (backward-list))
-                   sexp))))))
+              :custom 'string)))
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
@@ -1345,6 +1339,27 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (funcall chronometrist-sexp-pretty-print-function expr (current-buffer))
       (insert "\n")
       (unless (eobp) (insert "\n")))))
+#+END_SRC
+
+**** iterator                                              :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-iterator ((backend chronometrist-plist-backend))
+  (with-slots (file iterator-state) backend
+      (with-current-buffer (find-file-noselect file)
+        (when (eq iterator-state t)
+          (goto-char (point-max))
+          (setf iterator-state nil))
+        ;; can we progress (backward)?
+        (if (and (not (bobp))
+                 (backward-list)
+                 (or (not (bobp))
+                     (not (looking-at-p "^[[:blank:]]*;"))))
+            (prog1 (ignore-errors (read (current-buffer)))
+              (backward-list)
+              (setf iterator-state (point)))
+          ;; cannot progress - traversal is complete
+          (setf iterator-state t)
+          nil))))
 #+END_SRC
 
 **** list-tasks                                            :reader:method:
@@ -1621,7 +1636,7 @@ This makes it easy and computationally cheap to perform our most common query - 
 
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)
