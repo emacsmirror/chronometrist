@@ -351,14 +351,14 @@ The list must be on a single line, as emitted by `prin1'."
          :accessor chronometrist-backend-file
          :custom 'string
          :documentation "Full path to backend file, with extension.")
-   (iterator-state :initform t
+   (iterator-state :initform :begin
                    :initarg :iterator-state
                    :accessor chronometrist-backend-iterator-state
                    :documentation
                    "State of iterator's progress through the backend file.
-nil means the iterator has not begun traversing the file,
-t means the iterator has finished traversing the file,
-a numerical value is the position of point in the file, and means that the iterator is traversing the file."))
+:begin means the iterator has not begun traversing the file,
+:run means means the iterator is traversing the file,
+:end means the iterator has finished traversing the file."))
   :documentation "Mixin for backends storing data in a single file.")
 
 (cl-defmethod initialize-instance :after ((backend chronometrist-file-backend-mixin)
@@ -403,9 +403,10 @@ Return nil when there are no more records to return.")
 RECORD is bound to each record in reverse chronological order."
   (declare (indent defun)
            (debug 'cl-loop))
-  `(cl-loop for ,record = (chronometrist-iterator ,backend)
-     while ,record
-     ,@loop-clauses))
+  `(save-excursion
+     (cl-loop for ,record = (chronometrist-iterator ,backend)
+       while ,record
+       ,@loop-clauses)))
 
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of all tasks recorded in BACKEND. Each task is a string.")
@@ -584,22 +585,25 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 
 (cl-defmethod chronometrist-iterator ((backend chronometrist-plist-backend))
-  (with-slots (file iterator-state) backend
-      (with-current-buffer (find-file-noselect file)
-        (when (eq iterator-state t)
-          (goto-char (point-max))
-          (setf iterator-state nil))
-        ;; can we progress (backward)?
-        (if (and (not (bobp))
-                 (backward-list)
-                 (or (not (bobp))
-                     (not (looking-at-p "^[[:blank:]]*;"))))
-            (prog1 (ignore-errors (read (current-buffer)))
-              (backward-list)
-              (setf iterator-state (point)))
-          ;; cannot progress - traversal is complete
-          (setf iterator-state t)
-          nil))))
+  (with-slots (file iterator-state point) backend
+    (with-current-buffer (find-file-noselect file)
+      (cl-case iterator-state
+        (:begin
+         (goto-char (point-max))
+         (setf iterator-state :run))
+        (:end
+         (setf iterator-state :begin)))
+      (if (and (eq iterator-state :run)
+               ;; can we progress (backward)?
+               (not (bobp))
+               (backward-list)
+               (or (not (bobp))
+                   (not (looking-at-p "^[[:blank:]]*;"))))
+          (prog1 (ignore-errors (read (current-buffer)))
+            (backward-list))
+        ;; cannot progress - traversal is complete
+        (setf iterator-state :end)
+        nil))))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
   (chronometrist-loop-records for plist in backend
@@ -768,9 +772,12 @@ Return
         (cl-flet ((backward-sexp-read (buffer)
                                       (backward-sexp)
                                       (save-excursion (read buffer))))
-          (when (eq iterator-state t)
-            (goto-char (point-max))
-            (setf iterator-state nil))
+          (cl-case iterator-state
+            (:begin
+             (goto-char (point-max))
+             (setf iterator-state :run))
+            (:end
+             (setf iterator-state :begin)))
           (cond (inside-sexp-p
                  ;; we have `read' at least the last plist in this tagged list
                  (cl-typecase (setq sexp (backward-sexp-read buffer))
@@ -787,11 +794,11 @@ Return
                  (down-list -1)
                  ;; read the last plist
                  (prog1 (backward-sexp-read buffer)
-                   (setf iterator-state (point)))
+                   (setf iterator-state :run))
                  ;; we are at the start of the last plist
                  ;; it may or may not be the only one in this tagged list
                  )
-                (t (setf iterator-state t) nil)))))))
+                (t (setf iterator-state :end) nil)))))))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist))
 

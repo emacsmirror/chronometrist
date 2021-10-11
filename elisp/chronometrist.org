@@ -916,14 +916,14 @@ The backend may use no files, a single file, or multiple files. Thus, =chronomet
          :accessor chronometrist-backend-file
          :custom 'string
          :documentation "Full path to backend file, with extension.")
-   (iterator-state :initform t
+   (iterator-state :initform :begin
                    :initarg :iterator-state
                    :accessor chronometrist-backend-iterator-state
                    :documentation
                    "State of iterator's progress through the backend file.
-nil means the iterator has not begun traversing the file,
-t means the iterator has finished traversing the file,
-a numerical value is the position of point in the file, and means that the iterator is traversing the file."))
+:begin means the iterator has not begun traversing the file,
+:run means means the iterator is traversing the file,
+:end means the iterator has finished traversing the file."))
   :documentation "Mixin for backends storing data in a single file.")
 #+END_SRC
 
@@ -987,7 +987,7 @@ Return nil when there are no more records to return.")
 #+END_SRC
 
 **** loop-records                                                  :macro:
-I wanted a generic =cl-loop= interface to iterate over records in any backend, and this is the best way I could find to make it work.
+I wanted a generic =cl-loop= interface to iterate over records in any backend, and this is the best way I could find to make it work. The =save-excursion= restores point for text backends, and (hopefully) has no effect for other backends.
 
 #+BEGIN_SRC emacs-lisp
 (defmacro chronometrist-loop-records (_for record _in backend &rest loop-clauses)
@@ -995,9 +995,10 @@ I wanted a generic =cl-loop= interface to iterate over records in any backend, a
 RECORD is bound to each record in reverse chronological order."
   (declare (indent defun)
            (debug 'cl-loop))
-  `(cl-loop for ,record = (chronometrist-iterator ,backend)
-     while ,record
-     ,@loop-clauses))
+  `(save-excursion
+     (cl-loop for ,record = (chronometrist-iterator ,backend)
+       while ,record
+       ,@loop-clauses)))
 #+END_SRC
 
 **** list-tasks                                         :generic:function:
@@ -1347,22 +1348,25 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 **** iterator                                              :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-iterator ((backend chronometrist-plist-backend))
-  (with-slots (file iterator-state) backend
-      (with-current-buffer (find-file-noselect file)
-        (when (eq iterator-state t)
-          (goto-char (point-max))
-          (setf iterator-state nil))
-        ;; can we progress (backward)?
-        (if (and (not (bobp))
-                 (backward-list)
-                 (or (not (bobp))
-                     (not (looking-at-p "^[[:blank:]]*;"))))
-            (prog1 (ignore-errors (read (current-buffer)))
-              (backward-list)
-              (setf iterator-state (point)))
-          ;; cannot progress - traversal is complete
-          (setf iterator-state t)
-          nil))))
+  (with-slots (file iterator-state point) backend
+    (with-current-buffer (find-file-noselect file)
+      (cl-case iterator-state
+        (:begin
+         (goto-char (point-max))
+         (setf iterator-state :run))
+        (:end
+         (setf iterator-state :begin)))
+      (if (and (eq iterator-state :run)
+               ;; can we progress (backward)?
+               (not (bobp))
+               (backward-list)
+               (or (not (bobp))
+                   (not (looking-at-p "^[[:blank:]]*;"))))
+          (prog1 (ignore-errors (read (current-buffer)))
+            (backward-list))
+        ;; cannot progress - traversal is complete
+        (setf iterator-state :end)
+        nil))))
 #+END_SRC
 
 **** list-tasks                                            :reader:method:
@@ -1683,9 +1687,12 @@ This makes it easy and computationally cheap to perform our most common query - 
         (cl-flet ((backward-sexp-read (buffer)
                                       (backward-sexp)
                                       (save-excursion (read buffer))))
-          (when (eq iterator-state t)
-            (goto-char (point-max))
-            (setf iterator-state nil))
+          (cl-case iterator-state
+            (:begin
+             (goto-char (point-max))
+             (setf iterator-state :run))
+            (:end
+             (setf iterator-state :begin)))
           (cond (inside-sexp-p
                  ;; we have `read' at least the last plist in this tagged list
                  (cl-typecase (setq sexp (backward-sexp-read buffer))
@@ -1702,11 +1709,11 @@ This makes it easy and computationally cheap to perform our most common query - 
                  (down-list -1)
                  ;; read the last plist
                  (prog1 (backward-sexp-read buffer)
-                   (setf iterator-state (point)))
+                   (setf iterator-state :run))
                  ;; we are at the start of the last plist
                  ;; it may or may not be the only one in this tagged list
                  )
-                (t (setf iterator-state t) nil)))))))
+                (t (setf iterator-state :end) nil)))))))
 #+END_SRC
 
 **** replace-last                                          :writer:method:
