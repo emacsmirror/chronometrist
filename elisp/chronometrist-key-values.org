@@ -111,6 +111,17 @@ Each of these has a corresponding function to clear it and fill it with values -
 #+END_SRC
 * Code
 ** Common
+*** history-limit                                         :custom:variable:
+Currently only used by [[#unified-prompt][chronometrist-key-values-unified-prompt]].
+
+There is a possibility that, for a task which the user has not clocked into for a long time (such that the last record for this task is more than $HISTORY number of records away), no key/value history may be generated.
+
+An alternative could be to count only matching records, instead of all records, as contributing to the limit. This may lead to the optimization being defeated if the matching records are very far apart, albeit under the limit.
+
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-key-value-history-limit 500
+  "Number of records to generate history from.")
+#+END_SRC
 *** history-prep                                                   :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-history-prep (key history-table)
@@ -701,6 +712,9 @@ Return t, to permit use in `chronometrist-before-out-functions'."
         ())))
 #+END_SRC
 *** WIP unified-prompt                                        :hook:writer:
+:PROPERTIES:
+:CUSTOM_ID: unified-prompt
+:END:
 1. [ ] Improve appearance - is there an easy way to syntax highlight the plists?
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-latest-record (chronometrist-active-backend)) :name)))
@@ -710,6 +724,9 @@ Return t, to permit use in `chronometrist-before-out-functions'."
   (let* ((backend (chronometrist-active-backend))
          (key-values
           (chronometrist-loop-records for plist in backend
+            with count = 0
+            do (cl-incf count)
+            while (<= count chronometrist-key-value-history-limit) and
             when (equal (plist-get plist :name) task)
             collect
             (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
