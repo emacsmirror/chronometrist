@@ -732,10 +732,8 @@ Return
   (plist-get (chronometrist-latest-record backend) :name))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
-  (chronometrist-loop-records for plist-group in (chronometrist-backend-file backend)
-    collect (cl-loop for plist in (rest plist-group)
-              collect (plist-get plist :name))
-    into names
+  (chronometrist-loop-records for plist in backend
+    collect (plist-get plist :name) into names
     finally return
     (--> (flatten-tree names)
          (cl-remove-duplicates it :test #'equal)
