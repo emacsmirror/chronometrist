@@ -1751,8 +1751,18 @@ This makes it easy and computationally cheap to perform our most common query - 
 
 **** replace-last                                          :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist))
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (when (save-excursion
+            (chronometrist-sexp-pre-read-check (current-buffer)))
+      (down-list -1)
+      (backward-list)
+      (chronometrist-sexp-delete-list)
+      (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+      (save-buffer))))
 #+END_SRC
+
 **** view-file                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))

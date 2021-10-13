@@ -815,6 +815,16 @@ Return
 (cl-defmethod chronometrist-day-iterator ((backend chronometrist-plist-group-backend))
   (chronometrist-sexp-iterator backend))
 
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (when (save-excursion
+            (chronometrist-sexp-pre-read-check (current-buffer)))
+      (down-list -1)
+      (backward-list)
+      (chronometrist-sexp-delete-list)
+      (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+      (save-buffer))))
 
 (cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))
 
