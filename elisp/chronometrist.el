@@ -774,7 +774,15 @@ Return
 
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 
-(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist))
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (when (save-excursion
+            (chronometrist-sexp-pre-read-check (current-buffer)))
+      (down-list -1)
+      (default-indent-new-line)
+      (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+      (save-buffer))))
 
 (defun chronometrist-backward-read-sexp (buffer)
   (backward-sexp)
