@@ -583,7 +583,6 @@ STREAM (which is the value of `current-buffer')."
       table)))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
-  "Add new PLIST at the end of `chronometrist-file'."
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -594,7 +593,6 @@ STREAM (which is the value of `current-buffer')."
     (save-buffer)))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
-  "Replace the last s-expression in `chronometrist-file' with PLIST."
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (unless (and (bobp) (bolp)) (insert "\n"))
