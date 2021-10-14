@@ -32,8 +32,3 @@
   (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
-
-# Local Variables:
-# nameless-aliases: (("c" . "chronometrist"))
-# nameless-current-name: "chronometrist"
-# End:
