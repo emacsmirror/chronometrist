@@ -522,9 +522,7 @@ Move point to the start of this s-expression."
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
-                      ,(make-instance 'chronometrist-plist-backend
-                                      :path chronometrist-file
-                                      :ext "plist")))
+                      ,(make-instance 'chronometrist-plist-backend :path chronometrist-file)))
 
 (defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
   "Function used to pretty print plists in `chronometrist-file'.

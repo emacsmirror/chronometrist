@@ -1276,9 +1276,7 @@ Boilerplate for updating state between file operations in tests.
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
-                      ,(make-instance 'chronometrist-plist-backend
-                                      :path chronometrist-file
-                                      :ext "plist")))
+                      ,(make-instance 'chronometrist-plist-backend :path chronometrist-file)))
 #+END_SRC
 **** pretty-print-function                               :custom:variable:
 #+BEGIN_SRC emacs-lisp
@@ -1409,13 +1407,6 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
           #'string-lessp)))
 #+END_SRC
 
-***** tests
-#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
-(ert-deftest task-list ()
-  (let ((task-list (chronometrist-list-tasks chronometrist-plist-test-backend)))
-    (should (listp task-list))
-    (should (seq-every-p #'stringp task-list))))
-#+END_SRC
 **** file-state                                        :internal:variable:
 :PROPERTIES:
 :VALUE:    list
