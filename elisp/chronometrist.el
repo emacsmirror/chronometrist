@@ -387,11 +387,11 @@ Value must be a keyword corresponding to a key in
   "Return an object representing the currently active backend."
   (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 
-(cl-defgeneric chronometrist-current-task (backend)
-  "Return the name of the active task as a string, or nil if not clocked in.")
-
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
+
+(cl-defgeneric chronometrist-current-task (backend)
+  "Return the name of the active task as a string, or nil if not clocked in.")
 
 (cl-defgeneric chronometrist-record-iterator (backend)
   "On each call, return (in reverse chronological order) a record from BACKEND as a plist.

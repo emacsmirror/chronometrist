@@ -966,16 +966,16 @@ Value must be a keyword corresponding to a key in
   (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 #+END_SRC
 
-**** current-task                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-current-task (backend)
-  "Return the name of the active task as a string, or nil if not clocked in.")
-#+END_SRC
-
 **** latest-record                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
+#+END_SRC
+
+**** current-task                                       :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-current-task (backend)
+  "Return the name of the active task as a string, or nil if not clocked in.")
 #+END_SRC
 
 **** record-iterator                                    :generic:function:
