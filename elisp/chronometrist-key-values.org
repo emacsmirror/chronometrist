@@ -585,9 +585,9 @@ used in `chronometrist-before-out-functions'."
 (defun chronometrist-kv-accept ()
   "Accept the plist in `chronometrist-kv-buffer-name' and add it to `chronometrist-file'."
   (interactive)
-  (let ((backend (chronometrist-active-backend))
-        (latest  (chronometrist-latest-record backend))
-        user-kv-expr)
+  (let* ((backend (chronometrist-active-backend))
+         (latest  (chronometrist-latest-record backend))
+         user-kv-expr)
     (with-current-buffer (get-buffer chronometrist-kv-buffer-name)
       (goto-char (point-min))
       (setq user-kv-expr (ignore-errors (read (current-buffer))))
