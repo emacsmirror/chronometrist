@@ -1,28 +1,57 @@
+
+* Setup
+** test-file-path-stem
+#+BEGIN_SRC emacs-lisp
 (defvar chronometrist-test-file-path-stem
   (format "%stest" (file-name-directory (or load-file-name default-directory))))
+#+END_SRC
 
+** test-backend
+#+BEGIN_SRC emacs-lisp
 (defvar chronometrist-test-backend
   (make-instance 'chronometrist-plist-backend :path chronometrist-test-file-path-stem))
+#+END_SRC
 
+** test-first-record
+#+BEGIN_SRC emacs-lisp
 (defvar chronometrist-test-first-record
   '(:name  "Programming"
     :start "2018-01-01T00:00:00+0530"
     :stop  "2018-01-01T01:00:00+0530"))
+#+END_SRC
 
+** test-latest-record
+#+BEGIN_SRC emacs-lisp
 (defvar chronometrist-test-latest-record
   '(:name  "Programming"
     :tags  (reading)
     :book  "Smalltalk-80: The Language and Its Implementation"
     :start "2020-05-10T16:33:17+0530"
     :stop  "2020-05-10T17:10:48+0530"))
+#+END_SRC
 
+** test-hash-table
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-test-hash-table
+  (chronometrist-to-hash-table chronometrist-test-backend))
+#+END_SRC
+
+* Tests
+** count-records
+#+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-count-records ()
   (should (= (chronometrist-count-records chronometrist-test-backend) 12)))
+#+END_SRC
 
+** latest-records
+#+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-latest-record ()
   (should (equal (chronometrist-latest-record chronometrist-test-backend)
                  chronometrist-test-latest-record)))
+#+END_SRC
 
+** latest-records
+#+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-current-task ()
   (chronometrist-insert chronometrist-test-backend '(:name "Test"))
   (should (equal (chronometrist-current-task chronometrist-test-backend) "Test"))
@@ -32,7 +61,10 @@
     (chronometrist-sexp-delete-list)
     (save-buffer))
   (should (not (chronometrist-current-task chronometrist-test-backend))))
+#+END_SRC
 
+** loop-records
+#+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-loop-records ()
   ;; `chronometrist-loop-records' is deliberately run twice here
   (should (equal (first (last (chronometrist-loop-records for record in chronometrist-test-backend
@@ -41,8 +73,18 @@
   (should (equal (first (chronometrist-loop-records for record in chronometrist-test-backend
                           collect record))
                  chronometrist-test-latest-record)))
+#+END_SRC
 
+** list-tasks
+#+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-list-tasks ()
   (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
+#+END_SRC
+
+** task-records
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-task-records ()
+  )
+#+END_SRC
