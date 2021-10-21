@@ -179,6 +179,13 @@ TS must be a ts struct (see `ts.el')."
   "Return an empty hash table with `equal' as test."
   (make-hash-table :test #'equal))
 
+(cl-defun chronometrist-current-task (&optional (backend (chronometrist-active-backend)))
+  "Return the name of the active task as a string, or nil if not clocked in."
+  (let ((last-event (chronometrist-latest-record backend)))
+    (if (plist-member last-event :stop)
+        nil
+      (plist-get last-event :name))))
+
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
@@ -642,9 +649,6 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
-(cl-defgeneric chronometrist-current-task (backend)
-  "Return the name of the active task as a string, or nil if not clocked in.")
-
 (cl-defgeneric chronometrist-record-iterator (backend)
   "On each call, return (in reverse chronological order) a record from BACKEND as a plist.
 Return nil when there are no more records to return.")
@@ -718,7 +722,8 @@ table keys and hash table values must be in chronological order.
 Any existing data in the BACKEND file is overwritten.")
 
 (cl-defgeneric chronometrist-on-change (backend fs-event)
-  "Function to be run when BACKEND changes on disk.")
+  "Function to be run when BACKEND changes on disk.
+FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
 
 (cl-defgeneric chronometrist-reset-internal (backend)
   "Reset data structures for BACKEND.")
@@ -812,12 +817,6 @@ STREAM (which is the value of `current-buffer')."
     (goto-char (point-max))
     (backward-list)
     (ignore-errors (read (current-buffer)))))
-
-(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-backend))
-  (let ((last-event (chronometrist-latest-record backend)))
-    (if (plist-member last-event :stop)
-        nil
-      (plist-get last-event :name))))
 
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1075,9 +1074,6 @@ Return
     (let ((latest-date
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
-
-(cl-defmethod chronometrist-current-task ((backend chronometrist-plist-group-backend))
-  (plist-get (chronometrist-latest-record backend) :name))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
   (chronometrist-loop-records for plist in backend
@@ -1353,8 +1349,7 @@ is clocked in to a task."
     ;; No need to update the buffer if there is no active task, or if
     ;; the file is being edited by the user. (The file may be in an
     ;; invalid state, and reading it then may result in a read error.)
-    (when (and (chronometrist-current-task (chronometrist-active-backend))
-               (not (buffer-modified-p file-buffer)))
+    (when (and (chronometrist-current-task) (not (buffer-modified-p file-buffer)))
       (when (get-buffer-window chronometrist-buffer-name)
         (chronometrist-refresh))
       (run-hooks 'chronometrist-timer-hook))))
@@ -1421,7 +1416,7 @@ button action."
 
 (defun chronometrist-task-active-p (task)
   "Return t if TASK is currently clocked in, else nil."
-  (equal (chronometrist-current-task (chronometrist-active-backend)) task))
+  (equal (chronometrist-current-task) task))
 
 (defun chronometrist-activity-indicator ()
   "Return a string to indicate that a task is active.
@@ -1589,7 +1584,7 @@ refresh the `chronometrist' buffer."
 
 (defun chronometrist-query-stop ()
   "Ask the user if they would like to clock out."
-  (let ((task (chronometrist-current-task (chronometrist-active-backend))))
+  (let ((task (chronometrist-current-task)))
     (and task
          (yes-or-no-p (format "Stop tracking time for %s? " task))
          (chronometrist-out))
@@ -1677,7 +1672,7 @@ Argument _BUTTON is for the purpose of using this as a button
 action, and is ignored."
   (when current-prefix-arg
     (chronometrist-goto-nth-task (prefix-numeric-value current-prefix-arg)))
-  (let ((current  (chronometrist-current-task (chronometrist-active-backend)))
+  (let ((current  (chronometrist-current-task))
         (at-point (chronometrist-task-at-point)))
     ;; clocked in + point on current    = clock out
     ;; clocked in + point on some other task = clock out, clock in to task
@@ -1691,7 +1686,7 @@ action, and is ignored."
   "Button action to add a new task.
 Argument _BUTTON is for the purpose of using this as a button
 action, and is ignored."
-  (let ((current (chronometrist-current-task (chronometrist-active-backend))))
+  (let ((current (chronometrist-current-task)))
     (when current
       (chronometrist-run-functions-and-clock-out current))
     (let ((task (read-from-minibuffer "New task name: " nil nil nil nil nil t)))
@@ -1716,7 +1711,7 @@ If INHIBIT-HOOKS is non-nil, the hooks
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
          (target       (or nth at-point))
-         (current      (chronometrist-current-task (chronometrist-active-backend)))
+         (current      (chronometrist-current-task))
          (in-function  (if inhibit-hooks
                            #'chronometrist-in
                          #'chronometrist-run-functions-and-clock-in))
@@ -1758,7 +1753,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if no task is active."
   (interactive "P")
-  (if (chronometrist-current-task (chronometrist-active-backend))
+  (if (chronometrist-current-task)
       (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
              (plist  (plist-put latest :start (chronometrist-format-time-iso8601)))
              (task   (plist-get plist :name)))
@@ -1777,7 +1772,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if a task is active."
   (interactive "P")
-  (if (chronometrist-current-task (chronometrist-active-backend))
+  (if (chronometrist-current-task)
       (message "Cannot extend an active task - use this after clocking out.")
     (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
            (plist  (plist-put latest :stop (chronometrist-format-time-iso8601)))

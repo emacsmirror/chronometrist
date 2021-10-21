@@ -43,14 +43,14 @@
   (should (= (chronometrist-count-records chronometrist-test-backend) 12)))
 #+END_SRC
 
-** latest-records
+** latest-record
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-latest-record ()
   (should (equal (chronometrist-latest-record chronometrist-test-backend)
                  chronometrist-test-latest-record)))
 #+END_SRC
 
-** latest-records
+** current-task
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-current-task ()
   (chronometrist-insert chronometrist-test-backend '(:name "Test"))
