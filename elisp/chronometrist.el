@@ -314,8 +314,8 @@ which span midnights."
 (defvar chronometrist-task-list nil
   "List of tasks in `chronometrist-file'.")
 
-(defun chronometrist-reset-task-list ()
-  (setq chronometrist-task-list (chronometrist-list-tasks (chronometrist-active-backend))))
+(cl-defun chronometrist-reset-task-list (&optional (backend (chronometrist-active-backend)))
+  (setq chronometrist-task-list (chronometrist-list-tasks backend)))
 
 (defun chronometrist-add-to-task-list (task)
   (unless (cl-member task chronometrist-task-list :test #'equal)
@@ -992,7 +992,7 @@ Return
       collect record)))
 
 (cl-defmethod chronometrist-reset-internal ((backend chronometrist-plist-backend))
-  (chronometrist-reset-task-list)
+  (chronometrist-reset-task-list backend)
   (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
         chronometrist--file-state nil)
   (chronometrist-refresh))
@@ -1016,7 +1016,7 @@ Return
                (file-notify-rm-watch chronometrist--fs-watch)
                (setq chronometrist--fs-watch nil chronometrist--file-state nil))
              (setf hash-table (chronometrist-to-hash-table backend))
-             (chronometrist-reset-task-list))
+             (chronometrist-reset-task-list backend))
             (chronometrist--file-state
              (-let* (((&plist :name old-task)  (chronometrist-events-last))
                      (latest-record-file       (chronometrist-latest-record backend))
