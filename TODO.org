@@ -719,6 +719,8 @@ See branch =grouped-plist-format=
 6. [X] =chronometrist-loop-sexp-file= - optimize grouped-plist iterator
 7. [X] key-values code is not yet generic
 8. [ ] update plist-pp to indent tagged lists differently
+9. [ ] optimize program startup and file change callback
+10. [ ] remove all references to =chronometrist-events=
 
 Optional
 1. define generic backend protocol for key-values package
@@ -733,3 +735,5 @@ Optional
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
+* customizable task list
+1. interactive modification of task list, with completion (=completing-read-multiple=?)
