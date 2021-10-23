@@ -1464,10 +1464,12 @@ I wanted a generic =cl-loop= interface to iterate over records in any backend, a
 RECORD is bound to each record in reverse chronological order."
   (declare (indent defun)
            (debug 'cl-loop))
-  `(save-excursion
-     (cl-loop for ,record = (chronometrist-record-iterator ,backend)
-       while ,record
-       ,@loop-clauses)))
+  `(unwind-protect
+       (save-excursion
+         (cl-loop for ,record = (chronometrist-record-iterator ,backend)
+           while ,record
+           ,@loop-clauses))
+     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
 #+END_SRC
 
 **** loop-days                                                     :macro:
@@ -1476,9 +1478,11 @@ RECORD is bound to each record in reverse chronological order."
   "Apply LOOP-CLAUSES  (see `cl-loop') to each day in BACKEND.
 RECORDS is bound to each day's records, in reverse chronological order."
   (declare (indent defun) (debug 'cl-loop))
-  `(save-excursion
-     (cl-loop for ,records = (chronometrist-day-iterator ,backend)
-       while ,records ,@loop-clauses)))
+  `(unwind-protect
+       (save-excursion
+         (cl-loop for ,records = (chronometrist-day-iterator ,backend)
+           while ,records ,@loop-clauses))
+     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
 #+END_SRC
 
 **** list-tasks                                         :generic:function:

@@ -700,18 +700,22 @@ Each list is in the form (\"ISO-DATE\" RECORDS*)")
 RECORD is bound to each record in reverse chronological order."
   (declare (indent defun)
            (debug 'cl-loop))
-  `(save-excursion
-     (cl-loop for ,record = (chronometrist-record-iterator ,backend)
-       while ,record
-       ,@loop-clauses)))
+  `(unwind-protect
+       (save-excursion
+         (cl-loop for ,record = (chronometrist-record-iterator ,backend)
+           while ,record
+           ,@loop-clauses))
+     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
 
 (defmacro chronometrist-loop-days (_for records _in backend &rest loop-clauses)
   "Apply LOOP-CLAUSES  (see `cl-loop') to each day in BACKEND.
 RECORDS is bound to each day's records, in reverse chronological order."
   (declare (indent defun) (debug 'cl-loop))
-  `(save-excursion
-     (cl-loop for ,records = (chronometrist-day-iterator ,backend)
-       while ,records ,@loop-clauses)))
+  `(unwind-protect
+       (save-excursion
+         (cl-loop for ,records = (chronometrist-day-iterator ,backend)
+           while ,records ,@loop-clauses))
+     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
 
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of all tasks recorded in BACKEND. Each task is a string.")
