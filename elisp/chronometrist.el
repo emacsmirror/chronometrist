@@ -646,14 +646,7 @@ The list must be on a single line, as emitted by `prin1'."
    (file :initarg :file
          :accessor chronometrist-backend-file
          :custom 'string
-         :documentation "Full path to backend file, with extension.")
-   (iterator-running-p :initform nil
-                       :initarg :iterator-running-p
-                       :accessor chronometrist-backend-iterator-running-p
-                       :documentation
-                       "State of iterator's progress through the backend file.
-nil means the iterator has not begun traversing the file, or has reached the end.
-t means means the iterator is traversing the file."))
+         :documentation "Full path to backend file, with extension."))
   :documentation "Mixin for backends storing data in a single file.")
 
 (cl-defmethod initialize-instance :after ((backend chronometrist-file-backend-mixin)
@@ -686,37 +679,6 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
-(cl-defgeneric chronometrist-record-iterator (backend)
-  "On each call, return (in reverse chronological order) a record from BACKEND as a plist.
-Return nil when there are no more records to return.")
-
-(cl-defgeneric chronometrist-day-iterator (backend)
-  "On each call, return (starting with the most recent date) a list of records from BACKEND.
-Return nil when there are no more records to return.
-Each list is in the form (\"ISO-DATE\" RECORDS*)")
-
-(defmacro chronometrist-loop-records (_for record _in backend &rest loop-clauses)
-  "Apply LOOP-CLAUSES  (see `cl-loop') to each RECORD in BACKEND.
-RECORD is bound to each record in reverse chronological order."
-  (declare (indent defun)
-           (debug 'cl-loop))
-  `(unwind-protect
-       (save-excursion
-         (cl-loop for ,record = (chronometrist-record-iterator ,backend)
-           while ,record
-           ,@loop-clauses))
-     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
-
-(defmacro chronometrist-loop-days (_for records _in backend &rest loop-clauses)
-  "Apply LOOP-CLAUSES  (see `cl-loop') to each day in BACKEND.
-RECORDS is bound to each day's records, in reverse chronological order."
-  (declare (indent defun) (debug 'cl-loop))
-  `(unwind-protect
-       (save-excursion
-         (cl-loop for ,records = (chronometrist-day-iterator ,backend)
-           while ,records ,@loop-clauses))
-     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
-
 (cl-defgeneric chronometrist-list-tasks (backend &key start end)
   "Return a list of all tasks recorded in BACKEND. Each task is a string.")
 
@@ -747,6 +709,9 @@ DATE-TS must be a `ts.el' struct.")
 
 (cl-defgeneric chronometrist-count-records (backend)
   "Return number of records in BACKEND.")
+
+(cl-defgeneric chronometrist-to-list (backend)
+  "Return all records in BACKEND as a list of plists.")
 
 (cl-defgeneric chronometrist-to-hash-table (backend)
   "Return data in BACKEND as a hash table in chronological order.
@@ -797,30 +762,6 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   (declare (indent defun) (debug t))
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
-
-(defun chronometrist-sexp-pre-read-check (buffer)
-  "Return non-nil if there is an s-expression before point in BUFFER.
-Move point to the start of this s-expression."
-  (with-current-buffer buffer
-    (and (not (bobp))
-         (backward-list)
-         (or (not (bobp))
-             (not (looking-at-p "^[[:blank:]]*;"))))))
-
-(defun chronometrist-sexp-iterator (backend)
-  "`read' s-expression from BACKEND on each call (last expression first), returning nil when done."
-  (with-slots (file iterator-running-p) backend
-    (with-current-buffer (find-file-noselect file)
-      (unless iterator-running-p
-        (goto-char (point-max))
-        (setf iterator-running-p t))
-      (when iterator-running-p
-        ;; can we progress (backward)?
-        (if (chronometrist-sexp-pre-read-check (current-buffer))
-            (prog1 (ignore-errors (read (current-buffer)))
-              (backward-list))
-          ;; cannot progress - traversal is complete
-          (setf iterator-running-p nil))))))
 
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
@@ -920,11 +861,8 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (insert "\n")
       (unless (eobp) (insert "\n")))))
 
-(cl-defmethod chronometrist-record-iterator ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-iterator backend))
-
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (chronometrist-loop-records for plist in backend
+  (cl-loop for plist in (chronometrist-to-list backend)
     collect (plist-get plist :name) into names
     finally return
     (sort (cl-remove-duplicates names :test #'equal)
@@ -1089,6 +1027,18 @@ Return
       ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
       (chronometrist-refresh))))
 
+(cl-defmethod chronometrist-to-list ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (cl-loop with expr
+      while (and (not (bobp))
+                 (backward-list)
+                 (or (not (bobp))
+                     (not (looking-at-p "^[[:blank:]]*;")))
+                 (setq expr (ignore-errors (read (current-buffer))))
+                 (backward-list))
+      collect expr)))
+
 (cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-plist-backend))
   (with-slots (file) backend
       (or (not (file-exists-p file))
@@ -1104,9 +1054,9 @@ Return
               :custom 'string)))
 
 (add-to-list 'chronometrist-backends-alist
-             `(:plist-groups "Store records as plists grouped by date."
-                             ,(make-instance 'chronometrist-plist-group-backend
-                                             :path chronometrist-file)))
+             `(:plist-group "Store records as plists grouped by date."
+                            ,(make-instance 'chronometrist-plist-group-backend
+                                            :path chronometrist-file)))
 
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1117,7 +1067,7 @@ Return
       (first (last latest-date)))))
 
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
-  (chronometrist-loop-records for plist in backend
+  (cl-loop for plist in (chronometrist-to-list backend)
     collect (plist-get plist :name) into names
     finally return
     (--> (flatten-tree names)
@@ -1125,7 +1075,7 @@ Return
          (sort it #'string-lessp))))
 
 (cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date-ts)
-  (chronometrist-loop-days for plist-group in backend
+  (cl-loop for plist-group in backend
     with date = (chronometrist-date-iso date-ts)
     when (equal date (first plist-group))
     do (cl-return
@@ -1151,40 +1101,6 @@ Return
   (backward-sexp)
   (save-excursion (read buffer)))
 
-(cl-defmethod chronometrist-record-iterator ((backend chronometrist-plist-group-backend))
-  (with-slots (file iterator-running-p) backend
-    (with-current-buffer (find-file-noselect file)
-      (let (sexp
-            (buffer        (current-buffer))
-            (inside-sexp-p (save-excursion
-                             (ignore-errors
-                               (backward-up-list)
-                               (point)))))
-        (unless iterator-running-p
-          (goto-char (point-max))
-          (setf iterator-running-p t))
-        (when iterator-running-p
-          (cond (inside-sexp-p
-                 ;; we have `read' at least the last plist in this tagged list
-                 (cl-typecase (setq sexp (chronometrist-backward-read-sexp buffer))
-                   (string
-                    (up-list -1)
-                    (chronometrist-record-iterator backend))
-                   (t sexp)))
-                ((chronometrist-sexp-pre-read-check (current-buffer))
-                 ;; we are before a top-level tagged list - enter it
-                 (forward-list)
-                 (down-list -1)
-                 ;; read the last plist
-                 (chronometrist-backward-read-sexp buffer)
-                 ;; we are at the start of the last plist
-                 ;; it may or may not be the only one in this tagged list
-                 )
-                (t (setf iterator-running-p nil))))))))
-
-(cl-defmethod chronometrist-day-iterator ((backend chronometrist-plist-group-backend))
-  (chronometrist-sexp-iterator backend))
-
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
@@ -1201,6 +1117,18 @@ Return
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
+
+(cl-defmethod list-records ((backend chronometrist-plist-group-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (cl-loop with expr
+      while (and (not (bobp))
+                 (backward-list)
+                 (or (not (bobp))
+                     (not (looking-at-p "^[[:blank:]]*;")))
+                 (setq expr (ignore-errors (read (current-buffer))))
+                 (backward-list))
+      append (rest expr))))
 
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
 

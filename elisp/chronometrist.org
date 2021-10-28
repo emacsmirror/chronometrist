@@ -250,6 +250,24 @@ Further details are stored in properties -
   =(hours minute seconds)=
   * Only returned by =chronometrist-seconds-to-hms=, called by =chronometrist-format-time=
 
+** generic cl-loop interface for iterating over records
+Of all the ways to work with Chronometrist data, both as part of the program and as part of my occasional "queries", my favorite was to use =cl-loop=.
+
+First, there was the =chronometrist-loop-file= macro, which handled the sole backend at that time - the plist backend. It took care of the common logic (=read= ing each plist in the file, checking loop termination conditions), and let the client code specify (with the terseness of =cl-loop=) what they wanted to do with the data.
+
+During the migration to the CLOS-based backend design began the quest to make  =chronometrist-loop-file= work with generic backends - it eventually became =chronometrist-loop-records= and =chronometrist-loop-days=. The idea was to call a generic function (=chronometrist-record-iterator= and =chronometrist-day-iterator=) which would return a new record on each call. Internal state of each of these generic functions was stored in backend slots. No list would be built up, unless the client code specified an accumulation clause.
+
+Most recently, gilberth of #lispcafe suggested an alternate approach - trying to build a list of records first, and using =cl-loop= (or any other iteration mechanism) on that. Testing the two approaches yielded a clear advantage for this new suggestion. The test was to generate key-values suitable for completion history from my full Chronometrist data to date (the plist backend had ~6.6k plists in a 1.2M file), using almost identical =cl-loop= client code for both cases. Here was the output from =(benchmark 1 ...)= -
+
+| approach | backend     | benchmark output                                 |
+|----------+-------------+--------------------------------------------------|
+| current  | plist       | "Elapsed time: 5.322056s (0.709023s in 4 GCs)"   |
+| current  | plist-group | "Elapsed time: 107.159170s (1.064125s in 6 GCs)" |
+| new      | plist       | "Elapsed time: 0.559264s (0.172344s in 1 GCs)"   |
+| new      | plist-group | "Elapsed time: 0.671106s (0.179435s in 1 GCs)"   |
+
+In addition, with this approach, client code can use any kind of iteration constructs they fancy - not just =cl-loop= but also =dolist=, higher-order functions (including those from =dash= and =seq=), =loopy=, etc.
+
 * How-to guides for maintainers
 ** How to set up Emacs to contribute
 # Different approaches to this setup -
@@ -1383,14 +1401,7 @@ The backend may use no files, a single file, or multiple files. Thus, =chronomet
    (file :initarg :file
          :accessor chronometrist-backend-file
          :custom 'string
-         :documentation "Full path to backend file, with extension.")
-   (iterator-running-p :initform nil
-                       :initarg :iterator-running-p
-                       :accessor chronometrist-backend-iterator-running-p
-                       :documentation
-                       "State of iterator's progress through the backend file.
-nil means the iterator has not begun traversing the file, or has reached the end.
-t means means the iterator is traversing the file."))
+         :documentation "Full path to backend file, with extension."))
   :documentation "Mixin for backends storing data in a single file.")
 #+END_SRC
 
@@ -1438,51 +1449,6 @@ Value must be a keyword corresponding to a key in
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
-#+END_SRC
-
-**** record-iterator                                    :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-record-iterator (backend)
-  "On each call, return (in reverse chronological order) a record from BACKEND as a plist.
-Return nil when there are no more records to return.")
-#+END_SRC
-
-**** day-iterator                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-day-iterator (backend)
-  "On each call, return (starting with the most recent date) a list of records from BACKEND.
-Return nil when there are no more records to return.
-Each list is in the form (\"ISO-DATE\" RECORDS*)")
-#+END_SRC
-
-**** loop-records                                                  :macro:
-I wanted a generic =cl-loop= interface to iterate over records in any backend, and this is the best way I could find to make it work. The =save-excursion= restores point for text backends, and (hopefully) has no effect for other backends.
-
-#+BEGIN_SRC emacs-lisp
-(defmacro chronometrist-loop-records (_for record _in backend &rest loop-clauses)
-  "Apply LOOP-CLAUSES  (see `cl-loop') to each RECORD in BACKEND.
-RECORD is bound to each record in reverse chronological order."
-  (declare (indent defun)
-           (debug 'cl-loop))
-  `(unwind-protect
-       (save-excursion
-         (cl-loop for ,record = (chronometrist-record-iterator ,backend)
-           while ,record
-           ,@loop-clauses))
-     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
-#+END_SRC
-
-**** loop-days                                                     :macro:
-#+BEGIN_SRC emacs-lisp
-(defmacro chronometrist-loop-days (_for records _in backend &rest loop-clauses)
-  "Apply LOOP-CLAUSES  (see `cl-loop') to each day in BACKEND.
-RECORDS is bound to each day's records, in reverse chronological order."
-  (declare (indent defun) (debug 'cl-loop))
-  `(unwind-protect
-       (save-excursion
-         (cl-loop for ,records = (chronometrist-day-iterator ,backend)
-           while ,records ,@loop-clauses))
-     (setf (chronometrist-backend-iterator-running-p ,backend) nil)))
 #+END_SRC
 
 **** list-tasks                                         :generic:function:
@@ -1544,6 +1510,12 @@ DATE-TS must be a `ts.el' struct.")
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-count-records (backend)
   "Return number of records in BACKEND.")
+#+END_SRC
+
+**** to-list                                            :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-to-list (backend)
+  "Return all records in BACKEND as a list of plists.")
 #+END_SRC
 
 **** to-hash-table                                      :generic:function:
@@ -1622,36 +1594,6 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   (declare (indent defun) (debug t))
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
-#+END_SRC
-
-**** sexp-iterator-helper                                      :procedure:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-sexp-pre-read-check (buffer)
-  "Return non-nil if there is an s-expression before point in BUFFER.
-Move point to the start of this s-expression."
-  (with-current-buffer buffer
-    (and (not (bobp))
-         (backward-list)
-         (or (not (bobp))
-             (not (looking-at-p "^[[:blank:]]*;"))))))
-#+END_SRC
-
-**** sexp-iterator                                             :procedure:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-sexp-iterator (backend)
-  "`read' s-expression from BACKEND on each call (last expression first), returning nil when done."
-  (with-slots (file iterator-running-p) backend
-    (with-current-buffer (find-file-noselect file)
-      (unless iterator-running-p
-        (goto-char (point-max))
-        (setf iterator-running-p t))
-      (when iterator-running-p
-        ;; can we progress (backward)?
-        (if (chronometrist-sexp-pre-read-check (current-buffer))
-            (prog1 (ignore-errors (read (current-buffer)))
-              (backward-list))
-          ;; cannot progress - traversal is complete
-          (setf iterator-running-p nil))))))
 #+END_SRC
 
 *** plist backend
@@ -1872,16 +1814,10 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 #+END_SRC
 
-**** record-iterator                                       :writer:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-record-iterator ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-iterator backend))
-#+END_SRC
-
 **** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (chronometrist-loop-records for plist in backend
+  (cl-loop for plist in (chronometrist-to-list backend)
     collect (plist-get plist :name) into names
     finally return
     (sort (cl-remove-duplicates names :test #'equal)
@@ -2156,6 +2092,21 @@ Return
       (chronometrist-refresh))))
 #+END_SRC
 
+**** to-list                                               :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-to-list ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (cl-loop with expr
+      while (and (not (bobp))
+                 (backward-list)
+                 (or (not (bobp))
+                     (not (looking-at-p "^[[:blank:]]*;")))
+                 (setq expr (ignore-errors (read (current-buffer))))
+                 (backward-list))
+      collect expr)))
+#+END_SRC
+
 **** backend-empty-p                                       :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-plist-backend))
@@ -2185,6 +2136,8 @@ This is largely like the plist backend, but plists are grouped by date by wrappi
 
 This makes it easy and computationally cheap to perform our most common query - getting the plists on a given day. [[#explanation-midnight-spanning-intervals][Midnight-spanning intervals]] are split in the file itself. The downside is that the user, if editing it by hand, must take care to split the intervals.
 
+Note that migrating from the plist backend to the plist group backend is inherently likely to result in more plists compared to the source, as each midnight-spanning plist is split into two.
+
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
@@ -2193,9 +2146,9 @@ This makes it easy and computationally cheap to perform our most common query - 
               :custom 'string)))
 
 (add-to-list 'chronometrist-backends-alist
-             `(:plist-groups "Store records as plists grouped by date."
-                             ,(make-instance 'chronometrist-plist-group-backend
-                                             :path chronometrist-file)))
+             `(:plist-group "Store records as plists grouped by date."
+                            ,(make-instance 'chronometrist-plist-group-backend
+                                            :path chronometrist-file)))
 #+END_SRC
 
 **** latest-record                                         :reader:method:
@@ -2212,7 +2165,7 @@ This makes it easy and computationally cheap to perform our most common query - 
 **** list-tasks                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
-  (chronometrist-loop-records for plist in backend
+  (cl-loop for plist in (chronometrist-to-list backend)
     collect (plist-get plist :name) into names
     finally return
     (--> (flatten-tree names)
@@ -2223,7 +2176,7 @@ This makes it easy and computationally cheap to perform our most common query - 
 **** task-records                                          :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date-ts)
-  (chronometrist-loop-days for plist-group in backend
+  (cl-loop for plist-group in backend
     with date = (chronometrist-date-iso date-ts)
     when (equal date (first plist-group))
     do (cl-return
@@ -2259,46 +2212,6 @@ This makes it easy and computationally cheap to perform our most common query - 
   (save-excursion (read buffer)))
 #+END_SRC
 
-**** record-iterator                                       :writer:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-record-iterator ((backend chronometrist-plist-group-backend))
-  (with-slots (file iterator-running-p) backend
-    (with-current-buffer (find-file-noselect file)
-      (let (sexp
-            (buffer        (current-buffer))
-            (inside-sexp-p (save-excursion
-                             (ignore-errors
-                               (backward-up-list)
-                               (point)))))
-        (unless iterator-running-p
-          (goto-char (point-max))
-          (setf iterator-running-p t))
-        (when iterator-running-p
-          (cond (inside-sexp-p
-                 ;; we have `read' at least the last plist in this tagged list
-                 (cl-typecase (setq sexp (chronometrist-backward-read-sexp buffer))
-                   (string
-                    (up-list -1)
-                    (chronometrist-record-iterator backend))
-                   (t sexp)))
-                ((chronometrist-sexp-pre-read-check (current-buffer))
-                 ;; we are before a top-level tagged list - enter it
-                 (forward-list)
-                 (down-list -1)
-                 ;; read the last plist
-                 (chronometrist-backward-read-sexp buffer)
-                 ;; we are at the start of the last plist
-                 ;; it may or may not be the only one in this tagged list
-                 )
-                (t (setf iterator-running-p nil))))))))
-#+END_SRC
-
-**** day-iterator                                          :writer:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-day-iterator ((backend chronometrist-plist-group-backend))
-  (chronometrist-sexp-iterator backend))
-#+END_SRC
-
 **** replace-last                                          :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
@@ -2324,6 +2237,21 @@ This makes it easy and computationally cheap to perform our most common query - 
 **** count-records                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
+#+END_SRC
+
+**** to-list                                               :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod list-records ((backend chronometrist-plist-group-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (cl-loop with expr
+      while (and (not (bobp))
+                 (backward-list)
+                 (or (not (bobp))
+                     (not (looking-at-p "^[[:blank:]]*;")))
+                 (setq expr (ignore-errors (read (current-buffer))))
+                 (backward-list))
+      append (rest expr))))
 #+END_SRC
 
 **** to-hash-table                                         :reader:method:

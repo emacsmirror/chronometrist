@@ -99,7 +99,7 @@ Return the new value inserted into HISTORY-TABLE.
 
 HISTORY-TABLE must be a hash table. (see `chronometrist-tags-history')"
   (puthash task nil history-table)
-  (chronometrist-loop-records for plist in backend do
+  (cl-loop for plist in (chronometrist-to-list backend) do
     (let ((new-tag-list  (plist-get plist :tags))
           (old-tag-lists (gethash task history-table)))
       (and (equal task (plist-get plist :name))
@@ -214,7 +214,7 @@ Return the new value inserted into HISTORY-TABLE.
 
 HISTORY-TABLE must be a hash table (see `chronometrist-key-history')."
   (puthash task nil history-table)
-  (chronometrist-loop-records for plist in backend do
+  (cl-loop for plist in backend do
     (catch 'quit
       (let* ((name     (plist-get plist :name))
              (_check   (unless (equal name task) (throw 'quit nil)))
@@ -241,7 +241,7 @@ HISTORY-TABLE must be a hash table. (see `chronometrist-value-history')"
   (clrhash history-table)
   ;; Note - while keys are Lisp keywords, values may be any Lisp
   ;; object, including lists
-  (chronometrist-loop-records for plist in backend do
+  (cl-loop for plist in (chronometrist-to-list backend) do
     ;; We call them user-key-values because we filter out Chronometrist's
     ;; reserved key-values
     (let ((user-key-values (chronometrist-plist-key-values plist)))
@@ -413,7 +413,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
   (interactive)
   (let* ((backend (chronometrist-active-backend))
          (key-values
-          (chronometrist-loop-records for plist in backend
+          (cl-loop for plist in (chronometrist-to-list backend)
             with count = 0
             do (cl-incf count)
             while (<= count chronometrist-key-value-history-limit) and

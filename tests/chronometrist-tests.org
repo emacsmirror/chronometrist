@@ -60,18 +60,6 @@
                  chronometrist-test-latest-record)))
 #+END_SRC
 
-*** loop-records
-#+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-loop-records ()
-  ;; `chronometrist-loop-records' is deliberately run twice here
-  (should (equal (first (last (chronometrist-loop-records for record in chronometrist-test-backend
-                                collect record)))
-                 chronometrist-test-first-record))
-  (should (equal (first (chronometrist-loop-records for record in chronometrist-test-backend
-                          collect record))
-                 chronometrist-test-latest-record)))
-#+END_SRC
-
 *** list-tasks
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-list-tasks ()
