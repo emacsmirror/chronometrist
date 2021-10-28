@@ -28,9 +28,6 @@
 ;;; Code:
 (require 'chronometrist)
 
-(defcustom chronometrist-key-value-history-limit 500
-  "Number of records to generate history from.")
-
 (defun chronometrist-history-prep (key history-table)
   "Prepare history of KEY in HISTORY-TABLE for use in prompts.
 Each value in hash table TABLE must be a list.  Each value will be reversed and will have duplicate elements removed."
@@ -414,9 +411,6 @@ Return t, to permit use in `chronometrist-before-out-functions'."
   (let* ((backend (chronometrist-active-backend))
          (key-values
           (cl-loop for plist in (chronometrist-to-list backend)
-            with count = 0
-            do (cl-incf count)
-            while (<= count chronometrist-key-value-history-limit) and
             when (equal (plist-get plist :name) task)
             collect
             (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
