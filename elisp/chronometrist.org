@@ -844,6 +844,17 @@ return a list of tasks from the active backend."
           (setf backend-task-list (chronometrist-list-tasks backend))))))
 #+END_SRC
 
+*** list-tasks                                                   :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-list-tasks (backend)
+  "Return a list of all tasks recorded in BACKEND. Each task is a string."
+  (cl-loop for plist in (chronometrist-to-list backend)
+    collect (plist-get plist :name) into names
+    finally return
+    (sort (cl-remove-duplicates names :test #'equal)
+          #'string-lessp)))
+#+END_SRC
+
 *** reset-task-list                                                :writer:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-reset-task-list (backend)
@@ -1451,12 +1462,6 @@ Value must be a keyword corresponding to a key in
   "Return the latest entry from BACKEND as a plist.")
 #+END_SRC
 
-**** list-tasks                                         :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-list-tasks (backend &key start end)
-  "Return a list of all tasks recorded in BACKEND. Each task is a string.")
-#+END_SRC
-
 **** task-records                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-task-records (backend task date-ts)
@@ -1814,16 +1819,6 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (unless (eobp) (insert "\n")))))
 #+END_SRC
 
-**** list-tasks                                            :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (cl-loop for plist in (chronometrist-to-list backend)
-    collect (plist-get plist :name) into names
-    finally return
-    (sort (cl-remove-duplicates names :test #'equal)
-          #'string-lessp)))
-#+END_SRC
-
 **** file-state                                        :internal:variable:
 :PROPERTIES:
 :VALUE:    list
@@ -2160,17 +2155,6 @@ Note that migrating from the plist backend to the plist group backend is inheren
     (let ((latest-date
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
-#+END_SRC
-
-**** list-tasks                                            :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
-  (cl-loop for plist in (chronometrist-to-list backend)
-    collect (plist-get plist :name) into names
-    finally return
-    (--> (flatten-tree names)
-         (cl-remove-duplicates it :test #'equal)
-         (sort it #'string-lessp))))
 #+END_SRC
 
 **** task-records                                          :reader:method:

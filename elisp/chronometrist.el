@@ -331,6 +331,14 @@ return a list of tasks from the active backend."
           backend-task-list
           (setf backend-task-list (chronometrist-list-tasks backend))))))
 
+(defun chronometrist-list-tasks (backend)
+  "Return a list of all tasks recorded in BACKEND. Each task is a string."
+  (cl-loop for plist in (chronometrist-to-list backend)
+    collect (plist-get plist :name) into names
+    finally return
+    (sort (cl-remove-duplicates names :test #'equal)
+          #'string-lessp)))
+
 (cl-defun chronometrist-reset-task-list (backend)
   "Regenerate BACKEND's task list from its data.
 Only takes effect if `chronometrist-task-list' is nil (i.e. the
@@ -679,9 +687,6 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
-(cl-defgeneric chronometrist-list-tasks (backend &key start end)
-  "Return a list of all tasks recorded in BACKEND. Each task is a string.")
-
 (cl-defgeneric chronometrist-task-records (backend task date-ts)
   "From BACKEND, return records for TASK on DATE-TS as a list of plists.
 DATE-TS must be a `ts.el' struct.")
@@ -860,13 +865,6 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
       (funcall chronometrist-sexp-pretty-print-function expr (current-buffer))
       (insert "\n")
       (unless (eobp) (insert "\n")))))
-
-(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-backend) &key start end)
-  (cl-loop for plist in (chronometrist-to-list backend)
-    collect (plist-get plist :name) into names
-    finally return
-    (sort (cl-remove-duplicates names :test #'equal)
-          #'string-lessp)))
 
 (defvar chronometrist--file-state nil
   "List containing the state of `chronometrist-file'.
@@ -1065,14 +1063,6 @@ Return
     (let ((latest-date
            (ignore-errors (read (current-buffer)))))
       (first (last latest-date)))))
-
-(cl-defmethod chronometrist-list-tasks ((backend chronometrist-plist-group-backend) &key start end)
-  (cl-loop for plist in (chronometrist-to-list backend)
-    collect (plist-get plist :name) into names
-    finally return
-    (--> (flatten-tree names)
-         (cl-remove-duplicates it :test #'equal)
-         (sort it #'string-lessp))))
 
 (cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date-ts)
   (cl-loop for plist-group in backend
