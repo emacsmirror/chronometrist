@@ -2326,7 +2326,7 @@ using `chronometrist-details-schema-transformers'.")
   "Return rows to be displayed in the `chronometrist-details' buffer.
 Return value is a list as specified by `tabulated-list-entries'."
   (cl-loop with index = 1
-    for plist in (chronometrist-details-intervals chronometrist-details-range chronometrist-details-filter chronometrist-events)
+    for plist in (chronometrist-details-intervals chronometrist-details-range chronometrist-details-filter (chronometrist-active-backend))
     collect
     (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
             ;; whether tags or key-values are actually displayed is handled later
@@ -2539,12 +2539,13 @@ FILTER must be a filter specifier as described by
           (_ (error "Unsupported filter.")))
     (tabulated-list-revert)))
 
-(defun chronometrist-details-intervals (range filter table)
-  "Return plists matching RANGE and FILTER from TABLE.
+(defun chronometrist-details-intervals (range filter backend)
+  "Return plists matching RANGE and FILTER from BACKEND.
 For values of RANGE, see `chronometrist-details-range'. For
 values of FILTER, see `chronometrist-details-filter'. TABLE must
 be a hash table similar to `chronometrist-events'."
-  (cl-loop for plist in (chronometrist-details-intervals-for-range range table)
+  (cl-loop for plist in (chronometrist-details-intervals-for-range range
+                                                      (chronometrist-backend-hash-table backend))
     when (chronometrist-details-filter-match-p plist filter)
     collect plist))
 
