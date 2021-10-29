@@ -46,6 +46,15 @@
     (save-buffer))
   (should (not (chronometrist-current-task chronometrist-test-backend))))
 #+END_SRC
+** data structures
+*** list-tasks
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-list-tasks ()
+  (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
+    (should (listp task-list))
+    (should (seq-every-p #'stringp task-list))))
+#+END_SRC
+
 ** backend
 *** count-records
 #+BEGIN_SRC emacs-lisp
@@ -60,20 +69,12 @@
                  chronometrist-test-latest-record)))
 #+END_SRC
 
-*** list-tasks
+*** task-records-for-date
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-list-tasks ()
-  (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
-    (should (listp task-list))
-    (should (seq-every-p #'stringp task-list))))
-#+END_SRC
-
-*** task-records
-#+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-task-records ()
-  (should (equal (chronometrist-task-records chronometrist-test-backend
-                                "Programming"
-                                (chronometrist-iso-to-ts "2020-05-10"))
+(ert-deftest chronometrist-task-records-for-date ()
+  (should (equal (chronometrist-task-records-for-date chronometrist-test-backend
+                                         "Programming"
+                                         (chronometrist-iso-to-ts "2020-05-10"))
                  (list chronometrist-test-latest-record))))
 #+END_SRC
 

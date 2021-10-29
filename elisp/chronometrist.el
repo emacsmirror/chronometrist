@@ -270,7 +270,7 @@ treated as though their time is 00:00:00."
 (cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-ts)) (backend (chronometrist-active-backend)))
   "Return total time spent on TASK today or on DATE, an ISO-8601 date.
 The return value is seconds, as an integer."
-  (let ((task-events (chronometrist-task-records backend task date)))
+  (let ((task-events (chronometrist-task-records-for-date backend task date)))
     (if task-events
         (->> (chronometrist-events-to-durations task-events)
              (-reduce #'+)
@@ -279,7 +279,7 @@ The return value is seconds, as an integer."
       0)))
 
 (defvar chronometrist-task-list)
-(cl-defun chronometrist-active-time-one-day (&optional (date (chronometrist-date-ts)))
+(cl-defun chronometrist-active-time-on (&optional (date (chronometrist-date-ts)))
   "Return the total active time today, or on DATE.
 Return value is seconds as an integer."
   (->> (--map (chronometrist-task-time-one-day it date) (chronometrist-task-list))
@@ -670,15 +670,15 @@ Value must be a keyword corresponding to a key in
   "Return an object representing the currently active backend."
   (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 
+(cl-defgeneric chronometrist-latest-date-records (backend)
+  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).")
+
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
-(cl-defgeneric chronometrist-task-records (backend task date-ts)
+(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
   "From BACKEND, return records for TASK on DATE-TS as a list of plists.
 DATE-TS must be a `ts.el' struct.")
-
-(cl-defgeneric chronometrist-active-time (backend date)
-  "From BACKEND, return total time recorded on DATE as integer seconds.")
 
 (cl-defgeneric chronometrist-active-days (backend task &key start end)
   "From BACKEND, return number of days on which TASK had recorded time.")
@@ -753,6 +753,22 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   (declare (indent defun) (debug t))
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
+
+(defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
+  "`cl-loop' LOOP-CLAUSES over s-expressions in FILE.
+SEXP is bound to each s-expressions in reverse order (last
+expression first)."
+  (declare (indent defun) (debug 'cl-loop))
+  `(chronometrist-sexp-in-file ,file
+     (goto-char (point-max))
+     (cl-loop with ,sexp
+       while (and (not (bobp))
+                  (backward-list)
+                  (or (not (bobp))
+                      (not (looking-at-p "^[[:blank:]]*;")))
+                  (setq ,sexp (ignore-errors (read (current-buffer))))
+                  (backward-list))
+       ,@loop-clauses)))
 
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
@@ -947,7 +963,7 @@ Return
                           (forward-list)))))
            :modify))))
 
-(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-backend) task date-ts)
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-backend) task date-ts)
   (let* ((date         (chronometrist-date-iso date-ts))
          (records      (gethash date (chronometrist-backend-hash-table backend))))
     (cl-loop for record in records
@@ -1041,15 +1057,19 @@ Return
                             ,(make-instance 'chronometrist-plist-group-backend
                                             :path chronometrist-file)))
 
+(defun chronometrist-backward-read-sexp (buffer)
+  (backward-list)
+  (save-excursion (read buffer)))
+
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
+  (first (last (chronometrist-latest-date-records backend))))
+
+(cl-defmethod chronometrist-latest-date-records (backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (backward-list)
-    (let ((latest-date
-           (ignore-errors (read (current-buffer)))))
-      (first (last latest-date)))))
+    (chronometrist-backward-read-sexp (current-buffer))))
 
-(cl-defmethod chronometrist-task-records ((backend chronometrist-plist-group-backend) task date-ts)
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend) task date-ts)
   (cl-loop for plist-group in backend
     with date = (chronometrist-date-iso date-ts)
     when (equal date (first plist-group))
@@ -1057,8 +1077,6 @@ Return
         (cl-loop for plist in (rest plist-group)
           when (equal task (plist-get plist :name))
           collect plist))))
-
-(cl-defmethod chronometrist-active-time ((backend chronometrist-plist-group-backend) date))
 
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 
@@ -1071,10 +1089,6 @@ Return
       (default-indent-new-line)
       (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
       (save-buffer))))
-
-(defun chronometrist-backward-read-sexp (buffer)
-  (backward-sexp)
-  (save-excursion (read buffer)))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1105,7 +1119,12 @@ Return
                  (backward-list))
       append (rest expr))))
 
-(cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend)))
+(cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend))
+  (with-slots (file) backend
+    (chronometrist-loop-sexp-file for plist-group in file
+      with table = (chronometrist-make-hash-table) do
+      (puthash (first plist-group) (rest plist-group) table)
+      finally return table)))
 
 (cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
   (let ((file (chronometrist-backend-file backend)))
@@ -1482,7 +1501,7 @@ is the name of the task to be clocked out of."
   (with-current-buffer chronometrist-buffer-name
     (let ((inhibit-read-only t) (w "\n    "))
       (goto-char (point-max))
-      (--> (chronometrist-active-time-one-day)
+      (--> (chronometrist-active-time-on)
            (chronometrist-format-duration it)
            (format "%s%- 26s%s" w "Total" it)
            (insert it)))))
@@ -1843,7 +1862,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
   (let* ((inhibit-read-only t)
          (w "\n    ")
          (ui-week-dates-ts  (mapcar #'chronometrist-date-ts chronometrist-report--ui-week-dates))
-         (total-time-daily  (mapcar #'chronometrist-active-time-one-day
+         (total-time-daily  (mapcar #'chronometrist-active-time-on
                                     ui-week-dates-ts)))
     (goto-char (point-min))
     (insert (make-string 25 ?\s))
@@ -2025,7 +2044,7 @@ TABLE should be a hash table - if not supplied,
   (cl-loop with days = 0
     with events-in-day
     for date being the hash-keys of table
-    when (setq events-in-day (chronometrist-task-records backend task date))
+    when (setq events-in-day (chronometrist-task-records-for-date backend task date))
     do (cl-incf days) and
     collect
     (-reduce #'+ (chronometrist-events-to-durations events-in-day))
