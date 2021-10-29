@@ -624,33 +624,6 @@ The list must be on a single line, as emitted by `prin1'."
               :initarg :task-list
               :accessor chronometrist-backend-task-list)))
 
-(defclass chronometrist-file-backend-mixin ()
-  ((path ;; :initform (error "Path is required")
-    :initarg :path
-    :accessor chronometrist-backend-path
-    :custom 'string
-    :documentation
-    "Path to backend file, without extension.")
-   (extension ;; :initform (error "Extension is required")
-    :initarg :ext
-    :accessor chronometrist-backend-ext
-    :custom 'string
-    :documentation
-    "Extension of backend file.")
-   (file :initarg :file
-         :accessor chronometrist-backend-file
-         :custom 'string
-         :documentation "Full path to backend file, with extension."))
-  :documentation "Mixin for backends storing data in a single file.")
-
-(cl-defmethod initialize-instance :after ((backend chronometrist-file-backend-mixin)
-                                          &rest initargs)
-  (when (and (chronometrist-backend-path backend)
-             (chronometrist-backend-ext backend)
-             (not (chronometrist-backend-file backend)))
-    (setf (chronometrist-backend-file backend)
-          (concat (chronometrist-backend-path backend) "." (chronometrist-backend-ext backend)))))
-
 (defvar chronometrist-backends-alist nil
   "Alist of Chronometrist backends.
 Each element must be in the form `(KEYWORD TAG OBJECT)', where
@@ -731,6 +704,55 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 (cl-defgeneric chronometrist-memory-layer-empty-p (backend)
   "Return non-nil if memory layer of BACKEND contains no records, else nil.")
 
+(defclass chronometrist-file-backend-mixin ()
+  ((path ;; :initform (error "Path is required")
+    :initarg :path
+    :accessor chronometrist-backend-path
+    :custom 'string
+    :documentation
+    "Path to backend file, without extension.")
+   (extension ;; :initform (error "Extension is required")
+    :initarg :ext
+    :accessor chronometrist-backend-ext
+    :custom 'string
+    :documentation
+    "Extension of backend file.")
+   (file :initarg :file
+         :initform nil
+         :accessor chronometrist-backend-file
+         :custom 'string
+         :documentation "Full path to backend file, with extension.")
+   (hash-table :initform (chronometrist-make-hash-table)
+               :initarg :ht
+               :accessor chronometrist-backend-hash-table))
+  :documentation "Mixin for backends storing data in a single file.")
+
+(cl-defmethod chronometrist-edit-file ((backend chronometrist-file-backend-mixin))
+  (find-file-other-window (chronometrist-backend-file backend))
+  (goto-char (point-max)))
+
+(cl-defmethod initialize-instance :after ((backend chronometrist-file-backend-mixin)
+                                          &rest initargs)
+  "Initialize FILE based on PATH and EXTENSION."
+  (with-slots (path extension file) backend
+    (when (and path extension (not file))
+      (setf file (concat path "." extension)))))
+
+(cl-defmethod chronometrist-reset-internal ((backend chronometrist-file-backend-mixin))
+  (chronometrist-reset-task-list backend)
+  (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
+        chronometrist--file-state nil)
+  (chronometrist-refresh))
+
+(cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-file-backend-mixin))
+  (with-slots (file) backend
+      (or (not (file-exists-p file))
+          (chronometrist-common-file-empty-p file))))
+
+(cl-defmethod chronometrist-memory-layer-empty-p ((backend chronometrist-file-backend-mixin))
+  (with-slots (hash-table) backend
+    (zerop (hash-table-count hash-table))))
+
 (defclass chronometrist-elisp-sexp-backend (chronometrist-backend) ()
   :documentation "Base class for any text file backend which stores s-expressions readable by Emacs Lisp.")
 
@@ -754,6 +776,15 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
 
+(defun chronometrist-sexp-pre-read-check (buffer)
+  "Return non-nil if there is an s-expression before point in BUFFER.
+Move point to the start of this s-expression."
+  (with-current-buffer buffer
+    (and (not (bobp))
+         (backward-list)
+         (or (not (bobp))
+             (not (looking-at-p "^[[:blank:]]*;"))))))
+
 (defmacro chronometrist-loop-sexp-file (_for sexp _in file &rest loop-clauses)
   "`cl-loop' LOOP-CLAUSES over s-expressions in FILE.
 SEXP is bound to each s-expressions in reverse order (last
@@ -762,10 +793,7 @@ expression first)."
   `(chronometrist-sexp-in-file ,file
      (goto-char (point-max))
      (cl-loop with ,sexp
-       while (and (not (bobp))
-                  (backward-list)
-                  (or (not (bobp))
-                      (not (looking-at-p "^[[:blank:]]*;")))
+       while (and (chronometrist-sexp-pre-read-check (current-buffer))
                   (setq ,sexp (ignore-errors (read (current-buffer))))
                   (backward-list))
        ,@loop-clauses)))
@@ -773,10 +801,7 @@ expression first)."
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
-              :custom 'string)
-   (hash-table :initform (chronometrist-make-hash-table)
-               :initarg :ht
-               :accessor chronometrist-backend-hash-table)))
+              :custom 'string)))
 
 (add-to-list 'chronometrist-backends-alist
              `(:plist "Store records as plists."
@@ -788,10 +813,6 @@ Like `pp', it must accept an OBJECT and optionally a
 STREAM (which is the value of `current-buffer')."
   :type 'function
   :group 'chronometrist)
-
-(cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-backend))
-  (find-file-other-window (chronometrist-backend-file backend))
-  (goto-char (point-max)))
 
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -970,12 +991,6 @@ Return
       when (equal task (plist-get record :name))
       collect record)))
 
-(cl-defmethod chronometrist-reset-internal ((backend chronometrist-plist-backend))
-  (chronometrist-reset-task-list backend)
-  (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
-        chronometrist--file-state nil)
-  (chronometrist-refresh))
-
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
   (with-slots (hash-table) backend
     (-let* (((descriptor action _ _) fs-event)
@@ -1027,25 +1042,7 @@ Return
       (chronometrist-refresh))))
 
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (cl-loop with expr
-      while (and (not (bobp))
-                 (backward-list)
-                 (or (not (bobp))
-                     (not (looking-at-p "^[[:blank:]]*;")))
-                 (setq expr (ignore-errors (read (current-buffer))))
-                 (backward-list))
-      collect expr)))
-
-(cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-plist-backend))
-  (with-slots (file) backend
-      (or (not (file-exists-p file))
-          (chronometrist-common-file-empty-p file))))
-
-(cl-defmethod chronometrist-memory-layer-empty-p (backend)
-  (with-slots (hash-table) backend
-    (zerop (hash-table-count hash-table))))
+  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) collect expr))
 
 (defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
   ((extension :initform "plg"
@@ -1069,14 +1066,12 @@ Return
     (goto-char (point-max))
     (chronometrist-backward-read-sexp (current-buffer))))
 
-(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend) task date-ts)
-  (cl-loop for plist-group in backend
-    with date = (chronometrist-date-iso date-ts)
-    when (equal date (first plist-group))
-    do (cl-return
-        (cl-loop for plist in (rest plist-group)
-          when (equal task (plist-get plist :name))
-          collect plist))))
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend)
+                                      task date-ts)
+  (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
+                                 (chronometrist-backend-hash-table backend))
+    when (equal task (plist-get plist :name))
+    collect plist))
 
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 
@@ -1101,23 +1096,11 @@ Return
       (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
       (save-buffer))))
 
-(cl-defmethod chronometrist-view-file ((backend chronometrist-plist-group-backend)))
-
-(cl-defmethod chronometrist-edit-file ((backend chronometrist-plist-group-backend)))
-
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
 
-(cl-defmethod list-records ((backend chronometrist-plist-group-backend))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (cl-loop with expr
-      while (and (not (bobp))
-                 (backward-list)
-                 (or (not (bobp))
-                     (not (looking-at-p "^[[:blank:]]*;")))
-                 (setq expr (ignore-errors (read (current-buffer))))
-                 (backward-list))
-      append (rest expr))))
+(cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
+  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
+    append (rest expr)))
 
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend))
   (with-slots (file) backend
