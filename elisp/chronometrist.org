@@ -632,17 +632,6 @@ The data from =chronometrist-events= is used by most (all?) interval-consuming f
   (interactive)
   (chronometrist-reset-internal (chronometrist-active-backend)))
 #+END_SRC
-*** chronometrist-events                                                     :variable:
-:PROPERTIES:
-:VALUE:    hash table
-:END:
-#+BEGIN_SRC emacs-lisp
-(defvar chronometrist-events (make-hash-table :test #'equal)
-  "Each key is a date in the form (YEAR MONTH DAY).
-Values are lists containing events, where each event is a list in
-the form (:name \"NAME\" :tags (TAGS) <key value pairs> ...
-:start TIME :stop TIME).")
-#+END_SRC
 *** apply-time                                                   :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-apply-time (time timestamp)
@@ -714,16 +703,6 @@ Return a list of two events if EVENT was split, else nil."
                    :stop "2021-02-13T00:03:46+0530")))))
 #+END_SRC
 
-*** events-populate                                              :function:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-events-populate ()
-  "Clear hash table `chronometrist-events' (which see) and populate it.
-The data is acquired from `chronometrist-file'.
-
-Return final number of events read from file, or nil if there
-were none."
-  (setq chronometrist-events (chronometrist-to-hash-table (chronometrist-active-backend))))
-#+END_SRC
 *** events-update                                                  :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-events-update (plist hash-table &optional replace)
@@ -762,20 +741,20 @@ If REPLACE is non-nil, replace the last interval with PLIST."
 :CUSTOM_ID: program-data-structures-events-subset
 :END:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-events-subset (start end)
-  "Return a subset of `chronometrist-events'.
+(defun chronometrist-events-subset (start end hash-table)
+  "Return a subset of HASH-TABLE.
 The subset will contain values between dates START and END (both
 inclusive).
 
 START and END must be ts structs (see `ts.el'). They will be
 treated as though their time is 00:00:00."
-  (let ((subset (make-hash-table :test #'equal))
+  (let ((subset (chronometrist-make-hash-table))
         (start  (chronometrist-date-ts start))
         (end    (chronometrist-date-ts end)))
     (maphash (lambda (key value)
                (when (ts-in start end (chronometrist-iso-to-ts key))
                  (puthash key value subset)))
-             chronometrist-events)
+             hash-table)
     subset))
 #+END_SRC
 *** task-time-one-day                                              :reader:
@@ -2043,9 +2022,8 @@ Return
             (reset-watch (or (eq action 'deleted)
                              (eq action 'renamed))))
       ;; (message "chronometrist - file change type is %s" change)
-      ;; If only the last plist was changed, update `chronometrist-events' and
-      ;; `chronometrist-task-list', otherwise clear and repopulate
-      ;; `chronometrist-events'.
+      ;; If only the last plist was changed, update hash table and
+      ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch
                  (not chronometrist--file-state) ;; why?
                  (eq change t))
@@ -2071,7 +2049,7 @@ Return
                   (chronometrist-add-to-task-list new-task backend))
                  (:remove ;; the last plist in the file was removed
                   (let ((date (chronometrist-events-last-date hash-table)))
-                    ;; `chronometrist-remove-from-task-list' checks `chronometrist-events' to
+                    ;; `chronometrist-remove-from-task-list' checks the hash table to
                     ;; determine if `chronometrist-task-list' is to be updated.
                     ;; Thus, the update of the latter must occur before
                     ;; the update of the former.
@@ -2769,7 +2747,7 @@ value of `revert-buffer-function'."
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-refresh-file (fs-event)
   "Procedure run when `chronometrist-file' changes.
-Re-read `chronometrist-file', update `chronometrist-events', and
+Re-read `chronometrist-file', update caches, and
 refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
@@ -3384,7 +3362,7 @@ TABLE should be a hash table - if not supplied,
   "Helper function for `chronometrist-statistics-rows'.
 
 It simply operates on the entire hash table TABLE (see
-`chronometrist-events' for table format), so ensure that TABLE is
+`chronometrist-to-hash-table' for table format), so ensure that TABLE is
 reduced to the desired range using
 `chronometrist-events-subset'."
   (cl-loop for task in (chronometrist-task-list) collect
@@ -3864,7 +3842,8 @@ This is basically like [[#program-data-structures-events-subset][chronometrist-e
   "Return intervals for RANGE from TABLE.
 RANGE must be a time range as specified by `chronometrist-details-range'.
 
-TABLE must be a hash table similar to `chronometrist-events'."
+TABLE must be a hash table as returned by
+`chronometrist-to-hash-table'."
   (pcase range
     ('nil
      (gethash (format-time-string "%F") table))
@@ -3902,11 +3881,13 @@ TABLE must be a hash table similar to `chronometrist-events'."
     ('nil nil)
     (`(,date) date)
     (`(,begin ,end)
-     (let* ((date-p (seq-find #'chronometrist-iso-date-p input))
-            (begin-date   (car (hash-table-keys chronometrist-events)))
+     (let* ((ht-keys      (hash-table-keys
+                           (chronometrist-backend-hash-table (chronometrist-active-backend))))
+            (date-p       (seq-find #'chronometrist-iso-date-p input))
+            (begin-date   (car ht-keys))
             (begin-iso-ts (ts-format
                            "%FT%T%z" (chronometrist-iso-to-ts begin-date)))
-            (end-date     (car (last (hash-table-keys chronometrist-events))))
+            (end-date     (car (last ht-keys)))
             (end-iso-ts   (chronometrist-format-time-iso8601))
             (begin (if (equal begin "begin")
                        (if date-p begin-date begin-iso-ts)
@@ -3923,11 +3904,12 @@ TABLE must be a hash table similar to `chronometrist-events'."
 (defun chronometrist-details-set-range ()
   "Prompt user for range for current `chronometrist-details' buffer."
   (interactive)
-  (let* ((input (completing-read-multiple
+  (let* ((hash-table (chronometrist-backend-hash-table (chronometrist-active-backend)))
+         (input (completing-read-multiple
                  (concat "Range (blank, ISO-8601 date, "
                          "or two ISO-8601 dates/timestamps): ")
                  (append '("begin" "end")
-                         (reverse (hash-table-keys chronometrist-events)))
+                         (reverse (hash-table-keys hash-table)))
                  nil nil (pcase chronometrist-details-range
                            ('nil nil)
                            ((pred stringp)
@@ -4004,7 +3986,7 @@ FILTER must be a filter specifier as described by
   "Return plists matching RANGE and FILTER from BACKEND.
 For values of RANGE, see `chronometrist-details-range'. For
 values of FILTER, see `chronometrist-details-filter'. TABLE must
-be a hash table similar to `chronometrist-events'."
+be a hash table as returned by `chronometrist-to-hash-table'."
   (cl-loop for plist in (chronometrist-details-intervals-for-range range
                                                       (chronometrist-backend-hash-table backend))
     when (chronometrist-details-filter-match-p plist filter)
