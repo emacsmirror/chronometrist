@@ -719,8 +719,11 @@ See branch =grouped-plist-format=
 6. [X] =chronometrist-loop-sexp-file= - optimize grouped-plist iterator
 7. [X] key-values code is not yet generic
 8. [ ] update plist-pp to indent tagged lists differently
-9. [ ] optimize program startup and file change callback
-10. [ ] remove all references to =chronometrist-events=
+9. [X] optimize program startup and file change callback
+10. [X] remove all references to =chronometrist-events=
+11. [ ] create new tagged list if required when clocking in
+12. [ ] split midnight-spanning intervals when clocking out
+13. [ ] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
 
 Optional
 1. define generic backend protocol for key-values package
@@ -736,4 +739,5 @@ Optional
 
 * Use ISO date for functions operating on dates                 :time:format:
 * customizable task list
-1. interactive modification of task list, with completion (=completing-read-multiple=?)
+1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
+2. Adding a task? We can modify the task list, but how to persist it?
