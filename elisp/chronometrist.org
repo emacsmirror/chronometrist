@@ -728,6 +728,7 @@ If REPLACE is non-nil, replace the last interval with PLIST."
        (last it)
        (car it)))
 #+END_SRC
+
 *** events-last                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-events-last (&optional (backend (chronometrist-active-backend)))
@@ -1777,6 +1778,15 @@ STREAM (which is the value of `current-buffer')."
       finally return count)))
 #+END_SRC
 
+**** latest-date-records                                   :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-latest-date-records (backend)
+  (with-slots (hash-table) backend
+    (let ((latest-date (chronometrist-events-last-date hash-table)))
+      (cons latest-date
+            (gethash latest-date hash-table)))))
+#+END_SRC
+
 **** latest-record                                         :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
@@ -2186,10 +2196,23 @@ Note that migrating from the plist backend to the plist group backend is inheren
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 #+END_SRC
 
+**** insert-new-day                                            :procedure:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-insert-new-day (backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (insert "\n")
+    (funcall chronometrist-sexp-pretty-print-function
+             (list (chronometrist-date-iso))
+             (current-buffer))))
+#+END_SRC
+
 **** insert                                                :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (unless (equal (chronometrist-date-iso) (first (chronometrist-latest-date-records backend)))
+      (chronometrist-insert-new-day backend))
     (goto-char (point-max))
     (when (save-excursion
             (chronometrist-sexp-pre-read-check (current-buffer)))

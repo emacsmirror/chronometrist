@@ -721,7 +721,7 @@ See branch =grouped-plist-format=
 8. [ ] update plist-pp to indent tagged lists differently
 9. [X] optimize program startup and file change callback
 10. [X] remove all references to =chronometrist-events=
-11. [ ] create new tagged list if required when clocking in
+11. [X] create new tagged list if required when clocking in
 12. [ ] split midnight-spanning intervals when clocking out
 13. [ ] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
 

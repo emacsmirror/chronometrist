@@ -822,6 +822,12 @@ STREAM (which is the value of `current-buffer')."
       do (cl-incf count)
       finally return count)))
 
+(cl-defmethod chronometrist-latest-date-records (backend)
+  (with-slots (hash-table) backend
+    (let ((latest-date (chronometrist-events-last-date hash-table)))
+      (cons latest-date
+            (gethash latest-date hash-table)))))
+
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
@@ -1075,8 +1081,18 @@ Return
 
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 
+(defun chronometrist-insert-new-day (backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (insert "\n")
+    (funcall chronometrist-sexp-pretty-print-function
+             (list (chronometrist-date-iso))
+             (current-buffer))))
+
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (unless (equal (chronometrist-date-iso) (first (chronometrist-latest-date-records backend)))
+      (chronometrist-insert-new-day backend))
     (goto-char (point-max))
     (when (save-excursion
             (chronometrist-sexp-pre-read-check (current-buffer)))
