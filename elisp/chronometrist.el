@@ -653,7 +653,7 @@ Value must be a keyword corresponding to a key in
                                                 keyword)))
                                      t)))
     (setq chronometrist-active-backend choice)
-    (chronometrist-on-change (chronometrist-active-backend) nil)))
+    (chronometrist-reset-internal (chronometrist-active-backend))))
 
 (defun chronometrist-register-backend (keyword tag object)
   "Add backend to `chronometrist-backends-alist'.
