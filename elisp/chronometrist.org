@@ -1489,8 +1489,9 @@ DATE-TS must be a `ts.el' struct.")
 
 **** create-file                                        :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-create-file (backend)
-  "Create file associated with BACKEND.")
+(cl-defgeneric chronometrist-create-file (backend &optional file)
+  "Create file associated with BACKEND.
+Use FILE as a path, if provided.")
 #+END_SRC
 
 **** view-file                                          :generic:function:
@@ -1528,13 +1529,8 @@ hash table values must be in chronological order.")
 
 **** to-file                                            :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-to-file (backend hash-table)
-  "Save data in HASH-TABLE to BACKEND.
-Hash table keys must be ISO-8601 date strings. Hash table values
-must be lists of records, where each record is a plist. Both hash
-table keys and hash table values must be in chronological order.
-
-Any existing data in the BACKEND file is overwritten.")
+(cl-defgeneric chronometrist-to-file (backend file)
+  "Save data from BACKEND to FILE. Any existing data in FILE is overwritten.")
 #+END_SRC
 
 **** on-change                                          :generic:function:
@@ -1664,8 +1660,8 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 #+END_SRC
 **** create-file                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-create-file ((backend chronometrist-elisp-sexp-backend))
-  (let ((file (chronometrist-backend-file backend)))
+(cl-defmethod chronometrist-create-file ((backend chronometrist-elisp-sexp-backend) &optional file)
+  (let ((file (or file (chronometrist-backend-file backend))))
     (unless (file-exists-p file)
       (with-current-buffer (find-file-noselect file)
         (erase-buffer)
@@ -1673,6 +1669,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file)))))
 #+END_SRC
+
 **** in-file                                                       :macro:
 #+BEGIN_SRC emacs-lisp
 (defmacro chronometrist-sexp-in-file (file &rest body)
@@ -2136,6 +2133,21 @@ Return
       when (equal task (plist-get record :name))
       collect record)))
 #+END_SRC
+**** to-file                                               :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-backend) file)
+  (with-slots (hash-table) backend
+    (delete-file file)
+    (chronometrist-create-file backend file)
+    (chronometrist-reset-internal backend)
+    (chronometrist-sexp-in-file file
+      (goto-char (point-max))
+      (cl-loop for plists being the hash-values of hash-table do
+        (cl-loop for plist in plists do
+          (insert (chronometrist-plist-pp plist) "\n\n"))
+        finally do (save-buffer)))))
+#+END_SRC
+
 **** on-change                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
@@ -2329,10 +2341,11 @@ Note that migrating from the plist backend to the plist group backend is inheren
 
 **** to-file                                               :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) hash-table)
-  (let ((file (chronometrist-backend-file backend)))
+(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) file)
+  (with-slots (hash-table) backend
     (delete-file file)
-    (chronometrist-create-file backend)
+    (chronometrist-create-file backend file)
+    (chronometrist-reset-internal backend)
     (chronometrist-sexp-in-file file
       (goto-char (point-max))
       (cl-loop for date being the hash-keys of hash-table
@@ -2375,8 +2388,7 @@ Note that migrating from the plist backend to the plist group backend is inheren
                                          (alist-get keyword chronometrist-backends-alist))
                                         input-backend)))))
          (output-file-suggestion (chronometrist-backend-file output-backend))
-         (output-file (read-file-name "File to write: " nil
-                                      output-file-suggestion nil
+         (output-file (read-file-name "File to write: " nil nil nil
                                       output-file-suggestion))
          (input-backend-name  (chronometrist-remove-prefix
                                (symbol-name
@@ -2391,14 +2403,15 @@ Note that migrating from the plist backend to the plist group backend is inheren
                            output-file
                            output-backend-name)))
          (confirm-exists
-          (if (and (file-exists-p output-file)
+          (if (and confirm
+                   (file-exists-p output-file)
                    (not (chronometrist-common-file-empty-p output-file)))
               (yes-or-no-p
                (format "Overwrite existing non-empty file %s ?"
                        output-file))
             t)))
     (if (and confirm confirm-exists)
-        (chronometrist-to-file output-backend (chronometrist-to-hash-table input-backend))
+        (chronometrist-to-file output-backend output-file)
       (message "Conversion aborted."))))
 #+END_SRC
 *** table                                                        :variable:
