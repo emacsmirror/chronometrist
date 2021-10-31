@@ -1436,6 +1436,30 @@ be replaced."
                t))
 #+END_SRC
 
+**** read-backend-name                                         :procedure:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-read-backend-name (prompt backend-alist
+                                  &optional predicate return-keyword)
+  "Prompt user for a Chronometrist backend name.
+BACKEND-ALIST should be an alist similar to `chronometrist-backends-alist'.
+
+RETURN-KEYWORD, if non-nil, means return only the keyword of the
+selected backend; otherwise, return the CLOS object for the
+backend.
+
+PROMPT and PREDICATE have the same meanings as in
+`completing-read'."
+  (let ((backend-keyword
+         (read
+          (completing-read prompt
+                           (cl-loop for list in backend-alist
+                             collect (first list))
+                           predicate t))))
+    (if return-keyword
+        backend-keyword
+      (second (alist-get backend-keyword backend-alist)))))
+#+END_SRC
+
 **** latest-record                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
@@ -2313,21 +2337,6 @@ Note that migrating from the plist backend to the plist group backend is inheren
 #+END_SRC
 
 ** Migration
-*** read-backend-name
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-read-backend-name (prompt backend-alist
-                                  &optional predicate return-keyword)
-  (let ((backend-keyword
-         (read
-          (completing-read prompt
-                           (cl-loop for list in backend-alist
-                             collect (first list))
-                           predicate t))))
-    (if return-keyword
-        backend-keyword
-      (second (alist-get backend-keyword backend-alist)))))
-#+END_SRC
-
 *** remove-prefix
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-remove-prefix (string)

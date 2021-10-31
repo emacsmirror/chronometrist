@@ -667,6 +667,27 @@ be replaced."
                (list keyword tag object)
                t))
 
+(defun chronometrist-read-backend-name (prompt backend-alist
+                                  &optional predicate return-keyword)
+  "Prompt user for a Chronometrist backend name.
+BACKEND-ALIST should be an alist similar to `chronometrist-backends-alist'.
+
+RETURN-KEYWORD, if non-nil, means return only the keyword of the
+selected backend; otherwise, return the CLOS object for the
+backend.
+
+PROMPT and PREDICATE have the same meanings as in
+`completing-read'."
+  (let ((backend-keyword
+         (read
+          (completing-read prompt
+                           (cl-loop for list in backend-alist
+                             collect (first list))
+                           predicate t))))
+    (if return-keyword
+        backend-keyword
+      (second (alist-get backend-keyword backend-alist)))))
+
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
@@ -1166,17 +1187,6 @@ Return
 
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event))
 
-(defun chronometrist-read-backend-name (prompt backend-alist
-                                  &optional predicate return-keyword)
-  (let ((backend-keyword
-         (read
-          (completing-read prompt
-                           (cl-loop for list in backend-alist
-                             collect (first list))
-                           predicate t))))
-    (if return-keyword
-        backend-keyword
-      (second (alist-get backend-keyword backend-alist)))))
 
 (defun chronometrist-remove-prefix (string)
   (replace-regexp-in-string "^chronometrist-" "" string))
