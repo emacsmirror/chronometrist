@@ -202,28 +202,25 @@ Return value is a ts struct (see `ts.el')."
     (ts-apply :hour h :minute m :second s
               (chronometrist-iso-to-ts timestamp))))
 
-(defun chronometrist-maybe-split-plist (plist)
-  "Split EVENT if it spans midnight.
-Return a list of two events if EVENT was split, else nil."
+(defun chronometrist-split-plist (plist)
+  "Return a list of two split plists if PLIST spans a midnight, else nil."
   (when (plist-get plist :stop)
-    (let ((split-time (chronometrist-midnight-spanning-p (plist-get plist :start)
-                                             (plist-get plist :stop)
-                                             chronometrist-day-start-time)))
+    (let ((split-time (chronometrist-split-time (plist-get plist :start)
+                                           (plist-get plist :stop)
+                                           chronometrist-day-start-time)))
       (when split-time
-        (let ((first-start  (plist-get (cl-first  split-time) :start))
-              (first-stop   (plist-get (cl-first  split-time) :stop))
-              (second-start (plist-get (cl-second split-time) :start))
-              (second-stop  (plist-get (cl-second split-time) :stop))
-              ;; plist-put modifies lists in-place. The resulting bugs
-              ;; left me puzzled for a while.
-              (event-1      (cl-copy-list plist))
-              (event-2      (cl-copy-list plist)))
+        (-let* (((&plist :start start-1 :stop stop-1) (cl-first  split-time))
+                ((&plist :start start-2 :stop stop-2) (cl-second split-time))
+                ;; `plist-put' modifies lists in-place. The resulting bugs
+                ;; left me puzzled for a while.
+                (event-1      (cl-copy-list plist))
+                (event-2      (cl-copy-list plist)))
           (list (-> event-1
-                    (plist-put :start first-start)
-                    (plist-put :stop  first-stop))
+                    (plist-put :start start-1)
+                    (plist-put :stop  stop-1))
                 (-> event-2
-                    (plist-put :start second-start)
-                    (plist-put :stop  second-stop))))))))
+                    (plist-put :start start-2)
+                    (plist-put :stop  stop-2))))))))
 
 (defun chronometrist-events-update (plist hash-table &optional replace)
   "Return HASH-TABLE with PLIST added as the latest interval.
@@ -422,7 +419,7 @@ Optional argument UNIX-TIME should be a time value (see
 ;; Note - this assumes that an event never crosses >1 day. This seems
 ;; sufficient for all conceivable cases.
 
-(defun chronometrist-midnight-spanning-p (start-time stop-time day-start-time)
+(defun chronometrist-split-time (start-time stop-time day-start-time)
   "Return non-nil if START-TIME and STOP-TIME cross a midnight.
 START-TIME and STOP-TIME must be ISO-8601 timestamps.
 
@@ -444,10 +441,9 @@ Return a list in the form
          (next-day-start  (ts-adjust 'hour 24 first-day-start)))
     ;; Does the event stop time exceed the next day start time?
     (when (ts< next-day-start stop-ts)
-      (list `(:start ,start-time
-                     :stop  ,(ts-format "%FT%T%z" next-day-start))
-            `(:start ,(ts-format "%FT%T%z" next-day-start)
-                     :stop  ,stop-time)))))
+      (let ((split-time (ts-format "%FT%T%z" next-day-start)))
+        (list `(:start ,start-time :stop ,split-time)
+              `(:start ,split-time :stop ,stop-time))))))
 
 (defun chronometrist-seconds-to-hms (seconds)
   "Convert SECONDS to a vector in the form [HOURS MINUTES SECONDS].
@@ -842,7 +838,7 @@ STREAM (which is the value of `current-buffer')."
       (while (or pending-expr
                  (setq expr (ignore-errors (read (current-buffer)))))
         ;; find and split midnight-spanning events during deserialization itself
-        (let* ((split-expr (chronometrist-maybe-split-plist expr))
+        (let* ((split-expr (chronometrist-split-plist expr))
                (new-value  (cond (pending-expr
                                   (prog1 pending-expr
                                     (setq pending-expr nil)))
@@ -1104,13 +1100,18 @@ Return
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (when (save-excursion
-            (chronometrist-sexp-pre-read-check (current-buffer)))
-      (down-list -1)
-      (backward-list)
-      (chronometrist-sexp-delete-list)
-      (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-      (save-buffer))))
+    (-let [(plist-1 plist-2) (chronometrist-split-plist plist)]
+      (when (save-excursion
+              (chronometrist-sexp-pre-read-check (current-buffer)))
+        (down-list -1)
+        (backward-list)
+        (chronometrist-sexp-delete-list)
+        (funcall chronometrist-sexp-pretty-print-function
+                 (or plist-1 plist)
+                 (current-buffer))
+        (when plist-2
+          (chronometrist-insert backend plist-2))
+        (save-buffer)))))
 
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
 
