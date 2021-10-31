@@ -430,16 +430,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
   "An extensible time tracker."
   :group 'applications)
 #+END_SRC
-*** fs-watch                                            :internal:variable:
-:PROPERTIES:
-:VALUE:    file notify watch
-:END:
-#+BEGIN_SRC emacs-lisp
-(defvar chronometrist--fs-watch nil
-  "Filesystem watch object.
-Used to prevent more than one watch being added for the same
-file.")
-#+END_SRC
+
 *** format-time                                                  :function:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-format-duration (seconds &optional (blank (make-string 3 ?\s)))
@@ -537,6 +528,7 @@ TS must be a ts struct (see `ts.el')."
           keys)
     plist))
 #+END_SRC
+
 **** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-plist-remove ()
@@ -569,6 +561,7 @@ TS must be a ts struct (see `ts.el')."
           '(:b 2 :c 3))))
 
 #+END_SRC
+
 *** plist-key-values                                             :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-key-values (plist)
@@ -594,6 +587,7 @@ TS must be a ts struct (see `ts.el')."
   (should (eq nil (chronometrist-plist-p '(:a 1 :b 2 3)))))
 
 #+END_SRC
+
 *** delete-list                                                    :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-delete-list (&optional arg)
@@ -602,12 +596,14 @@ TS must be a ts struct (see `ts.el')."
     (forward-sexp (or arg 1))
     (delete-region point-1 (point))))
 #+END_SRC
+
 *** make-hash-table                                              :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-make-hash-table ()
   "Return an empty hash table with `equal' as test."
   (make-hash-table :test #'equal))
 #+END_SRC
+
 *** current-task                                            :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-current-task (&optional (backend (chronometrist-active-backend)))
@@ -1593,8 +1589,22 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
          :documentation "Full path to backend file, with extension.")
    (hash-table :initform (chronometrist-make-hash-table)
                :initarg :ht
-               :accessor chronometrist-backend-hash-table))
+               :accessor chronometrist-backend-hash-table)
+   (file-watch :initform nil
+               :initarg :file-watch
+               :accessor chronometrist-backend-file-watch
+               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'."))
   :documentation "Mixin for backends storing data in a single file.")
+#+END_SRC
+
+**** setup-file-watch                                             :writer:
+#+BEGIN_SRC emacs-lisp
+(cl-defun chronometrist-setup-file-watch (&optional (callback #'chronometrist-refresh-file))
+  "Arrange for CALLBACK to be called when the backend file changes."
+  (with-slots (file file-watch) (chronometrist-active-backend)
+    (unless file-watch
+      (setq file-watch
+            (file-notify-add-watch file '(change) callback)))))
 #+END_SRC
 
 **** edit-file                                                    :method:
@@ -1620,6 +1630,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   (chronometrist-reset-task-list backend)
   (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
         chronometrist--file-state nil)
+  (chronometrist-setup-file-watch)
   (chronometrist-refresh))
 #+END_SRC
 
@@ -1932,12 +1943,13 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 
 \(see `chronometrist-file-hash')
 
-LAST-START and LAST-END represent the start and the end of the
-last s-expression.
+LAST-START and LAST-END are integers representing the start and
+the end of the last s-expression.
 
-REST-START and REST-END represent the start of the file and the
-end of the second-last s-expression.")
+REST-START and REST-END are integers representing the start of
+the file and the end of the second-last s-expression.")
 #+END_SRC
+
 **** file-hash                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
@@ -2127,7 +2139,7 @@ Return
 **** on-change                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
-  (with-slots (hash-table) backend
+  (with-slots (hash-table file-watch) backend
     (-let* (((descriptor action _ _) fs-event)
             (change      (when chronometrist--file-state
                            (chronometrist-file-change-type chronometrist--file-state)))
@@ -2141,8 +2153,8 @@ Return
                  (eq change t))
              ;; Don't keep a watch for a nonexistent file.
              (when reset-watch
-               (file-notify-rm-watch chronometrist--fs-watch)
-               (setq chronometrist--fs-watch nil chronometrist--file-state nil))
+               (file-notify-rm-watch file-watch)
+               (setq file-watch nil  chronometrist--file-state nil))
              (setf hash-table (chronometrist-to-hash-table backend))
              (chronometrist-reset-task-list backend))
             (chronometrist--file-state
@@ -2846,16 +2858,7 @@ refresh the `chronometrist' buffer."
   ;; (message "chronometrist - file %s" fs-event)
   (chronometrist-on-change (chronometrist-active-backend) fs-event))
 #+END_SRC
-**** setup-file-watch                                             :writer:
-#+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-setup-file-watch (&optional (callback #'chronometrist-refresh-file))
-  "Arrange for CALLBACK to be called when the backend file changes."
-  (unless chronometrist--fs-watch
-    (setq chronometrist--fs-watch
-          (file-notify-add-watch (chronometrist-backend-file (chronometrist-active-backend))
-                                 '(change)
-                                 callback))))
-#+END_SRC
+
 **** query-stop                                                :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-query-stop ()
@@ -3133,6 +3136,7 @@ run `chronometrist-statistics'."
                      (chronometrist-goto-last-task))))
           (chronometrist-setup-file-watch))))))
 #+END_SRC
+
 *** Report
 **** TODO [0%]
 1. [ ] preserve point when clicking buttons
@@ -3326,6 +3330,7 @@ Argument _FS-EVENT is ignored."
   (setq revert-buffer-function #'chronometrist-report-refresh)
   (chronometrist-setup-file-watch))
 #+END_SRC
+
 **** chronometrist-report                                        :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload
@@ -3579,6 +3584,7 @@ value of `revert-buffer-function'."
   (setq revert-buffer-function #'chronometrist-statistics-refresh)
   (chronometrist-setup-file-watch))
 #+END_SRC
+
 **** chronometrist-statistics                                    :command:
 #+BEGIN_SRC emacs-lisp
 ;;;###autoload

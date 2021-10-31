@@ -71,11 +71,6 @@
   "An extensible time tracker."
   :group 'applications)
 
-(defvar chronometrist--fs-watch nil
-  "Filesystem watch object.
-Used to prevent more than one watch being added for the same
-file.")
-
 (cl-defun chronometrist-format-duration (seconds &optional (blank (make-string 3 ?\s)))
   "Format SECONDS as a string suitable for display in Chronometrist buffers.
 SECONDS must be a positive integer.
@@ -766,8 +761,19 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
          :documentation "Full path to backend file, with extension.")
    (hash-table :initform (chronometrist-make-hash-table)
                :initarg :ht
-               :accessor chronometrist-backend-hash-table))
+               :accessor chronometrist-backend-hash-table)
+   (file-watch :initform nil
+               :initarg :file-watch
+               :accessor chronometrist-backend-file-watch
+               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'."))
   :documentation "Mixin for backends storing data in a single file.")
+
+(cl-defun chronometrist-setup-file-watch (&optional (callback #'chronometrist-refresh-file))
+  "Arrange for CALLBACK to be called when the backend file changes."
+  (with-slots (file file-watch) (chronometrist-active-backend)
+    (unless file-watch
+      (setq file-watch
+            (file-notify-add-watch file '(change) callback)))))
 
 (cl-defmethod chronometrist-edit-file ((backend chronometrist-file-backend-mixin))
   (find-file-other-window (chronometrist-backend-file backend))
@@ -784,6 +790,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   (chronometrist-reset-task-list backend)
   (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
         chronometrist--file-state nil)
+  (chronometrist-setup-file-watch)
   (chronometrist-refresh))
 
 (cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-file-backend-mixin))
@@ -945,11 +952,11 @@ This is meant to be run in `chronometrist-file' when using the s-expression back
 
 \(see `chronometrist-file-hash')
 
-LAST-START and LAST-END represent the start and the end of the
-last s-expression.
+LAST-START and LAST-END are integers representing the start and
+the end of the last s-expression.
 
-REST-START and REST-END represent the start of the file and the
-end of the second-last s-expression.")
+REST-START and REST-END are integers representing the start of
+the file and the end of the second-last s-expression.")
 
 (cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
   "Calculate hash of `chronometrist-file' between START and END.
@@ -1040,7 +1047,7 @@ Return
       collect record)))
 
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
-  (with-slots (hash-table) backend
+  (with-slots (hash-table file-watch) backend
     (-let* (((descriptor action _ _) fs-event)
             (change      (when chronometrist--file-state
                            (chronometrist-file-change-type chronometrist--file-state)))
@@ -1054,8 +1061,8 @@ Return
                  (eq change t))
              ;; Don't keep a watch for a nonexistent file.
              (when reset-watch
-               (file-notify-rm-watch chronometrist--fs-watch)
-               (setq chronometrist--fs-watch nil chronometrist--file-state nil))
+               (file-notify-rm-watch file-watch)
+               (setq file-watch nil  chronometrist--file-state nil))
              (setf hash-table (chronometrist-to-hash-table backend))
              (chronometrist-reset-task-list backend))
             (chronometrist--file-state
@@ -1574,14 +1581,6 @@ refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
   (chronometrist-on-change (chronometrist-active-backend) fs-event))
-
-(cl-defun chronometrist-setup-file-watch (&optional (callback #'chronometrist-refresh-file))
-  "Arrange for CALLBACK to be called when the backend file changes."
-  (unless chronometrist--fs-watch
-    (setq chronometrist--fs-watch
-          (file-notify-add-watch (chronometrist-backend-file (chronometrist-active-backend))
-                                 '(change)
-                                 callback))))
 
 (defun chronometrist-query-stop ()
   "Ask the user if they would like to clock out."
