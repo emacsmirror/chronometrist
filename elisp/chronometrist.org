@@ -1405,6 +1405,37 @@ Value must be a keyword corresponding to a key in
   "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).")
 #+END_SRC
 
+**** switch-backend                                              :command:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-switch-backend ()
+  (interactive)
+  (let* ((prompt (format "Switch to backend (current - %s): "
+                         chronometrist-active-backend))
+         (choice (chronometrist-read-backend-name prompt
+                                     chronometrist-backends-alist
+                                     (lambda (keyword)
+                                       (not (eq chronometrist-active-backend
+                                                keyword)))
+                                     t)))
+    (setq chronometrist-active-backend choice)
+    (chronometrist-on-change (chronometrist-active-backend) nil)))
+#+END_SRC
+
+**** register-backend                                             :writer:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-register-backend (keyword tag object)
+  "Add backend to `chronometrist-backends-alist'.
+For values of KEYWORD, TAG, and OBJECT, see `chronometrist-backends-alist'.
+
+If a backend with KEYWORD already exists, the existing entry will
+be replaced."
+  (setq chronometrist-backends-alist
+        (assq-delete-all keyword chronometrist-backends-alist))
+  (add-to-list 'chronometrist-backends-alist
+               (list keyword tag object)
+               t))
+#+END_SRC
+
 **** latest-record                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
@@ -1749,9 +1780,9 @@ Boilerplate for updating state between file operations in tests.
               :accessor chronometrist-backend-ext
               :custom 'string)))
 
-(add-to-list 'chronometrist-backends-alist
-             `(:plist "Store records as plists."
-                      ,(make-instance 'chronometrist-plist-backend :path chronometrist-file)))
+(chronometrist-register-backend
+ :plist "Store records as plists."
+ (make-instance 'chronometrist-plist-backend :path chronometrist-file))
 #+END_SRC
 
 **** pretty-print-function                               :custom:variable:
@@ -2151,10 +2182,10 @@ Note that migrating from the plist backend to the plist group backend is inheren
               :accessor chronometrist-backend-ext
               :custom 'string)))
 
-(add-to-list 'chronometrist-backends-alist
-             `(:plist-group "Store records as plists grouped by date."
-                            ,(make-instance 'chronometrist-plist-group-backend
-                                            :path chronometrist-file)))
+(chronometrist-register-backend
+ :plist-group "Store records as plists grouped by date."
+ (make-instance 'chronometrist-plist-group-backend
+                :path chronometrist-file))
 #+END_SRC
 
 **** backward-read-sexp                                           :reader:
@@ -2284,14 +2315,17 @@ Note that migrating from the plist backend to the plist group backend is inheren
 ** Migration
 *** read-backend-name
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-read-backend-name (prompt backend-alist &optional predicate)
+(defun chronometrist-read-backend-name (prompt backend-alist
+                                  &optional predicate return-keyword)
   (let ((backend-keyword
          (read
           (completing-read prompt
                            (cl-loop for list in backend-alist
                              collect (first list))
                            predicate t))))
-    (second (alist-get backend-keyword backend-alist))))
+    (if return-keyword
+        backend-keyword
+      (second (alist-get backend-keyword backend-alist)))))
 #+END_SRC
 
 *** remove-prefix

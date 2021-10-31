@@ -642,6 +642,31 @@ Value must be a keyword corresponding to a key in
 (cl-defgeneric chronometrist-latest-date-records (backend)
   "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).")
 
+(defun chronometrist-switch-backend ()
+  (interactive)
+  (let* ((prompt (format "Switch to backend (current - %s): "
+                         chronometrist-active-backend))
+         (choice (chronometrist-read-backend-name prompt
+                                     chronometrist-backends-alist
+                                     (lambda (keyword)
+                                       (not (eq chronometrist-active-backend
+                                                keyword)))
+                                     t)))
+    (setq chronometrist-active-backend choice)
+    (chronometrist-on-change (chronometrist-active-backend) nil)))
+
+(defun chronometrist-register-backend (keyword tag object)
+  "Add backend to `chronometrist-backends-alist'.
+For values of KEYWORD, TAG, and OBJECT, see `chronometrist-backends-alist'.
+
+If a backend with KEYWORD already exists, the existing entry will
+be replaced."
+  (setq chronometrist-backends-alist
+        (assq-delete-all keyword chronometrist-backends-alist))
+  (add-to-list 'chronometrist-backends-alist
+               (list keyword tag object)
+               t))
+
 (cl-defgeneric chronometrist-latest-record (backend)
   "Return the latest entry from BACKEND as a plist.")
 
@@ -799,9 +824,9 @@ expression first)."
               :accessor chronometrist-backend-ext
               :custom 'string)))
 
-(add-to-list 'chronometrist-backends-alist
-             `(:plist "Store records as plists."
-                      ,(make-instance 'chronometrist-plist-backend :path chronometrist-file)))
+(chronometrist-register-backend
+ :plist "Store records as plists."
+ (make-instance 'chronometrist-plist-backend :path chronometrist-file))
 
 (defcustom chronometrist-sexp-pretty-print-function #'chronometrist-plist-pp
   "Function used to pretty print plists in `chronometrist-file'.
@@ -1051,10 +1076,10 @@ Return
               :accessor chronometrist-backend-ext
               :custom 'string)))
 
-(add-to-list 'chronometrist-backends-alist
-             `(:plist-group "Store records as plists grouped by date."
-                            ,(make-instance 'chronometrist-plist-group-backend
-                                            :path chronometrist-file)))
+(chronometrist-register-backend
+ :plist-group "Store records as plists grouped by date."
+ (make-instance 'chronometrist-plist-group-backend
+                :path chronometrist-file))
 
 (defun chronometrist-backward-read-sexp (buffer)
   (backward-list)
@@ -1141,14 +1166,17 @@ Return
 
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event))
 
-(defun chronometrist-read-backend-name (prompt backend-alist &optional predicate)
+(defun chronometrist-read-backend-name (prompt backend-alist
+                                  &optional predicate return-keyword)
   (let ((backend-keyword
          (read
           (completing-read prompt
                            (cl-loop for list in backend-alist
                              collect (first list))
                            predicate t))))
-    (second (alist-get backend-keyword backend-alist))))
+    (if return-keyword
+        backend-keyword
+      (second (alist-get backend-keyword backend-alist)))))
 
 (defun chronometrist-remove-prefix (string)
   (replace-regexp-in-string "^chronometrist-" "" string))

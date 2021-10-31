@@ -723,7 +723,7 @@ See branch =grouped-plist-format=
 10. [X] remove all references to =chronometrist-events=
 11. [X] create new tagged list if required when clocking in
 12. [ ] split midnight-spanning intervals when clocking out
-13. [ ] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
+13. [X] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
 
 Optional
 1. define generic backend protocol for key-values package
