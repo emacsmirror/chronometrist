@@ -721,8 +721,9 @@ Hash table keys are ISO-8601 date strings. Hash table values are
 lists of records, represented by plists. Both hash table keys and
 hash table values must be in chronological order.")
 
-(cl-defgeneric chronometrist-to-file (backend file)
-  "Save data from BACKEND to FILE. Any existing data in FILE is overwritten.")
+(cl-defgeneric chronometrist-to-file (input-hash-table output-backend output-file)
+  "Save data from INPUT-HASH-TABLE to OUTPUT-FILE, in OUTPUT-BACKEND format.
+Any existing data in OUTPUT-FILE is overwritten.")
 
 (cl-defgeneric chronometrist-on-change (backend fs-event)
   "Function to be run when BACKEND changes on disk.
@@ -1042,17 +1043,17 @@ Return
       when (equal task (plist-get record :name))
       collect record)))
 
-(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-backend) file)
-  (with-slots (hash-table) backend
-    (delete-file file)
-    (chronometrist-create-file backend file)
-    (chronometrist-reset-internal backend)
-    (chronometrist-sexp-in-file file
-      (goto-char (point-max))
-      (cl-loop for plists being the hash-values of hash-table do
-        (cl-loop for plist in plists do
-          (insert (chronometrist-plist-pp plist) "\n\n"))
-        finally do (save-buffer)))))
+(cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-backend) file)
+  (delete-file file)
+  (chronometrist-create-file backend file)
+  (chronometrist-reset-internal backend)
+  (chronometrist-sexp-in-file file
+    (goto-char (point-max))
+    (cl-loop
+      for date in (sort (hash-table-keys hash-table) #'string-lessp) do
+      (cl-loop for plist in (gethash date hash-table) do
+        (insert (chronometrist-plist-pp plist) "\n\n"))
+      finally do (save-buffer))))
 
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
   (with-slots (hash-table file-watch) backend
@@ -1187,21 +1188,20 @@ Return
       (puthash (first plist-group) (rest plist-group) table)
       finally return table)))
 
-(cl-defmethod chronometrist-to-file ((backend chronometrist-plist-group-backend) file)
-  (with-slots (hash-table) backend
-    (delete-file file)
-    (chronometrist-create-file backend file)
-    (chronometrist-reset-internal backend)
-    (chronometrist-sexp-in-file file
-      (goto-char (point-max))
-      (cl-loop for date being the hash-keys of hash-table
-        using (hash-values plists) do
-        (insert
-         (chronometrist-plist-pp (apply #'list date plists))
-         "\n")
-        finally do (save-buffer)))))
 
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event))
+(cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-group-backend) file)
+  (delete-file file)
+  (chronometrist-create-file backend file)
+  (chronometrist-reset-internal backend)
+  (chronometrist-sexp-in-file file
+    (goto-char (point-max))
+    (cl-loop for date being the hash-keys of hash-table
+      using (hash-values plists) do
+      (insert
+       (chronometrist-plist-pp (apply #'list date plists))
+       "\n")
+      finally do (save-buffer))))
 
 
 (defun chronometrist-remove-prefix (string)
@@ -1248,7 +1248,9 @@ Return
                        output-file))
             t)))
     (if (and confirm confirm-exists)
-        (chronometrist-to-file output-backend output-file)
+        (chronometrist-to-file (chronometrist-backend-hash-table input-backend)
+                  output-backend
+                  output-file)
       (message "Conversion aborted."))))
 
 (defvar chronometrist-migrate-table (make-hash-table))
