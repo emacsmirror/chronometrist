@@ -345,7 +345,7 @@ Once, for sake of neatness, I made the value of =Package-Requires:= multiline -
 #+END_SRC
 But I discovered that if I do that, =package-lint= says - =error: Couldn't parse "Package-Requires" header: End of file during parsing=.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :comments no
 ;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
@@ -367,7 +367,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 
 "Commentary" is displayed when the user clicks on the package's entry in =M-x list-packages=.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :comments no
 ;;; Commentary:
 ;;
 ;; A time tracker in Emacs with a nice interface
@@ -406,7 +406,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 #+END_SRC
 
 ** Dependencies
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :comments no
 ;;; Code:
 ;; This file was automatically generated from chronometrist.org
 (require 'dash)
@@ -4105,7 +4105,7 @@ be a hash table as returned by `chronometrist-to-hash-table'."
     collect plist))
 #+END_SRC
 ** Provide
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :comments no
 (provide 'chronometrist)
 
 ;;; chronometrist.el ends here
