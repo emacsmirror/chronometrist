@@ -1188,8 +1188,6 @@ Return
       (puthash (first plist-group) (rest plist-group) table)
       finally return table)))
 
-
-(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event))
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-group-backend) file)
   (delete-file file)
   (chronometrist-create-file backend file)
@@ -1203,6 +1201,8 @@ Return
        "\n")
       finally do (save-buffer))))
 
+(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
+  (chronometrist-reset-internal backend))
 
 (defun chronometrist-remove-prefix (string)
   (replace-regexp-in-string "^chronometrist-" "" string))

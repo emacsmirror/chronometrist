@@ -2358,7 +2358,8 @@ Note that migrating from the plist backend to the plist group backend is inheren
 
 **** on-change                                                    :method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event))
+(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
+  (chronometrist-reset-internal backend))
 #+END_SRC
 
 ** Migration
