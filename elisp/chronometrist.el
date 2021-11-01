@@ -513,26 +513,29 @@ that point is after the first opening parenthesis."
   (format (concat "% -" (number-to-string right-indent) "s")
           sexp))
 
-(cl-defun chronometrist-plist-pp-buffer (&optional inside-sublist-p)
+(cl-defun chronometrist-plist-pp-buffer (&optional in-sublist)
   "Recursively indent the alist, plist, or a list of plists after point.
-The list must be on a single line, as emitted by `prin1'."
+The list must be on a single line, as emitted by `prin1'.
+
+IN-SUBLIST, if non-nil, means point is inside an inner list."
   (if (not (looking-at-p (rx (or ")" line-end))))
       (let ((sexp (save-excursion (read (current-buffer)))))
           (cond
            ((chronometrist-plist-p sexp)
-            (chronometrist-plist-pp-buffer-plist inside-sublist-p)
-            (chronometrist-plist-pp-buffer inside-sublist-p))
+            (chronometrist-plist-pp-buffer-plist in-sublist)
+            ;; in case we were inside a sublist
+            (chronometrist-plist-pp-buffer in-sublist))
            ((chronometrist-plist-pp-alist-p sexp)
             (chronometrist-plist-pp-buffer-alist)
-            (unless inside-sublist-p (chronometrist-plist-pp-buffer)))
+            (unless in-sublist (chronometrist-plist-pp-buffer)))
            ((chronometrist-plist-pp-pair-p sexp)
             (forward-sexp)
-            (chronometrist-plist-pp-buffer inside-sublist-p))
+            (chronometrist-plist-pp-buffer in-sublist))
            ((listp sexp)
             (down-list)
             (chronometrist-plist-pp-buffer t))
            (t (forward-sexp)
-              (chronometrist-plist-pp-buffer inside-sublist-p))))
+              (chronometrist-plist-pp-buffer in-sublist))))
     ;; we're before a ) - is it a lone paren on its own line?
     (let ((pos (point))
           (bol (point-at-bol)))
@@ -544,7 +547,7 @@ The list must be on a single line, as emitted by `prin1'."
       (when (not (eobp))
         (forward-char)))))
 
-(defun chronometrist-plist-pp-buffer-plist (&optional inside-sublist-p)
+(defun chronometrist-plist-pp-buffer-plist (&optional in-sublist)
   "Indent a single plist after point."
   (down-list)
   (let ((left-indent  (1- (chronometrist-plist-pp-column)))
@@ -557,7 +560,7 @@ The list must be on a single line, as emitted by `prin1'."
              (chronometrist-sexp-delete-list)
              (insert (if first-p
                          (progn (setq first-p nil) "")
-                       (make-string left-indent ?\ ))
+                       (make-string left-indent ?\s))
                      (chronometrist-plist-pp-indent-sexp sexp right-indent)))
             ;; not a keyword = a value
             ((chronometrist-plist-p sexp)
@@ -572,8 +575,8 @@ The list must be on a single line, as emitted by `prin1'."
     (up-list)
     ;; we have exited the plist, but might still be in a list with more plists
     (unless (eolp) (insert "\n"))
-    (when inside-sublist-p
-      (insert (make-string (1- left-indent) ?\ )))))
+    (when in-sublist
+      (insert (make-string (1- left-indent) ?\s)))))
 
 (defun chronometrist-plist-pp-buffer-alist ()
   "Indent a single alist after point."
@@ -584,7 +587,7 @@ The list must be on a single line, as emitted by `prin1'."
       (chronometrist-sexp-delete-list)
       (insert (if first-p
                   (progn (setq first-p nil) "")
-                (make-string indent ?\ ))
+                (make-string indent ?\s))
               (format "%S\n" sexp)))
     (when (bolp) (delete-char -1))
     (up-list)))
