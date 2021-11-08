@@ -157,12 +157,12 @@ TS must be a ts struct (see `ts.el')."
 
 (defun chronometrist-plist-p (list)
   "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
-  (while (consp list)
-    (setq list (if (and (keywordp (car list))
-                        (consp (cdr list)))
-                   (cddr list)
-                 'not-plist)))
-  (null list))
+  (when list
+    (while (consp list)
+      (setq list (if (and (keywordp (first list)) (consp (rest list)))
+                     (cddr list)
+                   'not-plist)))
+    (null list)))
 
 (defun chronometrist-sexp-delete-list (&optional arg)
   "Delete ARG lists after point."
@@ -498,6 +498,13 @@ considers it an alist."
   (when (listp list)
     (cl-loop for elt in list thereis (chronometrist-plist-pp-pair-p elt))))
 
+(defun chronometrist-plist-group-p (list)
+  "Return non-nil if LIST is in the form \(ATOM PLIST+\)."
+  (and (consp list)
+       (not (consp (first list)))
+       (rest list)
+       (seq-every-p #'chronometrist-plist-p (rest list))))
+
 (defun chronometrist-plist-pp-longest-keyword-length ()
   "Find the length of the longest keyword in a plist.
 This assumes there is a single plist in the current buffer, and
@@ -523,7 +530,10 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
           (cond
            ((chronometrist-plist-p sexp)
             (chronometrist-plist-pp-buffer-plist in-sublist)
-            ;; in case we were inside a sublist
+            ;; we want to continue, in case we were inside a sublist
+            (chronometrist-plist-pp-buffer in-sublist))
+           ((chronometrist-plist-group-p sexp)
+            (chronometrist-plist-pp-buffer-plist-group in-sublist)
             (chronometrist-plist-pp-buffer in-sublist))
            ((chronometrist-plist-pp-alist-p sexp)
             (chronometrist-plist-pp-buffer-alist)
@@ -577,6 +587,12 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
     (unless (eolp) (insert "\n"))
     (when in-sublist
       (insert (make-string (1- left-indent) ?\s)))))
+
+(defun chronometrist-plist-pp-buffer-plist-group (&optional in-sublist)
+  (down-list)
+  (forward-sexp)
+  (default-indent-new-line)
+  (chronometrist-plist-pp-buffer t))
 
 (defun chronometrist-plist-pp-buffer-alist ()
   "Indent a single alist after point."
@@ -931,7 +947,7 @@ STREAM (which is the value of `current-buffer')."
 
 (defun chronometrist-sexp-reindent-buffer ()
   "Reindent the current buffer.
-This is meant to be run in `chronometrist-file' when using the s-expression backend."
+This is meant to be run in `chronometrist-file' when using an s-expression backend."
   (interactive)
   (let (expr)
     (goto-char (point-min))
@@ -1142,47 +1158,40 @@ Return
 
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 
-(defun chronometrist-insert-new-day (backend)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (insert "\n")
-    (funcall chronometrist-sexp-pretty-print-function
-             (list (chronometrist-date-iso))
-             (current-buffer))))
-
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (unless (equal (chronometrist-date-iso) (first (chronometrist-latest-date-records backend)))
-      (chronometrist-insert-new-day backend))
-    (goto-char (point-max))
-    (when (save-excursion
-            (chronometrist-sexp-pre-read-check (current-buffer)))
-      (down-list -1)
-      (default-indent-new-line)
-      (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+    (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
+           (backend-latest-date (first latest-plist-group))
+           (date-today          (chronometrist-date-iso))
+           (insert-new-group    (not (equal date-today backend-latest-date)))
+           (new-plist-group     (if insert-new-group
+                                    (list date-today plist)
+                                  (append latest-plist-group (list plist)))))
+      (goto-char (point-max))
+      (if insert-new-group
+          (default-indent-new-line)
+        (chronometrist-sexp-pre-read-check (current-buffer))
+        (chronometrist-sexp-delete-list))
+      (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
       (save-buffer))))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (-let [(plist-1 plist-2) (chronometrist-split-plist plist)]
-      (when (save-excursion
-              (chronometrist-sexp-pre-read-check (current-buffer)))
-        (down-list -1)
-        (backward-list)
+    (-let* ((latest-plist-group (chronometrist-latest-date-records backend))
+            ((plist-1 plist-2)  (chronometrist-split-plist plist))
+            (new-plist-group    (append (butlast latest-plist-group)
+                                        (list (or plist-1 plist)))))
+      (when (chronometrist-sexp-pre-read-check (current-buffer))
         (chronometrist-sexp-delete-list)
-        (funcall chronometrist-sexp-pretty-print-function
-                 (or plist-1 plist)
-                 (current-buffer))
-        (when plist-2
-          (chronometrist-insert backend plist-2))
+        (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
+        (when plist-2 (chronometrist-insert backend plist-2))
         (save-buffer)))))
 
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
 
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
-  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
-    append (rest expr)))
+  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) append (rest expr)))
 
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-group-backend))
   (with-slots (file) backend
