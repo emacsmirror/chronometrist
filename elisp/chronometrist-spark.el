@@ -53,10 +53,10 @@ DURATIONS must be a list of integer seconds."
            (format "(%sm)" (apply #'max duration-minutes))))))
 
 (defun chronometrist-spark-durations (task length stop-ts)
+  "Return a list of durations for time tracked for TASK in the last LENGTH days before STOP-TS."
   (cl-loop for day from (- (- length 1)) to 0
     collect
-    (chronometrist-task-time-one-day task
-                         (ts-adjust 'day day stop-ts))))
+    (chronometrist-task-time-one-day task (ts-adjust 'day day stop-ts))))
 
 (defun chronometrist-spark-row-transformer (row)
   "Add a sparkline cell to ROW.
