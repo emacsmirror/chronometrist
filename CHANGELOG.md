@@ -6,9 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 ### Added
-1. Multiple backend support - new custom variable `chronometrist-active-backend` to determine active backend, new `plist-group` backend.
-2. Unified migration interface with command `chronometrist-migrate`.
-3. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
+1. Multiple backend support - new custom variable `chronometrist-active-backend` to determine active backend, new command `chronometrist-switch-backend` to temporarily select a backend (with completion).
+2. New `plist-group` backend, reducing time taken in startup and after changes to the file.
+3. Unified migration interface with command `chronometrist-migrate`.
+4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
 
 ## [0.9.0] - 2021-07-08
 ### Added
