@@ -623,7 +623,7 @@ Strategies
    * Perhaps I needn't worry too much. =menu-bar-mode= is enabled by default, and it makes #1 and #2 easy. I think a significant amount of the userbase disables =menu-bar-mode=, but they also have things like =counsel-M-x=, =describe-=.
      + The menu does not make the behavior of the numeric argument discoverable. Doesn't make sense to put it there, either.
 
-* query-editing the file buffer                                     :feature:
+* querying the file buffer and editing the results                  :feature:
 <2021-06-16T07:50:21+0530>
 
 =chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.
@@ -722,7 +722,7 @@ See branch =grouped-plist-format=
 9. [X] optimize program startup and file change callback
 10. [X] remove all references to =chronometrist-events=
 11. [X] create new tagged list if required when clocking in
-12. [ ] split midnight-spanning intervals when clocking out
+12. [X] split midnight-spanning intervals when clocking out
 13. [X] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
 
 Optional
