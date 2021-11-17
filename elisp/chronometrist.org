@@ -1,7 +1,7 @@
 #+TITLE: Chronometrist - an extensible time tracker for Emacs
 #+SUBTITLE: Developer manual and program source
 #+AUTHOR: contrapunctus
-#+TODO: TODO TEST WIP EXTEND CLEANUP FIXME REVIEW |
+#+TODO: TODO TEST WIP EXTEND CLEANUP FIXME HACK REVIEW |
 #+PROPERTY: header-args :tangle yes :load yes
 #+INFOJS_OPT: view:info toc:nil
 
@@ -2298,7 +2298,7 @@ Note that migrating from the plist backend to the plist group backend is inheren
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 #+END_SRC
 
-**** insert                                                :writer:method:
+**** HACK insert                                           :writer:method:
 We just want to insert a plist, but as a hack to avoid updating the pretty-printer to handle indentation of plists being inserted into an outer list, we =append= the plist to a plist group and insert/replace the plist group instead.
 
 #+BEGIN_SRC emacs-lisp
