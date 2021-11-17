@@ -757,6 +757,9 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 (cl-defgeneric chronometrist-memory-layer-empty-p (backend)
   "Return non-nil if memory layer of BACKEND contains no records, else nil.")
 
+(cl-defgeneric chronometrist-verify (backend)
+  "Check BACKEND for errors in data.")
+
 (defclass chronometrist-file-backend-mixin ()
   ((path ;; :initform (error "Path is required")
     :initarg :path

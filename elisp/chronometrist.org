@@ -1279,8 +1279,22 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
             " :tags    (warm-up)\n"
             " :start   \"2018-11-21T15:35:04+0530\"\n"
             " :stop    \"2018-11-21T15:38:41+0530\"\n"
-            " :comment (\"stretching\" (25 10 \"push-ups\")))"))))
+            " :comment (\"stretching\" (25 10 \"push-ups\")))")))
+  (should (equal
+           (chronometrist-plist-pp-to-string
+            '(:name    "Guitar"
+              :tags    (classical)
+              :warm-up ((right-hand-patterns "pima" "piam" "pmia" "pmai" "pami" "paim"))
+              :start   "2021-09-28T17:49:18+0530"
+              :stop    "2021-09-28T17:53:49+0530"))
+           (concat
+            "(:name    \"Guitar\"\n"
+            " :tags    (classical)\n"
+            " :warm-up ((right-hand-patterns \"pima\" \"piam\" \"pmia\" \"pmai\" \"pami\" \"paim\"))\n"
+            " :start   \"2021-09-28T17:49:18+0530\"\n"
+            " :stop    \"2021-09-28T17:53:49+0530\")"))))
 #+END_SRC
+
 *** buffer-plist                                                   :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-pp-buffer-plist (&optional in-sublist)
@@ -1580,6 +1594,12 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-memory-layer-empty-p (backend)
   "Return non-nil if memory layer of BACKEND contains no records, else nil.")
+#+END_SRC
+
+**** verify                                             :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-verify (backend)
+  "Check BACKEND for errors in data.")
 #+END_SRC
 
 *** Common definitions for s-expression backends
@@ -2346,8 +2366,7 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
 **** to-list                                               :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
-  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
-    append (rest expr)))
+  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) append (rest expr)))
 #+END_SRC
 
 **** to-hash-table                                         :reader:method:
