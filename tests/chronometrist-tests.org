@@ -1,0 +1,114 @@
+
+* Setup
+** test-file-path-stem
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-test-file-path-stem
+  (format "%stest" (file-name-directory (or load-file-name default-directory))))
+#+END_SRC
+
+** test-backend
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-test-backend
+  (make-instance 'chronometrist-plist-backend :path chronometrist-test-file-path-stem))
+
+(chronometrist-reset-internal chronometrist-test-backend)
+#+END_SRC
+
+** test-first-record
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-test-first-record
+  '(:name  "Programming"
+    :start "2018-01-01T00:00:00+0530"
+    :stop  "2018-01-01T01:00:00+0530"))
+#+END_SRC
+
+** test-latest-record
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-test-latest-record
+  '(:name  "Programming"
+    :tags  (reading)
+    :book  "Smalltalk-80: The Language and Its Implementation"
+    :start "2020-05-10T16:33:17+0530"
+    :stop  "2020-05-10T17:10:48+0530"))
+#+END_SRC
+
+* Tests
+** common
+*** current-task
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-current-task ()
+  (chronometrist-insert chronometrist-test-backend '(:name "Test"))
+  (should (equal (chronometrist-current-task chronometrist-test-backend) "Test"))
+  (chronometrist-sexp-in-file (chronometrist-backend-file chronometrist-test-backend)
+    (goto-char (point-max))
+    (backward-list)
+    (chronometrist-sexp-delete-list)
+    (save-buffer))
+  (should (not (chronometrist-current-task chronometrist-test-backend))))
+#+END_SRC
+
+*** plist-p
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-plist-p ()
+  (should (eq t   (chronometrist-plist-p '(:a 1 :b 2))))
+  (should (eq nil (chronometrist-plist-p '(0 :a 1 :b 2))))
+  (should (eq nil (chronometrist-plist-p '(:a 1 :b 2 3))))
+  (should (not    (chronometrist-plist-p nil))))
+#+END_SRC
+
+** data structures
+*** list-tasks
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-list-tasks ()
+  (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
+    (should (listp task-list))
+    (should (seq-every-p #'stringp task-list))))
+#+END_SRC
+
+** time functions
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-format-duration-long ()
+  (should (equal (chronometrist-format-duration-long 5) ""))
+  (should (equal (chronometrist-format-duration-long 65) "1 minute"))
+  (should (equal (chronometrist-format-duration-long 125) "2 minutes"))
+
+  (should (equal (chronometrist-format-duration-long 3605) "1 hour"))
+  (should (equal (chronometrist-format-duration-long 3660) "1 hour, 1 minute"))
+  (should (equal (chronometrist-format-duration-long 3725) "1 hour, 2 minutes"))
+
+  (should (equal (chronometrist-format-duration-long 7200) "2 hours"))
+  (should (equal (chronometrist-format-duration-long 7260) "2 hours, 1 minute"))
+  (should (equal (chronometrist-format-duration-long 7320) "2 hours, 2 minutes")))
+#+END_SRC
+
+** plist pretty-printing
+*** plist-group-p
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-plist-group-p ()
+  (should (eq t (chronometrist-plist-group-p '("string" (:a 1 :b 2)))))
+  (should (not (chronometrist-plist-group-p nil)))
+  (should (not (chronometrist-plist-group-p '("string")))))
+#+END_SRC
+
+** backend
+*** count-records
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-count-records ()
+  (should (= (chronometrist-count-records chronometrist-test-backend) 12)))
+#+END_SRC
+
+*** latest-record
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-latest-record ()
+  (should (equal (chronometrist-latest-record chronometrist-test-backend)
+                 chronometrist-test-latest-record)))
+#+END_SRC
+
+*** task-records-for-date
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-task-records-for-date ()
+  (should (equal (chronometrist-task-records-for-date chronometrist-test-backend
+                                         "Programming"
+                                         (chronometrist-iso-to-ts "2020-05-10"))
+                 (list chronometrist-test-latest-record))))
+#+END_SRC

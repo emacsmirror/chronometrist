@@ -52,6 +52,12 @@ DURATIONS must be a list of integer seconds."
            ;; have a minimum and maximum range.
            (format "(%sm)" (apply #'max duration-minutes))))))
 
+(defun chronometrist-spark-durations (task length stop-ts)
+  "Return a list of durations for time tracked for TASK in the last LENGTH days before STOP-TS."
+  (cl-loop for day from (- (- length 1)) to 0
+    collect
+    (chronometrist-task-time-one-day task (ts-adjust 'day day stop-ts))))
+
 (defun chronometrist-spark-row-transformer (row)
   "Add a sparkline cell to ROW.
 Used to add a sparkline column to `chronometrist-rows'.
@@ -59,20 +65,11 @@ Used to add a sparkline column to `chronometrist-rows'.
 ROW must be a valid element of the list specified by
 `tabulated-list-entries'."
   (-let* (((task vector) row)
-          (sparkline
-           (cl-loop with today = (ts-now)
-             with duration with active-p
-             for day from (- (- chronometrist-spark-length 1)) to 0
-             collect
-             (setq duration
-                   (chronometrist-task-time-one-day task
-                                        (ts-adjust 'day day today)))
-             into durations
-             unless (zerop duration) do (setq active-p t)
-             finally return
-             (if (and active-p chronometrist-spark-show-range)
-                 (format "%s %s" (spark durations) (chronometrist-spark-range durations))
-               (format "%s" (spark durations))))))
+          (durations (chronometrist-spark-durations task chronometrist-spark-length (ts-now)))
+          (sparkline (if (and (not (seq-every-p #'zerop durations))
+                              chronometrist-spark-show-range)
+                         (format "%s %s" (spark durations) (chronometrist-spark-range durations))
+                       (format "%s" (spark durations)))))
     (list task (vconcat vector `[,sparkline]))))
 
 (defun chronometrist-spark-schema-transformer (schema)
