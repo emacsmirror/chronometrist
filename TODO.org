@@ -471,6 +471,11 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:53:37] rnkn: although you will probably need a function link instead to find the org file \\
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
+
+1. command (and menu item) to launch Org LP
+2. provide =:link= argument to =defgroup=
+3. open changelog on update
+
 * macro for extensions                                       :code:extension:
 <2021-06-07T16:33:54+0530>
 A macro to create new columns for Chronometrist.
