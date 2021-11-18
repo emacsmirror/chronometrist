@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## unreleased
+### Changed
+1. The value of `chronometrist-file` must now be a file path _without extension._ Please update your configurations.
+2. The existing file format used by Chronometrist is now called the `plist` format.
+3. The extension for files in the `plist` format is now `.plist`. Update the extension of your file to use it with the `plist` backend.
+
 ### Added
 1. Multiple backend support - new custom variable `chronometrist-active-backend` to determine active backend, new command `chronometrist-switch-backend` to temporarily select a backend (with completion).
 2. New `plist-group` backend, reducing time taken in startup and after changes to the file.
