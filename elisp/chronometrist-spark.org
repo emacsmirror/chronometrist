@@ -89,10 +89,10 @@ DURATIONS must be a list of integer seconds."
 ** durations                                                      :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-spark-durations (task length stop-ts)
+  "Return a list of durations for time tracked for TASK in the last LENGTH days before STOP-TS."
   (cl-loop for day from (- (- length 1)) to 0
     collect
-    (chronometrist-task-time-one-day task
-                         (ts-adjust 'day day stop-ts))))
+    (chronometrist-task-time-one-day task (ts-adjust 'day day stop-ts))))
 #+END_SRC
 
 ** TODO row-transformer                          :function:
