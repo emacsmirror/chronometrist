@@ -268,7 +268,7 @@ Most recently, gilberth of #lispcafe suggested an alternate approach - trying to
 
 In addition, with this approach, client code can use any kind of iteration constructs they fancy - not just =cl-loop= but also =dolist=, higher-order functions (including those from =dash= and =seq=), =loopy=, etc.
 
-The macro still exists in its non-generic form, providing a common way to loop over s-expressions in a text file.
+The macro still exists in its non-generic form as =chronometrist-loop-sexp-file=, providing a common way to loop over s-expressions in a text file.
 
 * How-to guides for maintainers
 ** How to set up Emacs to contribute
