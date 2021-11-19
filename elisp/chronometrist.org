@@ -3018,6 +3018,7 @@ PREFIX is ignored."
     ["View details of today's data" chronometrist-details]
     ["View weekly report" chronometrist-report]
     ["View/edit log file" chronometrist-open-log]
+    ["View/edit literate source" chronometrist-open-literate-source]
     ["Restart timer" chronometrist-force-restart-timer]
     ["Reset state" chronometrist-reset]))
 #+END_SRC
