@@ -606,6 +606,28 @@ TS must be a ts struct (see `ts.el')."
       (plist-get last-event :name))))
 #+END_SRC
 
+*** install-directory                                            :variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-install-directory
+  (when load-file-name
+    (file-name-directory load-file-name))
+  "Directory where Chronometrist has been installed.")
+#+END_SRC
+
+*** doc-paths                                                    :variable:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-doc-paths '(:lp "chronometrist.org")
+  "Plist of names of Chronometrist's documentation files.")
+#+END_SRC
+
+*** open-literate-source                                          :command:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-open-literate-source ()
+  "Visit the Org literate program for Chronometrist."
+  (interactive)
+  (find-file (concat chronometrist-install-directory (plist-get chronometrist-doc-paths :lp))))
+#+END_SRC
+
 ** Data structures
 :PROPERTIES:
 :CUSTOM_ID: program-data-structures

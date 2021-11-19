@@ -181,6 +181,19 @@ TS must be a ts struct (see `ts.el')."
         nil
       (plist-get last-event :name))))
 
+(defvar chronometrist-install-directory
+  (when load-file-name
+    (file-name-directory load-file-name))
+  "Directory where Chronometrist has been installed.")
+
+(defvar chronometrist-doc-paths '(:lp "chronometrist.org")
+  "Plist of names of Chronometrist's documentation files.")
+
+(defun chronometrist-open-literate-source ()
+  "Visit the Org literate program for Chronometrist."
+  (interactive)
+  (find-file (concat chronometrist-install-directory (plist-get chronometrist-doc-paths :lp))))
+
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
