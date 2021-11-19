@@ -652,9 +652,9 @@ Might have to do with there being 2 empty lines between the last-but-one plist a
 list of tasks, one day, durations and graphs
 + commands [0%]
   1. [ ] previous/next day
-  2. [ ] set day
-  3. [ ] reset day
-  4. [ ] set duration format
+  2. [ ] set day (blank input to reset to today's date)
+  3. [ ] set duration format
+  4. [ ] display sparkline for total time
 *** report
 list of tasks, one week, durations only
 *** statistics
