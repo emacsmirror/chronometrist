@@ -2,7 +2,7 @@
 #+SUBTITLE: Developer manual and program source
 #+AUTHOR: contrapunctus
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME HACK REVIEW |
-#+PROPERTY: header-args :tangle yes :load yes
+#+PROPERTY: header-args :tangle yes :load yes :comments link
 #+INFOJS_OPT: view:info toc:nil
 
 * Introduction
@@ -806,6 +806,7 @@ which span midnights."
                       (equal task (plist-get event :name)))
                     events)))
 #+END_SRC
+
 *** task-list                                                    :variable:
 :PROPERTIES:
 :VALUE:    list
