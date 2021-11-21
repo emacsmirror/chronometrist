@@ -344,7 +344,7 @@ Return value is seconds as an integer."
 ;; active-time-on:1 ends here
 
 ;; [[file:chronometrist.org::*count-active-days][count-active-days:1]]
-(cl-defun chronometrist-statistics-count-active-days (task &optional (table chronometrist-events))
+(cl-defun chronometrist-statistics-count-active-days (task table)
   "Return the number of days the user spent any time on TASK.
   TABLE must be a hash table - if not supplied, `chronometrist-events' is used.
 
@@ -367,83 +367,6 @@ active backend."
   :type '(choice (repeat string) nil)
   :group 'chronometrist)
 ;; task-list:1 ends here
-
-;; [[file:chronometrist.org::*task-list][task-list:1]]
-(defun chronometrist-task-list ()
-  "Return the list of tasks to be used.
-If `chronometrist-task-list' is non-nil, return its value; else,
-return a list of tasks from the active backend."
-  (let ((backend (chronometrist-active-backend)))
-    (with-slots ((backend-task-list task-list)) backend
-      (or chronometrist-task-list
-          backend-task-list
-          (setf backend-task-list (chronometrist-list-tasks backend))))))
-;; task-list:1 ends here
-
-;; [[file:chronometrist.org::*list-tasks][list-tasks:1]]
-(defun chronometrist-list-tasks (backend)
-  "Return a list of all tasks recorded in BACKEND. Each task is a string."
-  (cl-loop for plist in (chronometrist-to-list backend)
-    collect (plist-get plist :name) into names
-    finally return
-    (sort (cl-remove-duplicates names :test #'equal)
-          #'string-lessp)))
-;; list-tasks:1 ends here
-
-;; [[file:chronometrist.org::*reset-task-list][reset-task-list:1]]
-(cl-defun chronometrist-reset-task-list (backend)
-  "Regenerate BACKEND's task list from its data.
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list)."
-  (unless chronometrist-task-list
-    (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
-;; reset-task-list:1 ends here
-
-;; [[file:chronometrist.org::*add-to-task-list][add-to-task-list:1]]
-(defun chronometrist-add-to-task-list (task backend)
-  "Add TASK to BACKEND's task list, if it is not already present.
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list)."
-  (with-slots (task-list) backend
-    (unless (and (not chronometrist-task-list)
-                 (cl-member task task-list :test #'equal))
-      (setf task-list
-            (sort (cons task task-list)
-                  #'string-lessp)))))
-;; add-to-task-list:1 ends here
-
-;; [[file:chronometrist.org::*remove-from-task-list][remove-from-task-list:1]]
-(defun chronometrist-remove-from-task-list (task backend)
-  "Remove TASK from BACKEND's task list if necessary.
-TASK is removed if it does not occur in BACKEND's hash table, or
-if it only occurs in the newest plist of the same.
-
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list).
-
-Return new value of BACKEND's task list, or nil if
-unchanged."
-  (with-slots (hash-table task-list) backend
-    (unless chronometrist-task-list
-      (let (;; number of plists in hash table
-            (ht-plist-count (cl-loop with count = 0
-                              for intervals being the hash-values of hash-table
-                              do (cl-loop for _interval in intervals
-                                   do (cl-incf count))
-                              finally return count))
-            ;; index of first occurrence of TASK in hash table, or nil if not found
-            (ht-task-first-result (cl-loop with count = 0
-                                    for intervals being the hash-values of hash-table
-                                    when (cl-loop for interval in intervals
-                                           do (cl-incf count)
-                                           when (equal task (plist-get interval :name))
-                                           return t)
-                                    return count)))
-        (when (or (not ht-task-first-result)
-                  (= ht-task-first-result ht-plist-count))
-          ;; The only interval for TASK is the last expression
-          (setf task-list (remove task task-list)))))))
-;; remove-from-task-list:1 ends here
 
 ;; [[file:chronometrist.org::*iso-to-ts][iso-to-ts:1]]
 (defun chronometrist-iso-to-ts (timestamp)
@@ -842,6 +765,81 @@ PROMPT and PREDICATE have the same meanings as in
         backend-keyword
       (second (alist-get backend-keyword backend-alist)))))
 ;; read-backend-name:1 ends here
+
+;; [[file:chronometrist.org::*task-list][task-list:1]]
+(defun chronometrist-task-list ()
+  "Return the list of tasks to be used.
+If `chronometrist-task-list' is non-nil, return its value; else,
+return a list of tasks from the active backend."
+  (let ((backend (chronometrist-active-backend)))
+    (with-slots (task-list) backend
+      (or chronometrist-task-list (setf task-list (chronometrist-list-tasks backend))))))
+;; task-list:1 ends here
+
+;; [[file:chronometrist.org::*list-tasks][list-tasks:1]]
+(defun chronometrist-list-tasks (backend)
+  "Return a list of all tasks recorded in BACKEND. Each task is a string."
+  (cl-loop for plist in (chronometrist-to-list backend)
+    collect (plist-get plist :name) into names
+    finally return
+    (sort (cl-remove-duplicates names :test #'equal)
+          #'string-lessp)))
+;; list-tasks:1 ends here
+
+;; [[file:chronometrist.org::*reset-task-list][reset-task-list:1]]
+(cl-defun chronometrist-reset-task-list (backend)
+  "Regenerate BACKEND's task list from its data.
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list)."
+  (unless chronometrist-task-list
+    (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
+;; reset-task-list:1 ends here
+
+;; [[file:chronometrist.org::*add-to-task-list][add-to-task-list:1]]
+(defun chronometrist-add-to-task-list (task backend)
+  "Add TASK to BACKEND's task list, if it is not already present.
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list)."
+  (with-slots (task-list) backend
+    (unless (and (not chronometrist-task-list)
+                 (cl-member task task-list :test #'equal))
+      (setf task-list
+            (sort (cons task task-list)
+                  #'string-lessp)))))
+;; add-to-task-list:1 ends here
+
+;; [[file:chronometrist.org::*remove-from-task-list][remove-from-task-list:1]]
+(defun chronometrist-remove-from-task-list (task backend)
+  "Remove TASK from BACKEND's task list if necessary.
+TASK is removed if it does not occur in BACKEND's hash table, or
+if it only occurs in the newest plist of the same.
+
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list).
+
+Return new value of BACKEND's task list, or nil if
+unchanged."
+  (with-slots (hash-table task-list) backend
+    (unless chronometrist-task-list
+      (let (;; number of plists in hash table
+            (ht-plist-count (cl-loop with count = 0
+                              for intervals being the hash-values of hash-table
+                              do (cl-loop for _interval in intervals
+                                   do (cl-incf count))
+                              finally return count))
+            ;; index of first occurrence of TASK in hash table, or nil if not found
+            (ht-task-first-result (cl-loop with count = 0
+                                    for intervals being the hash-values of hash-table
+                                    when (cl-loop for interval in intervals
+                                           do (cl-incf count)
+                                           when (equal task (plist-get interval :name))
+                                           return t)
+                                    return count)))
+        (when (or (not ht-task-first-result)
+                  (= ht-task-first-result ht-plist-count))
+          ;; The only interval for TASK is the last expression
+          (setf task-list (remove task task-list)))))))
+;; remove-from-task-list:1 ends here
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defgeneric chronometrist-latest-record (backend)

@@ -22,4 +22,5 @@
      (org-html-head
       . (concat "<link rel=\"stylesheet\" "
                 "type=\"text/css\" "
-                "href=\"../org-doom-molokai.css\" />")))))
+                "href=\"../org-doom-molokai.css\" />"))
+     (org-babel-tangle-use-relative-file-links . t))))
