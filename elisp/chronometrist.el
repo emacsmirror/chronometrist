@@ -428,8 +428,8 @@ Optional argument UNIX-TIME should be a time value (see
 
 ;; [[file:chronometrist.org::*split-time][split-time:1]]
 (defun chronometrist-split-time (start-time stop-time day-start-time)
-  "Return non-nil if START-TIME and STOP-TIME cross a midnight.
-START-TIME and STOP-TIME must be ISO-8601 timestamps.
+  "If START-TIME and STOP-TIME intersect DAY-START-TIME, split them into two intervals.
+START-TIME and STOP-TIME must be ISO-8601 timestamps e.g. \"YYYY-MM-DDTHH:MM:SSZ\".
 
 DAY-START-TIME must be a string in the form \"HH:MM:SS\" (see
 `chronometrist-day-start-time')
