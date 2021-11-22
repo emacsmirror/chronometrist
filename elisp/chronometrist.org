@@ -901,8 +901,8 @@ It does not matter here that the =:stop= dates in the returned plists are differ
 
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-split-time (start-time stop-time day-start-time)
-  "Return non-nil if START-TIME and STOP-TIME cross a midnight.
-START-TIME and STOP-TIME must be ISO-8601 timestamps.
+  "If START-TIME and STOP-TIME intersect DAY-START-TIME, split them into two intervals.
+START-TIME and STOP-TIME must be ISO-8601 timestamps e.g. \"YYYY-MM-DDTHH:MM:SSZ\".
 
 DAY-START-TIME must be a string in the form \"HH:MM:SS\" (see
 `chronometrist-day-start-time')
