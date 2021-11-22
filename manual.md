@@ -1,8 +1,8 @@
 
 # Table of Contents
 
-1.  [Benefits](#org83c3199)
-2.  [Limitations](#org265ad3f)
+1.  [Benefits](#org62a1b0c)
+2.  [Limitations](#orgb285c2a)
 3.  [Comparisons](#comparisons)
     1.  [timeclock.el](#timeclock.el)
     2.  [Org time tracking](#org-time-tracking)
@@ -13,21 +13,22 @@
     1.  [chronometrist](#chronometrist-1)
     2.  [chronometrist-report](#chronometrist-report)
     3.  [chronometrist-statistics](#chronometrist-statistics)
-    4.  [chronometrist-details](#org0ec335b)
-    5.  [common commands](#org170f814)
+    4.  [chronometrist-details](#org6b29da1)
+    5.  [common commands](#orgd5eb20a)
     6.  [Time goals/targets](#time-goalstargets)
 6.  [How-to](#customization)
     1.  [How to display a prompt when exiting with an active task](#prompt-when-exiting-emacs)
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#org7fd0f91)
+    5.  [How to skip running hooks/attaching tags and key values](#org695d442)
     6.  [How to open certain files when you start a task](#open-certain-files-when-you-start-a-task)
     7.  [How to warn yourself about uncommitted changes](#uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#current-time-interval-in-activity-indicator)
-7.  [Explanation](#orga5e2e2e)
+    9.  [How to back up your Chronometrist data](#org4eb8bd6)
+7.  [Explanation](#orgebe297d)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org2c64088)
+8.  [User's reference](#orga29a28b)
 9.  [Contributions and contact](#contributions-and-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
@@ -41,7 +42,7 @@ A time tracker in Emacs with a nice interface
 Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
 
 
-<a id="org83c3199"></a>
+<a id="org62a1b0c"></a>
 
 # Benefits
 
@@ -53,7 +54,7 @@ Largely modelled after the Android application, [A Time Tracker](https://github.
 6.  Fancy graphs with chronometrist-sparkline extension
 
 
-<a id="org265ad3f"></a>
+<a id="orgb285c2a"></a>
 
 # Limitations
 
@@ -158,12 +159,12 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="org0ec335b"></a>
+<a id="org6b29da1"></a>
 
 ## chronometrist-details
 
 
-<a id="org170f814"></a>
+<a id="orgd5eb20a"></a>
 
 ## common commands
 
@@ -233,7 +234,7 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="org7fd0f91"></a>
+<a id="org695d442"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -271,10 +272,10 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
     
     Return nil (and run `magit-status') if the user answers no."
       (cond ((not (magit-anything-modified-p)) t)
-            ((yes-or-no-p
-              (format "You have uncommitted changes in %S. Really clock out? "
-                      default-directory)) t)
-            (t (magit-status) nil)))
+    	((yes-or-no-p
+    	  (format "You have uncommitted changes in %S. Really clock out? "
+    		  default-directory)) t)
+    	(t (magit-status) nil)))
     
     (add-hook 'chronometrist-before-out-functions 'my-commit-prompt)
 
@@ -285,7 +286,7 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
 
     (defun my-activity-indicator ()
       (thread-last (plist-put (chronometrist-last)
-                              :stop (chronometrist-format-time-iso8601))
+    			  :stop (chronometrist-format-time-iso8601))
         list
         chronometrist-events-to-durations
         (-reduce #'+)
@@ -295,7 +296,31 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
     (setq chronometrist-activity-indicator #'my-activity-indicator)
 
 
-<a id="orga5e2e2e"></a>
+<a id="org4eb8bd6"></a>
+
+## How to back up your Chronometrist data
+
+I suggest backing up Chronometrist data on each save. Here's how you can do that.
+
+1.  Add the following to your init.
+    
+        (setq backup-by-copying t
+              kept-new-versions 10
+              kept-old-versions 10
+              version-control t)
+        
+        (defun my-force-backup ()
+          (setq buffer-backed-up nil))
+2.  Open your Chronometrist file and add the function to `before-save-hook`.
+    
+        M-x chronometrist-open-log
+        M-x add-file-local-variable-prop-line RET eval RET (add-hook 'before-save-hook #'my-force-backup nil t) RET
+3.  Optionally, configure `backup-directory-alist` to set a specific directory for the backups.
+
+Adapted from this [StackOverflow answer](https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save).
+
+
+<a id="orgebe297d"></a>
 
 # Explanation
 
@@ -311,7 +336,7 @@ The Org file can also be loaded directly using the   [literate-elisp](https://gi
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org2c64088"></a>
+<a id="orga29a28b"></a>
 
 # User's reference
 
