@@ -746,3 +746,11 @@ Optional
 * customizable task list
 1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
 2. Adding a task? We can modify the task list, but how to persist it?
+* Extend time range prompt
+Support inputs like "today", "yesterday", "5 days ago", etc.
+ * =date(1)= does something like this, right? Maybe we could shell out to it.
+
+A general library for this could convert between (both to and from) such strings and TS structs.
+ * today, yesterday, day before yesterday, tomorrow, day after tomorrow
+ * N <seconds/minutes/hours/days/weeks/months/years> (ago|from now/today)
+   + plus multiples of those units e.g. "1 year, 5 months, ... from now"
