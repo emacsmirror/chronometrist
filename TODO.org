@@ -472,7 +472,7 @@ Ensure that the user manual is easily discoverable.
 [2021-06-02 13:54:30] contrapunctus: Although I guess the manual.org does not really need those fancy features...info export could work for it. \\
 #+END_QUOTE
 
-1. command (and menu item) to launch Org LP
+1. [X] command (and menu item) to launch Org LP
 2. provide =:link= argument to =defgroup=
 3. open changelog on update
 
