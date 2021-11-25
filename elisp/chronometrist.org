@@ -1021,6 +1021,12 @@ SECONDS is less than 60, return a blank string."
 3. [ ] Fix alignment of alist dots
    * While also handling alist members which are proper lists
 
+The suggested way of debugging this pretty printer is to
+1. edebug =chronometrist-plist-pp-buffer= (and others if desired),
+2. insert an s-expression in a new =emacs-lisp-mode= buffer, ensuring it does not contain newlines (other than in strings),
+3. place point at the beginning of the buffer, and
+4. =M-: (chronometrist-plist-pp-buffer) RET=.
+
 *** normalize-whitespace                                           :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-pp-normalize-whitespace ()
