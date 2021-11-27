@@ -494,7 +494,7 @@ SECONDS is less than 60, return a blank string."
 ;; format-duration-long:1 ends here
 
 ;; [[file:chronometrist.org::*normalize-whitespace][normalize-whitespace:1]]
-(defun chronometrist-plist-pp-normalize-whitespace ()
+(defun chronometrist-pp-normalize-whitespace ()
   "Remove whitespace following point, and insert a space.
 Point is placed at the end of the space."
   (when (looking-at "[[:blank:]]+")
@@ -503,26 +503,26 @@ Point is placed at the end of the space."
 ;; normalize-whitespace:1 ends here
 
 ;; [[file:chronometrist.org::*column][column:1]]
-(defun chronometrist-plist-pp-column ()
+(defun chronometrist-pp-column ()
   "Return column point is on, as an integer.
 0 means point is at the beginning of the line."
   (- (point) (point-at-bol)))
 ;; column:1 ends here
 
 ;; [[file:chronometrist.org::*pair-p][pair-p:1]]
-(defun chronometrist-plist-pp-pair-p (cons)
+(defun chronometrist-pp-pair-p (cons)
   "Return non-nil if CONS is a pair, i.e. (CAR . CDR)."
   (and (listp cons) (not (listp (cdr cons)))))
 ;; pair-p:1 ends here
 
 ;; [[file:chronometrist.org::*alist-p][alist-p:1]]
-(defun chronometrist-plist-pp-alist-p (list)
+(defun chronometrist-pp-alist-p (list)
   "Return non-nil if LIST is an association list.
 If even a single element of LIST is a pure cons cell (as
-determined by `chronometrist-plist-pp-pair-p'), this function
+determined by `chronometrist-pp-pair-p'), this function
 considers it an alist."
   (when (listp list)
-    (cl-loop for elt in list thereis (chronometrist-plist-pp-pair-p elt))))
+    (cl-loop for elt in list thereis (chronometrist-pp-pair-p elt))))
 ;; alist-p:1 ends here
 
 ;; [[file:chronometrist.org::*plist-group-p][plist-group-p:1]]
@@ -535,7 +535,7 @@ considers it an alist."
 ;; plist-group-p:1 ends here
 
 ;; [[file:chronometrist.org::*longest-keyword-length][longest-keyword-length:1]]
-(defun chronometrist-plist-pp-longest-keyword-length ()
+(defun chronometrist-pp-longest-keyword-length ()
   "Find the length of the longest keyword in a plist.
 This assumes there is a single plist in the current buffer, and
 that point is after the first opening parenthesis."
@@ -547,14 +547,14 @@ that point is after the first opening parenthesis."
 ;; longest-keyword-length:1 ends here
 
 ;; [[file:chronometrist.org::*indent-sexp][indent-sexp:1]]
-(cl-defun chronometrist-plist-pp-indent-sexp (sexp &optional (right-indent 0))
+(cl-defun chronometrist-pp-indent-sexp (sexp &optional (right-indent 0))
   "Return a string indenting SEXP by RIGHT-INDENT spaces."
   (format (concat "% -" (number-to-string right-indent) "s")
           sexp))
 ;; indent-sexp:1 ends here
 
 ;; [[file:chronometrist.org::*buffer][buffer:1]]
-(cl-defun chronometrist-plist-pp-buffer (&optional in-sublist)
+(cl-defun chronometrist-pp-buffer (&optional in-sublist)
   "Recursively indent the alist, plist, or a list of plists after point.
 The list must be on a single line, as emitted by `prin1'.
 
@@ -563,23 +563,23 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
       (let ((sexp (save-excursion (read (current-buffer)))))
           (cond
            ((chronometrist-plist-p sexp)
-            (chronometrist-plist-pp-buffer-plist in-sublist)
+            (chronometrist-pp-buffer-plist in-sublist)
             ;; we want to continue, in case we were inside a sublist
-            (chronometrist-plist-pp-buffer in-sublist))
+            (chronometrist-pp-buffer in-sublist))
            ((chronometrist-plist-group-p sexp)
-            (chronometrist-plist-pp-buffer-plist-group in-sublist)
-            (chronometrist-plist-pp-buffer in-sublist))
-           ((chronometrist-plist-pp-alist-p sexp)
-            (chronometrist-plist-pp-buffer-alist)
-            (unless in-sublist (chronometrist-plist-pp-buffer)))
-           ((chronometrist-plist-pp-pair-p sexp)
+            (chronometrist-pp-buffer-plist-group in-sublist)
+            (chronometrist-pp-buffer in-sublist))
+           ((chronometrist-pp-alist-p sexp)
+            (chronometrist-pp-buffer-alist)
+            (unless in-sublist (chronometrist-pp-buffer)))
+           ((chronometrist-pp-pair-p sexp)
             (forward-sexp)
-            (chronometrist-plist-pp-buffer in-sublist))
+            (chronometrist-pp-buffer in-sublist))
            ((listp sexp)
             (down-list)
-            (chronometrist-plist-pp-buffer t))
+            (chronometrist-pp-buffer t))
            (t (forward-sexp)
-              (chronometrist-plist-pp-buffer in-sublist))))
+              (chronometrist-pp-buffer in-sublist))))
     ;; we're before a ) - is it a lone paren on its own line?
     (let ((pos (point))
           (bol (point-at-bol)))
@@ -593,27 +593,27 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 ;; buffer:1 ends here
 
 ;; [[file:chronometrist.org::*buffer-plist][buffer-plist:1]]
-(defun chronometrist-plist-pp-buffer-plist (&optional in-sublist)
+(defun chronometrist-pp-buffer-plist (&optional in-sublist)
   "Indent a single plist after point."
   (down-list)
-  (let ((left-indent  (1- (chronometrist-plist-pp-column)))
-        (right-indent (chronometrist-plist-pp-longest-keyword-length))
+  (let ((left-indent  (1- (chronometrist-pp-column)))
+        (right-indent (chronometrist-pp-longest-keyword-length))
         (first-p t) sexp)
     (while (not (looking-at-p ")"))
-      (chronometrist-plist-pp-normalize-whitespace)
+      (chronometrist-pp-normalize-whitespace)
       (setq sexp (save-excursion (read (current-buffer))))
       (cond ((keywordp sexp)
              (chronometrist-sexp-delete-list)
              (insert (if first-p
                          (progn (setq first-p nil) "")
                        (make-string left-indent ?\s))
-                     (chronometrist-plist-pp-indent-sexp sexp right-indent)))
+                     (chronometrist-pp-indent-sexp sexp right-indent)))
             ;; not a keyword = a value
             ((chronometrist-plist-p sexp)
-             (chronometrist-plist-pp-buffer-plist))
+             (chronometrist-pp-buffer-plist))
             ((and (listp sexp)
-                  (not (chronometrist-plist-pp-pair-p sexp)))
-             (chronometrist-plist-pp-buffer t)
+                  (not (chronometrist-pp-pair-p sexp)))
+             (chronometrist-pp-buffer t)
              (insert "\n"))
             (t (forward-sexp)
                (insert "\n"))))
@@ -626,18 +626,18 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 ;; buffer-plist:1 ends here
 
 ;; [[file:chronometrist.org::*buffer-plist-group][buffer-plist-group:1]]
-(defun chronometrist-plist-pp-buffer-plist-group (&optional in-sublist)
+(defun chronometrist-pp-buffer-plist-group (&optional in-sublist)
   (down-list)
   (forward-sexp)
   (default-indent-new-line)
-  (chronometrist-plist-pp-buffer t))
+  (chronometrist-pp-buffer t))
 ;; buffer-plist-group:1 ends here
 
 ;; [[file:chronometrist.org::*buffer-alist][buffer-alist:1]]
-(defun chronometrist-plist-pp-buffer-alist ()
+(defun chronometrist-pp-buffer-alist ()
   "Indent a single alist after point."
   (down-list)
-  (let ((indent (chronometrist-plist-pp-column)) (first-p t) sexp)
+  (let ((indent (chronometrist-pp-column)) (first-p t) sexp)
     (while (not (looking-at-p ")"))
       (setq sexp (save-excursion (read (current-buffer))))
       (chronometrist-sexp-delete-list)
@@ -650,7 +650,7 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 ;; buffer-alist:1 ends here
 
 ;; [[file:chronometrist.org::*to-string][to-string:1]]
-(defun chronometrist-plist-pp-to-string (object)
+(defun chronometrist-pp-to-string (object)
   "Convert OBJECT to a pretty-printed string."
   (with-temp-buffer
     (lisp-mode-variables nil)
@@ -658,14 +658,14 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
     (let ((print-quoted t))
       (prin1 object (current-buffer)))
     (goto-char (point-min))
-    (chronometrist-plist-pp-buffer)
+    (chronometrist-pp-buffer)
     (buffer-string)))
 ;; to-string:1 ends here
 
 ;; [[file:chronometrist.org::plist-pp][plist-pp]]
 (defun chronometrist-plist-pp (object &optional stream)
   "Pretty-print OBJECT and output to STREAM (see `princ')."
-  (princ (chronometrist-plist-pp-to-string object)
+  (princ (chronometrist-pp-to-string object)
          (or stream standard-output)))
 ;; plist-pp ends here
 

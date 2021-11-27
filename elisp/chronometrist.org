@@ -1021,14 +1021,14 @@ SECONDS is less than 60, return a blank string."
    * While also handling alist members which are proper lists
 
 The suggested way of debugging this pretty printer is to
-1. edebug =chronometrist-plist-pp-buffer= (and others if desired),
-2. insert an s-expression in a new =emacs-lisp-mode= buffer, ensuring it does not contain newlines (other than in strings),
+1. edebug =chronometrist-pp-buffer= (and others if desired),
+2. insert an s-expression in a blank =emacs-lisp-mode= buffer, ensuring it does not contain newlines (other than in strings),
 3. place point at the beginning of the buffer, and
-4. =M-: (chronometrist-plist-pp-buffer) RET=.
+4. =M-: (chronometrist-pp-buffer) RET=.
 
 *** normalize-whitespace                                           :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-normalize-whitespace ()
+(defun chronometrist-pp-normalize-whitespace ()
   "Remove whitespace following point, and insert a space.
 Point is placed at the end of the space."
   (when (looking-at "[[:blank:]]+")
@@ -1037,26 +1037,26 @@ Point is placed at the end of the space."
 #+END_SRC
 *** column                                                         :reader:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-column ()
+(defun chronometrist-pp-column ()
   "Return column point is on, as an integer.
 0 means point is at the beginning of the line."
   (- (point) (point-at-bol)))
 #+END_SRC
 *** pair-p                                                       :function:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-pair-p (cons)
+(defun chronometrist-pp-pair-p (cons)
   "Return non-nil if CONS is a pair, i.e. (CAR . CDR)."
   (and (listp cons) (not (listp (cdr cons)))))
 #+END_SRC
 *** alist-p                                                      :function:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-alist-p (list)
+(defun chronometrist-pp-alist-p (list)
   "Return non-nil if LIST is an association list.
 If even a single element of LIST is a pure cons cell (as
-determined by `chronometrist-plist-pp-pair-p'), this function
+determined by `chronometrist-pp-pair-p'), this function
 considers it an alist."
   (when (listp list)
-    (cl-loop for elt in list thereis (chronometrist-plist-pp-pair-p elt))))
+    (cl-loop for elt in list thereis (chronometrist-pp-pair-p elt))))
 #+END_SRC
 *** plist-group-p                                                :function:
 #+BEGIN_SRC emacs-lisp
@@ -1070,7 +1070,7 @@ considers it an alist."
 
 *** longest-keyword-length                                         :reader:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-longest-keyword-length ()
+(defun chronometrist-pp-longest-keyword-length ()
   "Find the length of the longest keyword in a plist.
 This assumes there is a single plist in the current buffer, and
 that point is after the first opening parenthesis."
@@ -1082,7 +1082,7 @@ that point is after the first opening parenthesis."
 #+END_SRC
 *** indent-sexp                                                  :function:
 #+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-plist-pp-indent-sexp (sexp &optional (right-indent 0))
+(cl-defun chronometrist-pp-indent-sexp (sexp &optional (right-indent 0))
   "Return a string indenting SEXP by RIGHT-INDENT spaces."
   (format (concat "% -" (number-to-string right-indent) "s")
           sexp))
@@ -1093,7 +1093,7 @@ It might help to make =in-sublist= an integer representing depth, instead of a b
 This procedure runs in a buffer containing a single s-expression, entirely on one line - which is why reaching the line-end is a termination condition.
 
 #+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-plist-pp-buffer (&optional in-sublist)
+(cl-defun chronometrist-pp-buffer (&optional in-sublist)
   "Recursively indent the alist, plist, or a list of plists after point.
 The list must be on a single line, as emitted by `prin1'.
 
@@ -1102,23 +1102,23 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
       (let ((sexp (save-excursion (read (current-buffer)))))
           (cond
            ((chronometrist-plist-p sexp)
-            (chronometrist-plist-pp-buffer-plist in-sublist)
+            (chronometrist-pp-buffer-plist in-sublist)
             ;; we want to continue, in case we were inside a sublist
-            (chronometrist-plist-pp-buffer in-sublist))
+            (chronometrist-pp-buffer in-sublist))
            ((chronometrist-plist-group-p sexp)
-            (chronometrist-plist-pp-buffer-plist-group in-sublist)
-            (chronometrist-plist-pp-buffer in-sublist))
-           ((chronometrist-plist-pp-alist-p sexp)
-            (chronometrist-plist-pp-buffer-alist)
-            (unless in-sublist (chronometrist-plist-pp-buffer)))
-           ((chronometrist-plist-pp-pair-p sexp)
+            (chronometrist-pp-buffer-plist-group in-sublist)
+            (chronometrist-pp-buffer in-sublist))
+           ((chronometrist-pp-alist-p sexp)
+            (chronometrist-pp-buffer-alist)
+            (unless in-sublist (chronometrist-pp-buffer)))
+           ((chronometrist-pp-pair-p sexp)
             (forward-sexp)
-            (chronometrist-plist-pp-buffer in-sublist))
+            (chronometrist-pp-buffer in-sublist))
            ((listp sexp)
             (down-list)
-            (chronometrist-plist-pp-buffer t))
+            (chronometrist-pp-buffer t))
            (t (forward-sexp)
-              (chronometrist-plist-pp-buffer in-sublist))))
+              (chronometrist-pp-buffer in-sublist))))
     ;; we're before a ) - is it a lone paren on its own line?
     (let ((pos (point))
           (bol (point-at-bol)))
@@ -1133,27 +1133,27 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 
 *** buffer-plist                                                   :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-buffer-plist (&optional in-sublist)
+(defun chronometrist-pp-buffer-plist (&optional in-sublist)
   "Indent a single plist after point."
   (down-list)
-  (let ((left-indent  (1- (chronometrist-plist-pp-column)))
-        (right-indent (chronometrist-plist-pp-longest-keyword-length))
+  (let ((left-indent  (1- (chronometrist-pp-column)))
+        (right-indent (chronometrist-pp-longest-keyword-length))
         (first-p t) sexp)
     (while (not (looking-at-p ")"))
-      (chronometrist-plist-pp-normalize-whitespace)
+      (chronometrist-pp-normalize-whitespace)
       (setq sexp (save-excursion (read (current-buffer))))
       (cond ((keywordp sexp)
              (chronometrist-sexp-delete-list)
              (insert (if first-p
                          (progn (setq first-p nil) "")
                        (make-string left-indent ?\s))
-                     (chronometrist-plist-pp-indent-sexp sexp right-indent)))
+                     (chronometrist-pp-indent-sexp sexp right-indent)))
             ;; not a keyword = a value
             ((chronometrist-plist-p sexp)
-             (chronometrist-plist-pp-buffer-plist))
+             (chronometrist-pp-buffer-plist))
             ((and (listp sexp)
-                  (not (chronometrist-plist-pp-pair-p sexp)))
-             (chronometrist-plist-pp-buffer t)
+                  (not (chronometrist-pp-pair-p sexp)))
+             (chronometrist-pp-buffer t)
              (insert "\n"))
             (t (forward-sexp)
                (insert "\n"))))
@@ -1167,19 +1167,19 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 
 *** buffer-plist-group                                             :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-buffer-plist-group (&optional in-sublist)
+(defun chronometrist-pp-buffer-plist-group (&optional in-sublist)
   (down-list)
   (forward-sexp)
   (default-indent-new-line)
-  (chronometrist-plist-pp-buffer t))
+  (chronometrist-pp-buffer t))
 #+END_SRC
 
 *** buffer-alist                                                   :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-buffer-alist ()
+(defun chronometrist-pp-buffer-alist ()
   "Indent a single alist after point."
   (down-list)
-  (let ((indent (chronometrist-plist-pp-column)) (first-p t) sexp)
+  (let ((indent (chronometrist-pp-column)) (first-p t) sexp)
     (while (not (looking-at-p ")"))
       (setq sexp (save-excursion (read (current-buffer))))
       (chronometrist-sexp-delete-list)
@@ -1197,7 +1197,7 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 :END:
 
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plist-pp-to-string (object)
+(defun chronometrist-pp-to-string (object)
   "Convert OBJECT to a pretty-printed string."
   (with-temp-buffer
     (lisp-mode-variables nil)
@@ -1205,7 +1205,7 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
     (let ((print-quoted t))
       (prin1 object (current-buffer)))
     (goto-char (point-min))
-    (chronometrist-plist-pp-buffer)
+    (chronometrist-pp-buffer)
     (buffer-string)))
 #+END_SRC
 
@@ -1214,7 +1214,7 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-pp (object &optional stream)
   "Pretty-print OBJECT and output to STREAM (see `princ')."
-  (princ (chronometrist-plist-pp-to-string object)
+  (princ (chronometrist-pp-to-string object)
          (or stream standard-output)))
 #+END_SRC
 ** Backends
@@ -4058,8 +4058,7 @@ FILTER must be a filter specifier as described by
 For values of RANGE, see `chronometrist-details-range'. For
 values of FILTER, see `chronometrist-details-filter'. TABLE must
 be a hash table as returned by `chronometrist-to-hash-table'."
-  (cl-loop for plist in (chronometrist-details-intervals-for-range range
-                                                      (chronometrist-backend-hash-table backend))
+  (cl-loop for plist in (chronometrist-details-intervals-for-range range (chronometrist-backend-hash-table backend))
     when (chronometrist-details-filter-match-p plist filter)
     collect plist))
 #+END_SRC
