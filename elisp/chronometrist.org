@@ -1287,7 +1287,9 @@ Value must be a keyword corresponding to a key in
                                                 keyword)))
                                      t)))
     (setq chronometrist-active-backend choice)
-    (chronometrist-reset-internal (chronometrist-active-backend))))
+    (chronometrist-reset-internal (chronometrist-active-backend))
+    ;; timer function is backend-dependent
+    (chronometrist-force-restart-timer)))
 #+END_SRC
 
 **** register-backend                                             :writer:
@@ -1518,6 +1520,15 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   "Check BACKEND for errors in data.")
 #+END_SRC
 
+**** timer                                              :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-timer (backend)
+  "Refresh Chronometrist and related buffers.
+Buffers will be refreshed only if they are visible and the user
+is clocked in to a task. Additionally, do not refresh buffers if
+if BACKEND is a file-based backend and the file is modified but
+not saved.")
+#+END_SRC
 *** Common definitions for s-expression backends
 **** file-backend-mixin                                            :mixin:
 :PROPERTIES:
@@ -1603,6 +1614,20 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 (cl-defmethod chronometrist-memory-layer-empty-p ((backend chronometrist-file-backend-mixin))
   (with-slots (hash-table) backend
     (zerop (hash-table-count hash-table))))
+#+END_SRC
+
+**** timer                                                        :method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-timer ((backend chronometrist-file-backend-mixin))
+  (with-slots (file) backend
+    (let ((file-buffer (get-buffer-create (find-file-noselect file))))
+      ;; No need to update the buffer if there is no active task, or if
+      ;; the file is being edited by the user. (The file may be in an
+      ;; invalid state, and reading it then may result in a read error.)
+      (when (and (chronometrist-current-task) (not (buffer-modified-p file-buffer)))
+        (when (get-buffer-window chronometrist-buffer-name)
+          (chronometrist-refresh))
+        (run-hooks 'chronometrist-timer-hook)))))
 #+END_SRC
 
 **** elisp-sexp-backend                                            :class:
@@ -2506,23 +2531,15 @@ This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
   "Functions run by `chronometrist-timer'."
   :type '(repeat function))
 #+END_SRC
-*** FIXME timer                                                 :procedure:
-1. [ ] Making this conditional upon =chronometrist-current-task= is, for some reason, currently resulting in no refresh at midnight.
+
+*** start-timer                                                   :command:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-buffer-name)
-(defun chronometrist-timer ()
-  "Refresh Chronometrist and related buffers.
-Buffers will be refreshed only if they are visible and the user
-is clocked in to a task."
-  (let ((file-buffer (get-buffer-create (find-file-noselect chronometrist-file))))
-    ;; No need to update the buffer if there is no active task, or if
-    ;; the file is being edited by the user. (The file may be in an
-    ;; invalid state, and reading it then may result in a read error.)
-    (when (and (chronometrist-current-task) (not (buffer-modified-p file-buffer)))
-      (when (get-buffer-window chronometrist-buffer-name)
-        (chronometrist-refresh))
-      (run-hooks 'chronometrist-timer-hook))))
+(defun chronometrist-start-timer ()
+  (setq chronometrist--timer-object
+        (run-at-time t chronometrist-update-interval
+                     (lambda () (chronometrist-timer (chronometrist-active-backend))))))
 #+END_SRC
+
 *** stop-timer                                                    :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-stop-timer ()
@@ -2531,6 +2548,7 @@ is clocked in to a task."
   (cancel-timer chronometrist--timer-object)
   (setq chronometrist--timer-object nil))
 #+END_SRC
+
 *** maybe-start-timer                                             :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-maybe-start-timer (&optional interactive-test)
@@ -2539,12 +2557,12 @@ INTERACTIVE-TEST is used to determine if this has been called
 interactively."
   (interactive "p")
   (unless chronometrist--timer-object
-    (setq chronometrist--timer-object
-          (run-at-time t chronometrist-update-interval #'chronometrist-timer))
+    (chronometrist-start-timer)
     (when interactive-test
       (message "Timer started."))
     t))
 #+END_SRC
+
 *** force-restart-timer                                           :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-force-restart-timer ()
@@ -2552,9 +2570,9 @@ interactively."
   (interactive)
   (when chronometrist--timer-object
     (cancel-timer chronometrist--timer-object))
-  (setq chronometrist--timer-object
-        (run-at-time t chronometrist-update-interval #'chronometrist-timer)))
+  (chronometrist-start-timer))
 #+END_SRC
+
 *** change-update-interval                                        :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-change-update-interval (arg)
@@ -2567,6 +2585,7 @@ ARG should be the new update interval, in seconds."
         chronometrist--timer-object nil)
   (chronometrist-maybe-start-timer))
 #+END_SRC
+
 ** Frontends
 All four of these use [[info:elisp#Tabulated List Mode][=(info "(elisp)Tabulated List Mode")=]]. Each of them also contains a "-print-non-tabular" function, which prints the non-tabular parts of the buffer.
 

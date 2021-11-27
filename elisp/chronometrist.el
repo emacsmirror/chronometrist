@@ -725,7 +725,9 @@ Value must be a keyword corresponding to a key in
                                                 keyword)))
                                      t)))
     (setq chronometrist-active-backend choice)
-    (chronometrist-reset-internal (chronometrist-active-backend))))
+    (chronometrist-reset-internal (chronometrist-active-backend))
+    ;; timer function is backend-dependent
+    (chronometrist-force-restart-timer)))
 ;; switch-backend:1 ends here
 
 ;; [[file:chronometrist.org::*register-backend][register-backend:1]]
@@ -932,6 +934,15 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   "Check BACKEND for errors in data.")
 ;; verify:1 ends here
 
+;; [[file:chronometrist.org::*timer][timer:1]]
+(cl-defgeneric chronometrist-timer (backend)
+  "Refresh Chronometrist and related buffers.
+Buffers will be refreshed only if they are visible and the user
+is clocked in to a task. Additionally, do not refresh buffers if
+if BACKEND is a file-based backend and the file is modified but
+not saved.")
+;; timer:1 ends here
+
 ;; [[file:chronometrist.org::#file-backend-mixin][file-backend-mixin:1]]
 (defclass chronometrist-file-backend-mixin ()
   ((path ;; :initform (error "Path is required")
@@ -1006,6 +1017,19 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
   (with-slots (hash-table) backend
     (zerop (hash-table-count hash-table))))
 ;; memory-layer-empty-p:1 ends here
+
+;; [[file:chronometrist.org::*timer][timer:1]]
+(cl-defmethod chronometrist-timer ((backend chronometrist-file-backend-mixin))
+  (with-slots (file) backend
+    (let ((file-buffer (get-buffer-create (find-file-noselect file))))
+      ;; No need to update the buffer if there is no active task, or if
+      ;; the file is being edited by the user. (The file may be in an
+      ;; invalid state, and reading it then may result in a read error.)
+      (when (and (chronometrist-current-task) (not (buffer-modified-p file-buffer)))
+        (when (get-buffer-window chronometrist-buffer-name)
+          (chronometrist-refresh))
+        (run-hooks 'chronometrist-timer-hook)))))
+;; timer:1 ends here
 
 ;; [[file:chronometrist.org::*elisp-sexp-backend][elisp-sexp-backend:1]]
 (defclass chronometrist-elisp-sexp-backend (chronometrist-backend) ()
@@ -1650,21 +1674,12 @@ This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
   :type '(repeat function))
 ;; timer-hook:1 ends here
 
-;; [[file:chronometrist.org::*timer][timer:1]]
-(defvar chronometrist-buffer-name)
-(defun chronometrist-timer ()
-  "Refresh Chronometrist and related buffers.
-Buffers will be refreshed only if they are visible and the user
-is clocked in to a task."
-  (let ((file-buffer (get-buffer-create (find-file-noselect chronometrist-file))))
-    ;; No need to update the buffer if there is no active task, or if
-    ;; the file is being edited by the user. (The file may be in an
-    ;; invalid state, and reading it then may result in a read error.)
-    (when (and (chronometrist-current-task) (not (buffer-modified-p file-buffer)))
-      (when (get-buffer-window chronometrist-buffer-name)
-        (chronometrist-refresh))
-      (run-hooks 'chronometrist-timer-hook))))
-;; timer:1 ends here
+;; [[file:chronometrist.org::*start-timer][start-timer:1]]
+(defun chronometrist-start-timer ()
+  (setq chronometrist--timer-object
+        (run-at-time t chronometrist-update-interval
+                     (lambda () (chronometrist-timer (chronometrist-active-backend))))))
+;; start-timer:1 ends here
 
 ;; [[file:chronometrist.org::*stop-timer][stop-timer:1]]
 (defun chronometrist-stop-timer ()
@@ -1681,8 +1696,7 @@ INTERACTIVE-TEST is used to determine if this has been called
 interactively."
   (interactive "p")
   (unless chronometrist--timer-object
-    (setq chronometrist--timer-object
-          (run-at-time t chronometrist-update-interval #'chronometrist-timer))
+    (chronometrist-start-timer)
     (when interactive-test
       (message "Timer started."))
     t))
@@ -1694,8 +1708,7 @@ interactively."
   (interactive)
   (when chronometrist--timer-object
     (cancel-timer chronometrist--timer-object))
-  (setq chronometrist--timer-object
-        (run-at-time t chronometrist-update-interval #'chronometrist-timer)))
+  (chronometrist-start-timer))
 ;; force-restart-timer:1 ends here
 
 ;; [[file:chronometrist.org::*change-update-interval][change-update-interval:1]]
@@ -3097,8 +3110,7 @@ FILTER must be a filter specifier as described by
 For values of RANGE, see `chronometrist-details-range'. For
 values of FILTER, see `chronometrist-details-filter'. TABLE must
 be a hash table as returned by `chronometrist-to-hash-table'."
-  (cl-loop for plist in (chronometrist-details-intervals-for-range range
-                                                      (chronometrist-backend-hash-table backend))
+  (cl-loop for plist in (chronometrist-details-intervals-for-range range (chronometrist-backend-hash-table backend))
     when (chronometrist-details-filter-match-p plist filter)
     collect plist))
 ;; intervals:1 ends here
