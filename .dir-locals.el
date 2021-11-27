@@ -13,7 +13,8 @@
                               ("cp" . "chronometrist-plist-pp")
                               ("cr" . "chronometrist-report")
                               ("cs" . "chronometrist-statistics")
-                              ("cx" . "chronometrist-sexp")))))
+                              ("cx" . "chronometrist-sexp")
+                              ("c" . "chronometrist")))))
  (org-mode
   . ((org-html-self-link-headlines . t)
      (eval . (org-indent-mode))
