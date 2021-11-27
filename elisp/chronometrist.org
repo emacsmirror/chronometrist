@@ -4070,7 +4070,8 @@ be a hash table as returned by `chronometrist-to-hash-table'."
 #+END_SRC
 
 ** Local variables                                                :NOEXPORT:
-# Local Variables:
-# nameless-aliases: (("cb" . "chronometrist-backend") ("c" . "chronometrist"))
-# nameless-current-name: "chronometrist"
-# End:
+Evaluate this to be able to insert the package prefix via =nameless-insert-name=, at the cost of having all =nameless-aliases= break (= less readable code).
+
+#+BEGIN_SRC emacs-lisp :load no :tangle no
+(setq nameless-current-name "chronometrist")
+#+END_SRC

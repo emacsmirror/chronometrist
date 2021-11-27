@@ -4,8 +4,7 @@
 ;; for some reason, setting `nameless-current-name' to "chronometrist"
 ;; makes all aliases not take effect - probably specific to Org
 ;; literate programs
-((nil . ((nameless-aliases . (("c" . "chronometrist")
-                              ("cb" . "chronometrist-backend")
+((nil . ((nameless-aliases . (("cb" . "chronometrist-backend")
                               ("cc" . "chronometrist-common")
                               ("cd" . "chronometrist-details")
                               ("ce" . "chronometrist-events")
@@ -14,8 +13,7 @@
                               ("cp" . "chronometrist-plist-pp")
                               ("cr" . "chronometrist-report")
                               ("cs" . "chronometrist-statistics")
-                              ("cx" . "chronometrist-sexp")))
-         (nameless-current-name . "chronometrist")))
+                              ("cx" . "chronometrist-sexp")))))
  (org-mode
   . ((org-html-self-link-headlines . t)
      (eval . (org-indent-mode))
