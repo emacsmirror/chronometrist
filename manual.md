@@ -1,8 +1,8 @@
 
 # Table of Contents
 
-1.  [Benefits](#org83c3199)
-2.  [Limitations](#org265ad3f)
+1.  [Benefits](#benefits)
+2.  [Limitations](#limitations)
 3.  [Comparisons](#comparisons)
     1.  [timeclock.el](#timeclock.el)
     2.  [Org time tracking](#org-time-tracking)
@@ -10,25 +10,26 @@
     1.  [from MELPA](#install-from-melpa)
     2.  [from Git](#install-from-git)
 5.  [Usage](#usage)
-    1.  [chronometrist](#chronometrist-1)
-    2.  [chronometrist-report](#chronometrist-report)
-    3.  [chronometrist-statistics](#chronometrist-statistics)
-    4.  [chronometrist-details](#org0ec335b)
-    5.  [common commands](#org170f814)
-    6.  [Time goals/targets](#time-goalstargets)
-6.  [How-to](#customization)
-    1.  [How to display a prompt when exiting with an active task](#prompt-when-exiting-emacs)
+    1.  [chronometrist](#usage-chronometrist)
+    2.  [chronometrist-report](#usage-chronometrist-report)
+    3.  [chronometrist-statistics](#usage-chronometrist-statistics)
+    4.  [chronometrist-details](#org533cd01)
+    5.  [common commands](#usage-common-commands)
+    6.  [Time goals/targets](#time-goals)
+6.  [How-to](#how-to)
+    1.  [How to display a prompt when exiting with an active task](#how-to-prompt-when-exiting-emacs)
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#org7fd0f91)
-    6.  [How to open certain files when you start a task](#open-certain-files-when-you-start-a-task)
-    7.  [How to warn yourself about uncommitted changes](#uncommitted-changes)
-    8.  [How to display the current time interval in the activity indicator](#current-time-interval-in-activity-indicator)
-7.  [Explanation](#orga5e2e2e)
+    5.  [How to skip running hooks/attaching tags and key values](#org0e10cef)
+    6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
+    7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
+    8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
+    9.  [How to back up your Chronometrist data](#how-to-backup)
+7.  [Explanation](#orgd02a44a)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org2c64088)
-9.  [Contributions and contact](#contributions-and-contact)
+8.  [User's reference](#org215fb52)
+9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
 
@@ -41,7 +42,7 @@ A time tracker in Emacs with a nice interface
 Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
 
 
-<a id="org83c3199"></a>
+<a id="benefits"></a>
 
 # Benefits
 
@@ -53,7 +54,7 @@ Largely modelled after the Android application, [A Time Tracker](https://github.
 6.  Fancy graphs with chronometrist-sparkline extension
 
 
-<a id="org265ad3f"></a>
+<a id="limitations"></a>
 
 # Limitations
 
@@ -127,7 +128,7 @@ Add the "elisp/" subdirectory to your load-path, and `(require 'chronometrist)`.
 # Usage
 
 
-<a id="chronometrist-1"></a>
+<a id="usage-chronometrist"></a>
 
 ## chronometrist
 
@@ -140,7 +141,7 @@ You can also hit `<numeric prefix> RET` anywhere in the buffer to toggle the cor
 Press `r` to see a weekly report (see `chronometrist-report`)
 
 
-<a id="chronometrist-report"></a>
+<a id="usage-chronometrist-report"></a>
 
 ## chronometrist-report
 
@@ -149,7 +150,7 @@ Run `M-x chronometrist-report` (or `chronometrist` with a prefix argument of 1, 
 Press `b` to look at past weeks, and `f` for future weeks.
 
 
-<a id="chronometrist-statistics"></a>
+<a id="usage-chronometrist-statistics"></a>
 
 ## chronometrist-statistics
 
@@ -158,12 +159,12 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="org0ec335b"></a>
+<a id="org533cd01"></a>
 
 ## chronometrist-details
 
 
-<a id="org170f814"></a>
+<a id="usage-common-commands"></a>
 
 ## common commands
 
@@ -174,21 +175,21 @@ All of these commands will kill their buffer when run again with the buffer visi
 All buffers keep themselves updated via an idle timer - no need to frequently press `g` to update.
 
 
-<a id="time-goalstargets"></a>
+<a id="time-goals"></a>
 
 ## Time goals/targets
 
 If you wish you could define time goals for some tasks, and have Chronometrist notify you when you're approaching the goal, completing it, or exceeding it, check out the extension [chronometrist-goal.el](https://github.com/contrapunctus-1/chronometrist-goal/).
 
 
-<a id="customization"></a>
+<a id="how-to"></a>
 
 # How-to
 
 See the Customize groups `chronometrist` and `chronometrist-report` for variables intended to be user-customizable.
 
 
-<a id="prompt-when-exiting-emacs"></a>
+<a id="how-to-prompt-when-exiting-emacs"></a>
 
 ## How to display a prompt when exiting with an active task
 
@@ -233,14 +234,14 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="org7fd0f91"></a>
+<a id="org0e10cef"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
 Use `M-RET` (`chronometrist-toggle-task-no-hooks`) to clock in/out.
 
 
-<a id="open-certain-files-when-you-start-a-task"></a>
+<a id="how-to-open-files-on-task-start"></a>
 
 ## How to open certain files when you start a task
 
@@ -256,7 +257,7 @@ An idea from the author's own init -
     (add-hook 'chronometrist-before-in-functions 'my-start-project)
 
 
-<a id="uncommitted-changes"></a>
+<a id="how-to-warn-uncommitted-changes"></a>
 
 ## How to warn yourself about uncommitted changes
 
@@ -271,21 +272,21 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
     
     Return nil (and run `magit-status') if the user answers no."
       (cond ((not (magit-anything-modified-p)) t)
-            ((yes-or-no-p
-              (format "You have uncommitted changes in %S. Really clock out? "
-                      default-directory)) t)
-            (t (magit-status) nil)))
+    	((yes-or-no-p
+    	  (format "You have uncommitted changes in %S. Really clock out? "
+    		  default-directory)) t)
+    	(t (magit-status) nil)))
     
     (add-hook 'chronometrist-before-out-functions 'my-commit-prompt)
 
 
-<a id="current-time-interval-in-activity-indicator"></a>
+<a id="how-to-activity-indicator"></a>
 
 ## How to display the current time interval in the activity indicator
 
     (defun my-activity-indicator ()
       (thread-last (plist-put (chronometrist-last)
-                              :stop (chronometrist-format-time-iso8601))
+    			  :stop (chronometrist-format-time-iso8601))
         list
         chronometrist-events-to-durations
         (-reduce #'+)
@@ -295,7 +296,31 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
     (setq chronometrist-activity-indicator #'my-activity-indicator)
 
 
-<a id="orga5e2e2e"></a>
+<a id="how-to-backup"></a>
+
+## How to back up your Chronometrist data
+
+I suggest backing up Chronometrist data on each save. Here's how you can do that.
+
+1.  Add the following to your init.
+    
+        (setq backup-by-copying t
+              kept-new-versions 10
+              kept-old-versions 10
+              version-control t)
+        
+        (defun my-force-backup ()
+          (setq buffer-backed-up nil))
+2.  Open your Chronometrist file and add the function to `before-save-hook`.
+    
+        M-x chronometrist-open-log
+        M-x add-file-local-variable-prop-line RET eval RET (add-hook 'before-save-hook #'my-force-backup nil t) RET
+3.  Optionally, configure `backup-directory-alist` to set a specific directory for the backups.
+
+Adapted from this [StackOverflow answer](https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save).
+
+
+<a id="orgd02a44a"></a>
 
 # Explanation
 
@@ -311,7 +336,7 @@ The Org file can also be loaded directly using the   [literate-elisp](https://gi
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org2c64088"></a>
+<a id="org215fb52"></a>
 
 # User's reference
 
@@ -344,14 +369,14 @@ Hooks
 9.  `chronometrist-timer-hook`
 
 
-<a id="contributions-and-contact"></a>
+<a id="contributions-contact"></a>
 
 # Contributions and contact
 
 Feedback and MRs are very welcome. 🙂
 
 -   <TODO.md> has a long list of tasks
--   <doc/manual.md> contains an overview of the codebase, explains various mechanisms and decisions, and has a reference of definitions.
+-   <elisp/chronometrist.md> contains all developer-oriented documentation
 
 If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [xmpp:emacs@salas.suchat.org?join](https://conversations.im/j/emacs@salas.suchat.org) ([web chat](https://inverse.chat/#converse/room?jid=emacs@salas.suchat.org))
 

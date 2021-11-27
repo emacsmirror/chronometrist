@@ -443,8 +443,7 @@ Return a list in the form
   ;; time-zone-spanning events
 
   ;; The time on which the first provided day starts (according to `chronometrist-day-start-time')
-  (let* ((start-ts        (chronometrist-iso-to-ts start-time))
-         (stop-ts         (chronometrist-iso-to-ts stop-time))
+  (let* ((stop-ts         (chronometrist-iso-to-ts stop-time))
          (first-day-start (chronometrist-apply-time day-start-time start-time))
          (next-day-start  (ts-adjust 'hour 24 first-day-start)))
     ;; Does the event stop time exceed the next day start time?
