@@ -746,7 +746,7 @@ A general library for this could convert between (both to and from) such strings
  * today, yesterday, day before yesterday, tomorrow, day after tomorrow
  * N <seconds/minutes/hours/days/weeks/months/years> (ago|from now/today)
    + plus multiples of those units e.g. "1 year, 5 months, ... from now"
-* STARTED Kill/discard command                                      :feature:
+* DONE Kill/discard command                                         :feature:
 Command to delete the interval currently being recorded. (bind to 'k')
 + Most conservative option - it will only operate on the project at point, and will only kill for a clocked-in project.
 + Somewhat less conservative option - it will operate on the currently clocked-in project, no matter where point is.

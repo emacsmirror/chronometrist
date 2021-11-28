@@ -2030,10 +2030,11 @@ PREFIX is ignored."
     (define-key map (kbd "a")          #'chronometrist-add-new-task)
     (define-key map (kbd "RET")        #'chronometrist-toggle-task)
     (define-key map (kbd "M-RET")      #'chronometrist-toggle-task-no-hooks)
-    (define-key map (kbd "<C-return>") #'chronometrist-restart-task)
-    (define-key map (kbd "<C-M-return>") #'chronometrist-extend-task)
     (define-key map [mouse-1]          #'chronometrist-toggle-task)
     (define-key map [mouse-3]          #'chronometrist-toggle-task-no-hooks)
+    (define-key map (kbd "<C-return>") #'chronometrist-restart-task)
+    (define-key map (kbd "<C-M-return>") #'chronometrist-extend-task)
+    (define-key map (kbd "D")          #'chronometrist-discard-active)
     (define-key map (kbd "d")          #'chronometrist-details)
     (define-key map (kbd "r")          #'chronometrist-report)
     (define-key map (kbd "l")          #'chronometrist-open-log)
@@ -2056,6 +2057,7 @@ PREFIX is ignored."
     ["Extend time for last completed task" chronometrist-extend-task]
     ["Extend time without running hooks" (chronometrist-extend-task t)
      :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
+    ["Discard active interval" chronometrist-discard-active]
     ["View details of today's data" chronometrist-details]
     ["View weekly report" chronometrist-report]
     ["View/edit log file" chronometrist-open-log]
@@ -2209,6 +2211,15 @@ Has no effect if a task is active."
       (unless inhibit-hooks
         (run-hook-with-args 'chronometrist-after-out-functions task)))))
 ;; extend-task:1 ends here
+
+;; [[file:chronometrist.org::*discard-interval][discard-interval:1]]
+(defun chronometrist-discard-active ()
+  "Remove active interval from the active backend."
+  (interactive)
+  (let ((backend (chronometrist-active-backend)))
+    (when (chronometrist-current-task backend)
+      (chronometrist-remove-last backend))))
+;; discard-interval:1 ends here
 
 ;; [[file:chronometrist.org::*chronometrist][chronometrist:1]]
 ;;;###autoload

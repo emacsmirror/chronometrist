@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 2. New `plist-group` backend, reducing time taken in startup and after changes to the file.
 3. Unified migration interface with command `chronometrist-migrate`.
 4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
+5. New command `chronometrist-discard-active`, to discard the active interval.
 
 ## [0.9.0] - 2021-07-08
 ### Added
