@@ -188,10 +188,12 @@ TS must be a ts struct (see `ts.el')."
 
 ;; [[file:chronometrist.org::*delete-list][delete-list:1]]
 (defun chronometrist-sexp-delete-list (&optional arg)
-  "Delete ARG lists after point."
+  "Delete ARG lists after point.
+Return new position of point."
   (let ((point-1 (point)))
     (forward-sexp (or arg 1))
-    (delete-region point-1 (point))))
+    (delete-region point-1 (point))
+    (point)))
 ;; delete-list:1 ends here
 
 ;; [[file:chronometrist.org::*make-hash-table][make-hash-table:1]]
@@ -863,6 +865,11 @@ DATE-TS must be a `ts.el' struct.")
   "Insert PLIST as new record in BACKEND.")
 ;; insert:1 ends here
 
+;; [[file:chronometrist.org::*remove-last][remove-last:1]]
+(cl-defgeneric chronometrist-remove-last (backend)
+  "Remove last record from BACKEND.")
+;; remove-last:1 ends here
+
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defgeneric chronometrist-replace-last (backend plist)
   "Replace last record in BACKEND with PLIST.")
@@ -1175,13 +1182,21 @@ STREAM (which is the value of `current-buffer')."
     (save-buffer)))
 ;; insert:1 ends here
 
+;; [[file:chronometrist.org::*remove-last][remove-last:1]]
+(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    ;; this condition should never really occur, since we insert a
+    ;; file local variable prop line when the file is created...
+    (unless (and (bobp) (bolp)) (insert "\n"))
+    (backward-list 1)
+    (chronometrist-sexp-delete-list)))
+;; remove-last:1 ends here
+
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (unless (and (bobp) (bolp)) (insert "\n"))
-    (backward-list 1)
-    (chronometrist-sexp-delete-list)
+    (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
     (save-buffer)))
 ;; replace-last:1 ends here
@@ -1452,16 +1467,24 @@ Return
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (-let* ((latest-plist-group (chronometrist-latest-date-records backend))
+    (-let* ((plist-group        (chronometrist-latest-date-records backend))
             ((plist-1 plist-2)  (chronometrist-split-plist plist))
-            (new-plist-group    (append (butlast latest-plist-group)
-                                        (list (or plist-1 plist)))))
-      (when (chronometrist-sexp-pre-read-check (current-buffer))
+            (new-plist-group    (append (butlast plist-group)
+                                        (when plist (list (or plist-1 plist))))))
+      (if (not plist-group)
+          (error "No plist to replace")
+        (backward-list)
         (chronometrist-sexp-delete-list)
-        (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
+        (when (>= (length new-plist-group) 2)
+          (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer)))
         (when plist-2 (chronometrist-insert backend plist-2))
         (save-buffer)))))
 ;; replace-last:1 ends here
+
+;; [[file:chronometrist.org::*remove-last][remove-last:1]]
+(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend))
+  (chronometrist-replace-last backend nil))
+;; remove-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))

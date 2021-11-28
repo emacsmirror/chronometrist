@@ -33,18 +33,11 @@
         5. Delete =:stop= time and save
         6. Clock out again
         7. Accept the already-inserted key-value. Duplicate!
-** Features [33%]
-   1. [ ] New commands
-      1. [ ] *Kill/discard* (bind to 'k') - which will delete the interval currently being recorded.
-         - Most conservative option - it will only operate on the project at point, and will only kill for a clocked-in project.
-         - Somewhat less conservative option - it will operate on the currently clocked-in project, no matter where point is.
-         - It _should_ ask for confirmation.
-         - Alternatively, or as a complement - an *undo command*, which will undo your last action (clock in or clock out).
-           - Undo and redo seem like the best bets.
-   2. [ ] Hook enhancement - can we supply the whole plist (including tags and key-values) to the task-start hooks, so users can have even smarter hook functions?
+** Features [50%]
+   1. [ ] Hook enhancement - can we supply the whole plist (including tags and key-values) to the task-start hooks, so users can have even smarter hook functions?
       * That would mean ensuring that -kv-read runs before other hooks.
       * Actually, it should be trivial to access the last expression in the file, so maybe this is unnecessary.
-   3. [X] Revisit 'no reason' commands - maybe we should ask for tags and key-values with the regular commands, and skip them with the 'no reason' variants?
+   2. [X] Revisit 'no reason' commands - maybe we should ask for tags and key-values with the regular commands, and skip them with the 'no reason' variants?
 *** Key-values [66%]
     1. [X] bug - value-history appears in chronological rather than reverse chronological order
     2. [X] generate history hash table from chronometrist-file.
@@ -632,12 +625,11 @@ Strategies
 <2021-06-16T07:50:21+0530>
 
 =chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.
-1. The result data may just be plists, which could be displayed/edited directly from the search results ([[info:elisp#Invisible Text][invisible text]] or [[info:elisp#Selective Display][selective display]] +
- [[info:elisp#Narrowing][narrowing]]?)
+1. The result data may just be plists, which could be displayed/edited directly from the search results ([[info:elisp#Invisible Text][invisible text]] or [[info:elisp#Selective Display][selective display]] + [[info:elisp#Narrowing][narrowing]]?)
 2. The result data may be something which corresponds to the input data, in which case we could jump to the corresponding plist.
 3. The result data may be impossible to trace back to the input data (e.g. a sum of intervals from many plists), in which case we cannot provide direct editing.
 
-* error in change type detection                                   :core:bug:
+* error in change type detection                     :core:bug:plist_backend:
 <2021-06-16T18:40:18+0530>
 Steps
 1. Clock in
@@ -743,10 +735,10 @@ Optional
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
-* customizable task list
+* customizable task list                                            :feature:
 1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
 2. Adding a task? We can modify the task list, but how to persist it?
-* Extend time range prompt
+* Extend time range prompt                                          :feature:
 Support inputs like "today", "yesterday", "5 days ago", etc.
  * =date(1)= does something like this, right? Maybe we could shell out to it.
 
@@ -754,3 +746,10 @@ A general library for this could convert between (both to and from) such strings
  * today, yesterday, day before yesterday, tomorrow, day after tomorrow
  * N <seconds/minutes/hours/days/weeks/months/years> (ago|from now/today)
    + plus multiples of those units e.g. "1 year, 5 months, ... from now"
+* STARTED Kill/discard command                                      :feature:
+Command to delete the interval currently being recorded. (bind to 'k')
++ Most conservative option - it will only operate on the project at point, and will only kill for a clocked-in project.
++ Somewhat less conservative option - it will operate on the currently clocked-in project, no matter where point is.
++ It _should_ ask for confirmation.
++ Alternatively, or as a complement - an *undo command*, which will undo your last action (clock in or clock out).
+  - Undo and redo seem like the best bets.

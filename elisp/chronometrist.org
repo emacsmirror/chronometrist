@@ -583,10 +583,12 @@ TS must be a ts struct (see `ts.el')."
 *** delete-list                                                    :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-delete-list (&optional arg)
-  "Delete ARG lists after point."
+  "Delete ARG lists after point.
+Return new position of point."
   (let ((point-1 (point)))
     (forward-sexp (or arg 1))
-    (delete-region point-1 (point))))
+    (delete-region point-1 (point))
+    (point)))
 #+END_SRC
 
 *** make-hash-table                                              :function:
@@ -1436,6 +1438,12 @@ DATE-TS must be a `ts.el' struct.")
   "Insert PLIST as new record in BACKEND.")
 #+END_SRC
 
+**** remove-last                                        :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-remove-last (backend)
+  "Remove last record from BACKEND.")
+#+END_SRC
+
 **** replace-last                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-replace-last (backend plist)
@@ -1884,14 +1892,23 @@ STREAM (which is the value of `current-buffer')."
     (save-buffer)))
 #+END_SRC
 
+**** remove-last
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    ;; this condition should never really occur, since we insert a
+    ;; file local variable prop line when the file is created...
+    (unless (and (bobp) (bolp)) (insert "\n"))
+    (backward-list 1)
+    (chronometrist-sexp-delete-list)))
+#+END_SRC
+
 **** replace-last                                          :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (unless (and (bobp) (bolp)) (insert "\n"))
-    (backward-list 1)
-    (chronometrist-sexp-delete-list)
+    (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
     (save-buffer)))
 #+END_SRC
@@ -2260,6 +2277,7 @@ Note that migrating from the plist backend to the plist group backend is inheren
 #+END_SRC
 
 **** HACK insert                                           :writer:method:
+<<hack-note-plist-group-insert>>
 We just want to insert a plist, but as a hack to avoid updating the pretty-printer to handle indentation of plists being inserted into an outer list, we =append= the plist to a plist group and insert/replace the plist group instead.
 
 #+BEGIN_SRC emacs-lisp
@@ -2284,19 +2302,30 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
 **** replace-last                                          :writer:method:
 =chronometrist-replace-last= is what is used for clocking out, so we split midnight-spanning intervals in this operation.
 
+We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] method, removing and inserting the plist group instead of just the specific plist, to avoid having to update the pretty printer.
+
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (-let* ((latest-plist-group (chronometrist-latest-date-records backend))
+    (-let* ((plist-group        (chronometrist-latest-date-records backend))
             ((plist-1 plist-2)  (chronometrist-split-plist plist))
-            (new-plist-group    (append (butlast latest-plist-group)
-                                        (list (or plist-1 plist)))))
-      (when (chronometrist-sexp-pre-read-check (current-buffer))
+            (new-plist-group    (append (butlast plist-group)
+                                        (when plist (list (or plist-1 plist))))))
+      (if (not plist-group)
+          (error "No plist to replace")
+        (backward-list)
         (chronometrist-sexp-delete-list)
-        (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
+        (when (>= (length new-plist-group) 2)
+          (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer)))
         (when plist-2 (chronometrist-insert backend plist-2))
         (save-buffer)))))
+#+END_SRC
+
+**** remove-last                                           :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend))
+  (chronometrist-replace-last backend nil))
 #+END_SRC
 
 **** count-records                                         :reader:method:
