@@ -2212,14 +2212,15 @@ Has no effect if a task is active."
         (run-hook-with-args 'chronometrist-after-out-functions task)))))
 ;; extend-task:1 ends here
 
-;; [[file:chronometrist.org::*discard-interval][discard-interval:1]]
+;; [[file:chronometrist.org::*discard-active][discard-active:1]]
 (defun chronometrist-discard-active ()
   "Remove active interval from the active backend."
   (interactive)
   (let ((backend (chronometrist-active-backend)))
-    (when (chronometrist-current-task backend)
-      (chronometrist-remove-last backend))))
-;; discard-interval:1 ends here
+    (if (chronometrist-current-task backend)
+        (chronometrist-remove-last backend)
+      (message "Nothing to discard - use this when clocked in."))))
+;; discard-active:1 ends here
 
 ;; [[file:chronometrist.org::*chronometrist][chronometrist:1]]
 ;;;###autoload

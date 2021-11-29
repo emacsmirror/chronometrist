@@ -3112,14 +3112,15 @@ Has no effect if a task is active."
       (unless inhibit-hooks
         (run-hook-with-args 'chronometrist-after-out-functions task)))))
 #+END_SRC
-**** discard-interval                                            :command:
+**** discard-active                                              :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-discard-active ()
   "Remove active interval from the active backend."
   (interactive)
   (let ((backend (chronometrist-active-backend)))
-    (when (chronometrist-current-task backend)
-      (chronometrist-remove-last backend))))
+    (if (chronometrist-current-task backend)
+        (chronometrist-remove-last backend)
+      (message "Nothing to discard - use this when clocked in."))))
 #+END_SRC
 
 **** chronometrist                                               :command:
