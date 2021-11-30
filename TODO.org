@@ -753,3 +753,6 @@ Command to delete the interval currently being recorded. (bind to 'k')
 + It _should_ ask for confirmation.
 + Alternatively, or as a complement - an *undo command*, which will undo your last action (clock in or clock out).
   - Undo and redo seem like the best bets.
+* pretty printer
+** fix handling of tagged alist group values                           :bug:
+** put each list element on its own line if length of list exceeds fill-column :feature:

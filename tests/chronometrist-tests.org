@@ -199,7 +199,28 @@
             " :tags    (classical)\n"
             " :warm-up ((right-hand-patterns \"pima\" \"piam\" \"pmia\" \"pmai\" \"pami\" \"paim\"))\n"
             " :start   \"2021-09-28T17:49:18+0530\"\n"
-            " :stop    \"2021-09-28T17:53:49+0530\")"))))
+            " :stop    \"2021-09-28T17:53:49+0530\")")))
+  (should (equal
+           (chronometrist-pp-to-string
+            '(:name   "Cooking"
+              :tags   (lunch)
+              :recipe ("urad dhuli"
+                       (:name     "brown rice"
+                        :brand    "Dawat quick-cooking"
+                        :quantity "40% of steel measuring glass"
+                        :water    "2× dry rice"))
+              :start  "2021-11-07T14:40:45+0530"
+              :stop   "2021-11-07T15:28:13+0530"))
+           (concat
+            "(:name   \"Cooking\"\n"
+            " :tags   (lunch)\n"
+            " :recipe (\"urad dhuli\"\n"
+            "          (:name \"brown rice\"\n"
+            "           :brand \"Dawat quick-cooking\"\n"
+            "           :quantity \"40% of steel measuring glass\"\n"
+            "           :water \"2× dry rice\"))\n"
+            " :start  \"2021-11-07T14:40:45+0530\"\n"
+            " :stop   \"2021-11-07T15:28:13+0530\")"))))
 #+END_SRC
 
 ** backend
