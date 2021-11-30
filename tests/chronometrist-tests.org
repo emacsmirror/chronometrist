@@ -94,10 +94,10 @@
 
 *** plist-pp-to-string
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-plist-pp-to-string ()
+(ert-deftest chronometrist-pp-to-string ()
   (should
    (equal
-    (chronometrist-plist-pp-to-string
+    (chronometrist-pp-to-string
      '(:name "Task"
        :tags (foo bar)
        :comment ((70 . "baz")
@@ -117,7 +117,7 @@
      " :stop    \"2020-06-25T19:43:30+0530\")")))
   (should
    (equal
-    (chronometrist-plist-pp-to-string
+    (chronometrist-pp-to-string
      '(:name  "Singing"
        :tags  (classical solo)
        :piece ((:composer "Gioachino Rossini"
@@ -160,7 +160,7 @@
      " :start \"2020-11-01T12:01:20+0530\"\n"
      " :stop  \"2020-11-01T13:08:32+0530\")")))
   (should (equal
-           (chronometrist-plist-pp-to-string
+           (chronometrist-pp-to-string
             '(:name "Cooking"
               :tags (lunch)
               :recipe (:name "moong-masoor ki dal"
@@ -175,7 +175,7 @@
             " :start  \"2020-09-23T15:22:39+0530\"\n"
             " :stop   \"2020-09-23T16:29:49+0530\")")))
   (should (equal
-           (chronometrist-plist-pp-to-string
+           (chronometrist-pp-to-string
             '(:name    "Exercise"
               :tags    (warm-up)
               :start   "2018-11-21T15:35:04+0530"
@@ -188,7 +188,7 @@
             " :stop    \"2018-11-21T15:38:41+0530\"\n"
             " :comment (\"stretching\" (25 10 \"push-ups\")))")))
   (should (equal
-           (chronometrist-plist-pp-to-string
+           (chronometrist-pp-to-string
             '(:name    "Guitar"
               :tags    (classical)
               :warm-up ((right-hand-patterns "pima" "piam" "pmia" "pmai" "pami" "paim"))

@@ -1101,7 +1101,8 @@ The list must be on a single line, as emitted by `prin1'.
 
 IN-SUBLIST, if non-nil, means point is inside an inner list."
   (if (not (looking-at-p (rx (or ")" line-end))))
-      (let ((sexp (save-excursion (read (current-buffer)))))
+      (let ((sexp (save-excursion
+                    (read (current-buffer)))))
           (cond
            ((chronometrist-plist-p sexp)
             (chronometrist-pp-buffer-plist in-sublist)
@@ -1118,19 +1119,19 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
             (chronometrist-pp-buffer in-sublist))
            ((listp sexp)
             (down-list)
-            (chronometrist-pp-buffer t))
+            (chronometrist-pp-buffer t)
+            (up-list))
+           ;; atoms and other values
            (t (forward-sexp)
               (chronometrist-pp-buffer in-sublist))))
     ;; we're before a ) - is it a lone paren on its own line?
-    (let ((pos (point))
-          (bol (point-at-bol)))
+    (let ((point (point))
+          (bol   (point-at-bol)))
       (goto-char bol)
-      (if (string-match "^[[:blank:]]*$" (buffer-substring bol pos))
+      (if (string-match "^[[:blank:]]*$" (buffer-substring bol point))
           ;; join the ) to the previous line by deleting the newline and whitespace
-          (delete-region (1- bol) pos)
-        (goto-char pos))
-      (when (not (eobp))
-        (forward-char)))))
+          (delete-region (1- bol) point)
+        (goto-char point)))))
 #+END_SRC
 
 *** buffer-plist                                                   :writer:
