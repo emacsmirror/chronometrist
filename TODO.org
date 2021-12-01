@@ -725,6 +725,28 @@ See branch =grouped-plist-format=
 Optional
 1. define generic backend protocol for key-values package
 
+protocol implementation progress
+1. [X] chronometrist-latest-date-records
+2. [X] chronometrist-latest-record
+3. [X] chronometrist-task-records-for-date
+4. [X] chronometrist-active-days
+5. [X] chronometrist-insert
+6. [X] chronometrist-remove-last
+7. [X] chronometrist-replace-last
+8. [X] [superclass] chronometrist-create-file
+9. [ ] chronometrist-view-file
+10. [X] [superclass] chronometrist-edit-file
+11. [ ] chronometrist-count-records
+12. [X] chronometrist-to-list
+13. [X] chronometrist-to-hash-table
+14. [X] chronometrist-to-file
+15. [X] chronometrist-on-change
+16. [X] [superclass] chronometrist-reset-internal
+17. [ ] chronometrist-backend-empty-p
+18. [X] [superclass] chronometrist-memory-layer-empty-p
+19. [ ] chronometrist-verify
+20. [ ] [superclass] chronometrist-timer
+
 * New backends                                                      :feature:
 1. Org time tracking
 2. timeclock
