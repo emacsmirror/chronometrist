@@ -721,6 +721,7 @@ See branch =grouped-plist-format=
 11. [X] create new tagged list if required when clocking in
 12. [X] split midnight-spanning intervals when clocking out
 13. [X] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
+14. [ ] (maybe) handle existing (in-file) split tasks. Currently, if an interval is split, commands such as =chronometrist-key-values-unified-prompt= operate on the second split interval, but not the first. Instead, plist-group methods for =chronometrist-replace-last= and =chronometrist-remove-last= could check if the last interval is split, and operate on both of them. (=chronometrist-insert= can already insert)
 
 Optional
 1. define generic backend protocol for key-values package
@@ -778,3 +779,9 @@ Command to delete the interval currently being recorded. (bind to 'k')
 * pretty printer
 ** fix handling of tagged alist group values                           :bug:
 ** put each list element on its own line if length of list exceeds fill-column :feature:
+* verify command
+With different checks, for different levels of speed/thoroughness -
+1. (plist group) sequence of plist group dates
+2. intersecting timestamps
+3. sequence of records
+4. (plist group) midnight spanning interval check (first and last intervals)
