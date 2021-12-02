@@ -2302,19 +2302,47 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
 
 **** plists-split-p                                             :function:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-plists-split-p (plist-1 plist-2)
-  "Return t if PLIST-1 and PLIST-2 are split plists.
-Split plists means the :stop time of plist-1 must be the same as
-the :start time of plist-2, and they must have identical
+(defun chronometrist-plists-split-p (old-plist new-plist)
+  "Return t if OLD-PLIST and NEW-PLIST are split plists.
+Split plists means the :stop time of old-plist must be the same as
+the :start time of new-plist, and they must have identical
 keyword-values (except :start and :stop)."
-  (-let* (((&plist :stop stop-1)   plist-1)
-          ((&plist :start start-2) plist-2)
-          (stop-1-unix  (parse-iso8601-time-string stop-1))
-          (start-2-unix (parse-iso8601-time-string start-2))
-          (plist-1-no-time (chronometrist-plist-remove plist-1 :start :stop))
-          (plist-2-no-time (chronometrist-plist-remove plist-2 :start :stop)))
-    (and (time-equal-p stop-1-unix start-2-unix)
-         (equal plist-1-no-time plist-2-no-time))))
+  (-let* (((&plist :stop  old-stop)  old-plist)
+          ((&plist :start new-start) new-plist)
+          (old-stop-unix     (parse-iso8601-time-string old-stop))
+          (new-start-unix    (parse-iso8601-time-string new-start))
+          (old-plist-no-time (chronometrist-plist-remove old-plist :start :stop))
+          (new-plist-no-time (chronometrist-plist-remove new-plist :start :stop)))
+    (and (time-equal-p old-stop-unix
+                       new-start-unix)
+         (equal old-plist-no-time
+                new-plist-no-time))))
+#+END_SRC
+
+**** last-two-split-p                                          :procedure:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-last-two-split-p (file)
+  "Return non-nil if the latest two plists in FILE are split.
+FILE must be a file containing plist groups, as created by
+`chronometrist-plist-backend'."
+  (chronometrist-sexp-in-file file
+    (let* ((newer-group (progn (goto-char (point-max))
+                               (backward-list)
+                               (read (current-buffer))))
+           (older-group (and (= 2 (length newer-group))
+                             (backward-list 2)
+                             (read (current-buffer))))
+           ;; non-nil older-group = newer-group has just one plist
+           ;; nil older-group = newer-group has >1 plists
+           (newer-plist (if older-group
+                            (cl-second newer-group)
+                          (first (last newer-group))))
+           ;; non-nil older-group = older-group's last plist is the second-last plist we want
+           ;; nil older-group = the second-last plist is in newer-group
+           (older-plist (if older-group
+                            (first (last older-group))
+                          (first (last (butlast newer-group))))))
+      (chronometrist-plists-split-p older-plist newer-plist))))
 #+END_SRC
 
 **** replace-last                                          :writer:method:
