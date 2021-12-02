@@ -1,3 +1,4 @@
+# -*- eval: (add-hook 'org-insert-heading-hook #'(lambda nil (save-excursion (insert "\n<" (format-time-string "%FT%T%z") ">"))) nil t); -*-
 #+TITLE: The Chronometrist TODO List
 #+AUTHOR: contrapunctus
 
