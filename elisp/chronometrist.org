@@ -668,7 +668,7 @@ Return value is a ts struct (see `ts.el')."
           "2021-02-17T01:02:03+0530")))
 #+END_SRC
 
-*** events-maybe-split                                           :function:
+*** split-plist                                                  :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-split-plist (plist)
   "Return a list of two split plists if PLIST spans a midnight, else nil."
@@ -2298,6 +2298,23 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
         (chronometrist-sexp-delete-list))
       (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
       (save-buffer))))
+#+END_SRC
+
+**** plists-split-p                                             :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-plists-split-p (plist-1 plist-2)
+  "Return t if PLIST-1 and PLIST-2 are split plists.
+Split plists means the :stop time of plist-1 must be the same as
+the :start time of plist-2, and they must have identical
+keyword-values (except :start and :stop)."
+  (-let* (((&plist :stop stop-1) plist-1)
+          ((&plist :start start-2) plist-2)
+          (stop-1-unix  (parse-iso8601-time-string stop-1))
+          (start-2-unix (parse-iso8601-time-string start-2))
+          (plist-1-wo-time (chronometrist-plist-remove plist-1 :start :stop))
+          (plist-2-wo-time (chronometrist-plist-remove plist-2 :start :stop)))
+    (and (time-equal-p stop-1-unix start-2-unix)
+         (equal plist-1-wo-time plist-2-wo-time))))
 #+END_SRC
 
 **** replace-last                                          :writer:method:

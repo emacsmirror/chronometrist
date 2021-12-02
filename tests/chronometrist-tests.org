@@ -1,3 +1,6 @@
+#+BEGIN_SRC emacs-lisp :load no :tangle no
+(setq nameless-current-name "chronometrist")
+#+END_SRC
 
 * Setup
 ** test-file-path-stem
@@ -55,6 +58,53 @@
   (should (eq nil (chronometrist-plist-p '(:a 1 :b 2 3))))
   (should (not    (chronometrist-plist-p nil))))
 #+END_SRC
+
+*** plists-split-p
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-plists-split-p ()
+  (should
+   (chronometrist-plists-split-p
+    '(:name    "Cooking"
+               :recipe  "whole wheat penne rigate in arrabbiata sauce"
+               :start   "2021-11-30T23:01:10+0530"
+               :stop    "2021-12-01T00:00:00+0530")
+    '(:name   "Cooking"
+              :recipe "whole wheat penne rigate in arrabbiata sauce"
+              :start  "2021-12-01T00:00:00+0530"
+              :stop   "2021-12-01T00:06:22+0530")))
+  ;; without :stop
+  (should
+   (chronometrist-plists-split-p
+    '(:name    "Cooking"
+               :recipe  "whole wheat penne rigate in arrabbiata sauce"
+               :start   "2021-11-30T23:01:10+0530"
+               :stop    "2021-12-01T00:00:00+0530")
+    '(:name   "Cooking"
+              :recipe "whole wheat penne rigate in arrabbiata sauce"
+              :start  "2021-12-01T00:00:00+0530")))
+  ;; difference in time
+  (should
+   (not (chronometrist-plists-split-p
+         '(:name    "Cooking"
+                    :recipe  "whole wheat penne rigate in arrabbiata sauce"
+                    :start   "2021-11-30T23:01:10+0530"
+                    :stop    "2021-12-01T00:00:00+0530")
+         '(:name   "Cooking"
+                   :recipe "whole wheat penne rigate in arrabbiata sauce"
+                   :start  "2021-12-01T00:00:01+0530"
+                   :stop   "2021-12-01T00:06:22+0530"))))
+  ;; difference in key-values
+  (should
+   (not (chronometrist-plists-split-p
+         '(:name    "Cooking"
+                    :recipe  "whole wheat penne rigate in arrabbiata sauce"
+                    :start   "2021-11-30T23:01:10+0530"
+                    :stop    "2021-12-01T00:00:00+0530")
+         '(:name   "Cooking"
+                   :start  "2021-12-01T00:00:00+0530"
+                   :stop   "2021-12-01T00:06:22+0530")))))
+#+END_SRC
+
 
 ** data structures
 *** list-tasks

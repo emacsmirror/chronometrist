@@ -250,7 +250,7 @@ Return value is a ts struct (see `ts.el')."
               (chronometrist-iso-to-ts timestamp))))
 ;; apply-time:1 ends here
 
-;; [[file:chronometrist.org::*events-maybe-split][events-maybe-split:1]]
+;; [[file:chronometrist.org::*split-plist][split-plist:1]]
 (defun chronometrist-split-plist (plist)
   "Return a list of two split plists if PLIST spans a midnight, else nil."
   (when (plist-get plist :stop)
@@ -270,7 +270,7 @@ Return value is a ts struct (see `ts.el')."
                 (-> event-2
                     (plist-put :start start-2)
                     (plist-put :stop  stop-2))))))))
-;; events-maybe-split:1 ends here
+;; split-plist:1 ends here
 
 ;; [[file:chronometrist.org::*events-update][events-update:1]]
 (defun chronometrist-events-update (plist hash-table &optional replace)
@@ -1463,6 +1463,22 @@ Return
       (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
       (save-buffer))))
 ;; insert:1 ends here
+
+;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
+(defun chronometrist-plists-split-p (plist-1 plist-2)
+  "Return t if PLIST-1 and PLIST-2 are split plists.
+Split plists means the :stop time of plist-1 must be the same as
+the :start time of plist-2, and they must have identical
+keyword-values (except :start and :stop)."
+  (-let* (((&plist :stop stop-1) plist-1)
+          ((&plist :start start-2) plist-2)
+          (stop-1-unix  (parse-iso8601-time-string stop-1))
+          (start-2-unix (parse-iso8601-time-string start-2))
+          (plist-1-wo-time (chronometrist-plist-remove plist-1 :start :stop))
+          (plist-2-wo-time (chronometrist-plist-remove plist-2 :start :stop)))
+    (and (time-equal-p stop-1-unix start-2-unix)
+         (equal plist-1-wo-time plist-2-wo-time))))
+;; plists-split-p:1 ends here
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
