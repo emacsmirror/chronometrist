@@ -373,20 +373,9 @@ Cons
    10. [ ] =chronometrist-timer= - if =chronometrist-file= is being edited (buffer exists and modified), don't refresh - this will (hopefully) prevent Emacs from going crazy with errors in trying to parse malformed data.
 
 * Maybe
-** New features [14%]
+** New features
 1. [ ] Interact with Chronometrist from phone, tablet, or smart watches. (Help needed, I'm a total strange to mobile development and don't own any wearables.)
-2. [ ] Some way to use markup (Markdown, Org, etc) for certain plist values.
-
-   Implementation ideas -
-   * A list of keys whose values are to be edited in a user-specified major mode.
-     + Multiple windows - instead of a single key-value buffer, we'll have multiple buffers in multiple visible windows, somewhat like =ediff=. The =accept= command will use the data from all involved buffers.
-       - The buffer and window will be created when a keyword associated with that mode is selected at the prompt.
-     + Alternatively, the whole plist goes into a single buffer of the markup's major mode - the markup bits as markup, the rest of the plist in a code block 🤷‍
-     + poly-mode to mix different modes
-     + see [[info:elisp#Swapping Text][swapping text]]
-   * "Input frontends" - a way to represent s-expressions as Markdown, Org, etc, so the entire plist can be edited in that mode. As a side-effect, this will permit use of Markdown, Org, etc in keyword-values - e.g. to use markup in comments or notes.
-   * A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
-3. [ ] /Task List/ - a custom variable containing a list of tasks
+2. [ ] /Task List/ - a custom variable containing a list of tasks
    #+BEGIN_SRC emacs-lisp
    ("A Task Name"
     ("Another Task Name" :key-prompt nil)
@@ -411,11 +400,11 @@ Cons
    1. Adding tasks without clocking into them (the list is stored in a separate file)
    2. Not asking for tags and/or key-values for a particular task, or having a special behaviour for a task. (e.g. some tasks I use follow certain patterns, which I'd like to automate away)
    3. defining goals (subsume =chronometrist-goal-list=), priorities, etc
-4. [ ] Completion for sub-plists - if the value of a user keyword-value pair is itself a plist, can we reuse the keyword-value prompt for it? 🤔
+3. [ ] Completion for sub-plists - if the value of a user keyword-value pair is itself a plist, can we reuse the keyword-value prompt for it? 🤔
    * Maybe generate the completion hash table when the plist is created, since this is likely to be less-used.
-5. [ ] Create a debug mode
-6. [ ] Create a verification command to test =chronometrist-file= for errors.
-7. [X] Display task's weekly progress using ASCII/sparklines
+4. [ ] Create a debug mode
+5. [ ] Create a verification command to test =chronometrist-file= for errors.
+6. [X] Display task's weekly progress using ASCII/sparklines
    * Extension to add new column in =chronometrist= buffer
    * without goals - show dashes for days on which task was not touched, x for days on which it was done. e.g.
      + =- x x x - - *= means today is a Saturday, that I did the task on three days (Mo, Tu, We), and that I'm doing it right now.
@@ -451,6 +440,19 @@ Cons
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
+* viewing/editing frontends
+Some way to use markup (Markdown, Org, etc) for certain plist values.
+
+** Implementation ideas
+1. A list of keys whose values are to be edited in a user-specified major mode.
+   * Multiple windows - instead of a single key-value buffer, we'll have multiple buffers in multiple visible windows, somewhat like =ediff=. The =accept= command will use the data from all involved buffers.
+     + The buffer and window will be created when a keyword associated with that mode is selected at the prompt.
+   * Alternatively, the whole plist goes into a single buffer of the markup's major mode - the markup bits as markup, the rest of the plist in a code block 🤷‍
+   * poly-mode to mix different modes
+   * see [[info:elisp#Swapping Text][swapping text]]
+2. "Input frontends" - a way to represent s-expressions as Markdown, Org, etc, so the entire plist can be edited in that mode. As a side-effect, this will permit use of Markdown, Org, etc in keyword-values - e.g. to use markup in comments or notes.
+3. A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
+
 * documentation discoverability                                         :doc:
 Ensure that the user manual is easily discoverable.
 
