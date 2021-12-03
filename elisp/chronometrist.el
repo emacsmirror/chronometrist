@@ -191,6 +191,9 @@ TS must be a ts struct (see `ts.el')."
   "Delete ARG lists after point.
 Return new position of point."
   (let ((point-1 (point)))
+    ;; try to preserve the file-local variable prop line in case this
+    ;; is run from the start of buffer
+    (while (forward-comment 1) nil)
     (forward-sexp (or arg 1))
     (delete-region point-1 (point))
     (point)))
@@ -1486,7 +1489,10 @@ keyword-values (except :start and :stop)."
 (defun chronometrist-last-two-split-p (file)
   "Return non-nil if the latest two plists in FILE are split.
 FILE must be a file containing plist groups, as created by
-`chronometrist-plist-backend'."
+`chronometrist-plist-backend'.
+
+Return value is either a list in the form
+(OLDER-PLIST NEWER-PLIST), or nil."
   (chronometrist-sexp-in-file file
     (let* ((newer-group (progn (goto-char (point-max))
                                (backward-list)
@@ -1494,17 +1500,13 @@ FILE must be a file containing plist groups, as created by
            (older-group (and (= 2 (length newer-group))
                              (backward-list 2)
                              (read (current-buffer))))
-           ;; non-nil older-group = newer-group has just one plist
-           ;; nil older-group = newer-group has >1 plists
-           (newer-plist (if older-group
-                            (cl-second newer-group)
-                          (first (last newer-group))))
-           ;; non-nil older-group = older-group's last plist is the second-last plist we want
-           ;; nil older-group = the second-last plist is in newer-group
-           (older-plist (if older-group
-                            (first (last older-group))
-                          (first (last (butlast newer-group))))))
-      (chronometrist-plists-split-p older-plist newer-plist))))
+           (older-group (unless (equal older-group newer-group) ;; if there is just one plist-group in the file
+                          older-group))
+           (newer-plist (cl-second newer-group))
+           (older-plist (first (last older-group))))
+      (when (and older-plist newer-plist
+                 (chronometrist-plists-split-p older-plist newer-plist))
+        (list older-plist newer-plist)))))
 ;; last-two-split-p:1 ends here
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
@@ -1527,7 +1529,18 @@ FILE must be a file containing plist groups, as created by
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend))
-  (chronometrist-replace-last backend nil))
+  (with-slots (file) backend
+    (chronometrist-sexp-in-file file
+      (goto-char (point-max))
+      (when (chronometrist-last-two-split-p file)   ;; cannot be checked after changing the file
+        (backward-list)
+        (chronometrist-sexp-delete-list))
+      ;; remove the last plist in the last plist-group
+      (down-list -1)
+      (backward-list)
+      (chronometrist-sexp-delete-list)
+      (join-line)
+      (save-buffer))))
 ;; remove-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
