@@ -1532,15 +1532,19 @@ Return value is either a list in the form
   (with-slots (file) backend
     (chronometrist-sexp-in-file file
       (goto-char (point-max))
-      (when (chronometrist-last-two-split-p file)   ;; cannot be checked after changing the file
+      (when (chronometrist-last-two-split-p file) ;; cannot be checked after changing the file
+        ;; latest plist-group has only one plist, which is split - delete the group
         (backward-list)
         (chronometrist-sexp-delete-list))
       ;; remove the last plist in the last plist-group
-      (down-list -1)
-      (backward-list)
-      (chronometrist-sexp-delete-list)
-      (join-line)
-      (save-buffer))))
+      ;; if the plist-group has only one plist, delete the group
+      (let ((plist-group (save-excursion (backward-list)
+                                         (read (current-buffer)))))
+        (unless (= 2 (length plist-group))
+          (down-list -1))
+        (backward-list)
+        (chronometrist-sexp-delete-list)
+        (save-buffer)))))
 ;; remove-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
