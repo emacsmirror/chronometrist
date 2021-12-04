@@ -1449,7 +1449,7 @@ Return
 ;; active-days:1 ends here
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
-(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist)
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
            (backend-latest-date (first latest-plist-group))
@@ -1464,7 +1464,7 @@ Return
         (chronometrist-sexp-pre-read-check (current-buffer))
         (chronometrist-sexp-delete-list))
       (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
-      (save-buffer))))
+      (when save (save-buffer)))))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
@@ -1500,7 +1500,8 @@ Return value is either a list in the form
            (older-group (and (= 2 (length newer-group))
                              (backward-list 2)
                              (read (current-buffer))))
-           (older-group (unless (equal older-group newer-group) ;; if there is just one plist-group in the file
+           ;; in case there was just one plist-group in the file
+           (older-group (unless (equal older-group newer-group)
                           older-group))
            (newer-plist (cl-second newer-group))
            (older-plist (first (last older-group))))
@@ -1512,23 +1513,13 @@ Return value is either a list in the form
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (-let* ((plist-group        (chronometrist-latest-date-records backend))
-            ((plist-1 plist-2)  (chronometrist-split-plist plist))
-            (new-plist-group    (append (butlast plist-group)
-                                        (when plist (list (or plist-1 plist))))))
-      (if (not plist-group)
-          (error "No plist to replace")
-        (backward-list)
-        (chronometrist-sexp-delete-list)
-        (when (>= (length new-plist-group) 2)
-          (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer)))
-        (when plist-2 (chronometrist-insert backend plist-2))
-        (save-buffer)))))
+   (chronometrist-remove-last backend :save nil)
+   (chronometrist-insert backend plist :save nil)
+   (save-buffer)))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
-(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend) &key (save t))
   (with-slots (file) backend
     (chronometrist-sexp-in-file file
       (goto-char (point-max))
@@ -1544,7 +1535,7 @@ Return value is either a list in the form
           (down-list -1))
         (backward-list)
         (chronometrist-sexp-delete-list)
-        (save-buffer)))))
+        (when save (save-buffer))))))
 ;; remove-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]

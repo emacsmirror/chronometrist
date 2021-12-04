@@ -2285,7 +2285,7 @@ Note that migrating from the plist backend to the plist group backend is inheren
 We just want to insert a plist, but as a hack to avoid updating the pretty-printer to handle indentation of plists being inserted into an outer list, we =append= the plist to a plist group and insert/replace the plist group instead.
 
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist)
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
            (backend-latest-date (first latest-plist-group))
@@ -2300,7 +2300,7 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
         (chronometrist-sexp-pre-read-check (current-buffer))
         (chronometrist-sexp-delete-list))
       (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
-      (save-buffer))))
+      (when save (save-buffer)))))
 #+END_SRC
 
 **** plists-split-p                                             :function:
@@ -2356,24 +2356,14 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (-let* ((plist-group        (chronometrist-latest-date-records backend))
-            ((plist-1 plist-2)  (chronometrist-split-plist plist))
-            (new-plist-group    (append (butlast plist-group)
-                                        (when plist (list (or plist-1 plist))))))
-      (if (not plist-group)
-          (error "No plist to replace")
-        (backward-list)
-        (chronometrist-sexp-delete-list)
-        (when (>= (length new-plist-group) 2)
-          (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer)))
-        (when plist-2 (chronometrist-insert backend plist-2))
-        (save-buffer)))))
+   (chronometrist-remove-last backend :save nil)
+   (chronometrist-insert backend plist :save nil)
+   (save-buffer)))
 #+END_SRC
 
 **** remove-last                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend) &key (save t))
   (with-slots (file) backend
     (chronometrist-sexp-in-file file
       (goto-char (point-max))
@@ -2389,7 +2379,7 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
           (down-list -1))
         (backward-list)
         (chronometrist-sexp-delete-list)
-        (save-buffer)))))
+        (when save (save-buffer))))))
 #+END_SRC
 
 **** count-records                                         :reader:method:
