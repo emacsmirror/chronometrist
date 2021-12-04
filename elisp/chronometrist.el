@@ -879,6 +879,12 @@ DATE-TS must be a `ts.el' struct.")
   "Replace last record in BACKEND with PLIST.")
 ;; replace-last:1 ends here
 
+;; [[file:chronometrist.org::*update-properties][update-properties:1]]
+(cl-defgeneric chronometrist-update-properties (backend plist)
+  "Apply key-values from PLIST to the latest record in BACKEND.
+Properties of the existing record are not preserved.")
+;; update-properties:1 ends here
+
 ;; [[file:chronometrist.org::*create-file][create-file:1]]
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
@@ -1520,6 +1526,18 @@ Return value is either a list in the form
         (list older-plist newer-plist)))))
 ;; last-two-split-p:1 ends here
 
+;; [[file:chronometrist.org::*plist-unify][plist-unify:1]]
+(defun chronometrist-plist-unify (old-plist new-plist)
+  "Return a plist with the :start of OLD-PLIST and the :stop of NEW-PLIST."
+  (let ((old-plist-wo-time (chronometrist-plist-remove old-plist :start :stop))
+        (new-plist-wo-time (chronometrist-plist-remove new-plist :start :stop)))
+    (cond ((not (and old-plist new-plist)) nil)
+          ((equal old-plist-wo-time new-plist-wo-time)
+           (let ((plist (copy-list old-plist)))
+             (plist-put plist :stop (plist-get new-plist :stop))))
+          (t (error "Attempt to unify plists with non-identical key-values")))))
+;; plist-unify:1 ends here
+
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1553,6 +1571,24 @@ Return value is either a list in the form
           (join-line))
         (when save (save-buffer))))))
 ;; remove-last:1 ends here
+
+;; [[file:chronometrist.org::*update-properties][update-properties:1]]
+(cl-defmethod chronometrist-update-properties ((backend chronometrist-plist-group-backend) plist)
+  (if (chronometrist-backend-empty-p backend)
+      (error "Backend has no records")
+    (with-slots (file) backend
+      (-let* (((split-1 split-2)         (chronometrist-last-two-split-p file))
+              ((unified-plist &as &plist :name name
+                              :start start :stop stop)
+               (or (chronometrist-plist-unify split-1 split-2)
+                   (chronometrist-latest-record backend)))
+              (new-plist         (copy-list plist))
+              (new-plist         (chronometrist-plist-remove new-plist :name :start :stop))
+              (new-plist         (when new-plist
+                                   (append (list :name name) new-plist
+                                           (list :start start :stop stop)))))
+        (chronometrist-replace-last backend new-plist)))))
+;; update-properties:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
