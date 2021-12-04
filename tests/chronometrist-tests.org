@@ -137,6 +137,7 @@
 *** plist-group-p
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-plist-group-p ()
+  (should (eq t (chronometrist-plist-group-p '(symbol   (:a 1 :b 2)))))
   (should (eq t (chronometrist-plist-group-p '("string" (:a 1 :b 2)))))
   (should (not (chronometrist-plist-group-p nil)))
   (should (not (chronometrist-plist-group-p '("string")))))
