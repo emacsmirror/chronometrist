@@ -94,7 +94,7 @@ supplied, 3 spaces are used."
 ;; format-time:1 ends here
 
 ;; [[file:chronometrist.org::*file-empty-p][file-empty-p:1]]
-(defun chronometrist-common-file-empty-p (file)
+(defun chronometrist-file-empty-p (file)
   "Return t if FILE is empty."
   (zerop (nth 7 (file-attributes file))))
 ;; file-empty-p:1 ends here
@@ -1020,7 +1020,7 @@ not saved.")
 (cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
       (or (not (file-exists-p file))
-          (chronometrist-common-file-empty-p file))))
+          (chronometrist-file-empty-p file))))
 ;; backend-empty-p:1 ends here
 
 ;; [[file:chronometrist.org::*memory-layer-empty-p][memory-layer-empty-p:1]]
@@ -1098,6 +1098,14 @@ expression first)."
                   (backward-list))
        ,@loop-clauses)))
 ;; loop-sexp-file:1 ends here
+
+;; [[file:chronometrist.org::*backend-empty-p][backend-empty-p:1]]
+(cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-elisp-sexp-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-min))
+    (not (ignore-errors
+           (read (current-buffer))))))
+;; backend-empty-p:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
@@ -1525,6 +1533,9 @@ Return value is either a list in the form
   (with-slots (file) backend
     (chronometrist-sexp-in-file file
       (goto-char (point-max))
+      (when (chronometrist-backend-empty-p backend)
+        (error "chronometrist-remove-last has nothing to remove in %s"
+               (eieio-object-class-name backend)))
       (when (chronometrist-last-two-split-p file) ;; cannot be checked after changing the file
         ;; latest plist-group has only one plist, which is split - delete the group
         (backward-list)
@@ -1619,7 +1630,7 @@ Return value is either a list in the form
          (confirm-exists
           (if (and confirm
                    (file-exists-p output-file)
-                   (not (chronometrist-common-file-empty-p output-file)))
+                   (not (chronometrist-file-empty-p output-file)))
               (yes-or-no-p
                (format "Overwrite existing non-empty file %s ?"
                        output-file))
@@ -2181,7 +2192,7 @@ If INHIBIT-HOOKS is non-nil, the hooks
 `chronometrist-before-out-functions', and
 `chronometrist-after-out-functions' will not be run."
   (interactive "P")
-  (let* ((empty-file   (chronometrist-common-file-empty-p chronometrist-file))
+  (let* ((empty-file   (chronometrist-file-empty-p chronometrist-file))
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
          (target       (or nth at-point))
