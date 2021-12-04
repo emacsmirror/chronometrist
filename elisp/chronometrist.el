@@ -1450,21 +1450,23 @@ Return
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
-           (backend-latest-date (first latest-plist-group))
-           (date-today          (chronometrist-date-iso))
-           (insert-new-group    (not (equal date-today backend-latest-date)))
-           (new-plist-group     (if insert-new-group
-                                    (list date-today plist)
-                                  (append latest-plist-group (list plist)))))
-      (goto-char (point-max))
-      (if insert-new-group
-          (default-indent-new-line)
-        (chronometrist-sexp-pre-read-check (current-buffer))
-        (chronometrist-sexp-delete-list))
-      (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
-      (when save (save-buffer)))))
+  (if (not plist)
+      (error "%s" "`chronometrist-insert' was called with an empty plist")
+    (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+      (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
+             (backend-latest-date (first latest-plist-group))
+             (date-today          (chronometrist-date-iso))
+             (insert-new-group    (not (equal date-today backend-latest-date)))
+             (new-plist-group     (if insert-new-group
+                                      (list date-today plist)
+                                    (append latest-plist-group (list plist)))))
+        (goto-char (point-max))
+        (if insert-new-group
+            (default-indent-new-line)
+          (chronometrist-sexp-pre-read-check (current-buffer))
+          (chronometrist-sexp-delete-list))
+        (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
+        (when save (save-buffer))))))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
