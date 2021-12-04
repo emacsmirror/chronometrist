@@ -1925,9 +1925,11 @@ is the name of the task to be clocked out of."
 ;; [[file:chronometrist.org::*goto-last-task][goto-last-task:1]]
 (defun chronometrist-goto-last-task ()
   "In the `chronometrist' buffer, move point to the line containing the last active task."
-  (goto-char (point-min))
-  (re-search-forward (plist-get (chronometrist-latest-record (chronometrist-active-backend)) :name) nil t)
-  (beginning-of-line))
+  (let* ((latest-record (chronometrist-latest-record (chronometrist-active-backend)))
+         (name (plist-get latest-record :name)))
+    (goto-char (point-min))
+    (re-search-forward name nil t)
+    (beginning-of-line)))
 ;; goto-last-task:1 ends here
 
 ;; [[file:chronometrist.org::*print-non-tabular][print-non-tabular:1]]
