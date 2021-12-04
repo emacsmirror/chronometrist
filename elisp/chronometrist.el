@@ -1544,10 +1544,13 @@ Return value is either a list in the form
       ;; if the plist-group has only one plist, delete the group
       (let ((plist-group (save-excursion (backward-list)
                                          (read (current-buffer)))))
-        (unless (= 2 (length plist-group))
-          (down-list -1))
-        (backward-list)
-        (chronometrist-sexp-delete-list)
+        (if (= 2 (length plist-group))
+            (progn (backward-list)
+                   (chronometrist-sexp-delete-list))
+          (down-list -1)
+          (backward-list)
+          (chronometrist-sexp-delete-list)
+          (join-line))
         (when save (save-buffer))))))
 ;; remove-last:1 ends here
 
