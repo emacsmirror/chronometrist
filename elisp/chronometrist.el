@@ -3127,7 +3127,7 @@ TABLE must be a hash table as returned by
                        (if date-p end-date end-iso-ts)
                      end)))
        (cons begin end)))
-    (_ (error "Unsupported range."))))
+    (_ (error "Unsupported range %S" input))))
 ;; input-to-value:1 ends here
 
 ;; [[file:chronometrist.org::*set-range][set-range:1]]
@@ -3186,7 +3186,7 @@ FILTER must be a filter specifier as described by
            plist))
         ((functionp filter)
          (when (funcall filter plist) plist))
-        (t (error "Invalid filter."))))
+        (t (error "Invalid filter %S" filter))))
 ;; filter-match-p:1 ends here
 
 ;; [[file:chronometrist.org::*set-filter][set-filter:1]]
@@ -3203,7 +3203,7 @@ FILTER must be a filter specifier as described by
          (sexp (ignore-errors (read input))))
     (cond ((equal input "") (setq-local chronometrist-details-filter nil))
           ((consp sexp)     (setq-local chronometrist-details-filter sexp))
-          (_ (error "Unsupported filter.")))
+          (_ (error "Unsupported filter %S" input)))
     (tabulated-list-revert)))
 ;; set-filter:1 ends here
 
