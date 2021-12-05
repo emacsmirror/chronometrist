@@ -2337,7 +2337,8 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
 **** to-list                                               :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
-  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) append (rest expr)))
+  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
+    append (reverse (rest expr))))
 #+END_SRC
 
 **** to-hash-table                                         :reader:method:

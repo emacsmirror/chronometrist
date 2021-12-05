@@ -1493,7 +1493,8 @@ Return
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
-  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) append (rest expr)))
+  (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
+    append (reverse (rest expr))))
 ;; to-list:1 ends here
 
 ;; [[file:chronometrist.org::*to-hash-table][to-hash-table:1]]
