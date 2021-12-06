@@ -2249,6 +2249,13 @@ This makes it easy and computationally cheap to perform our most common query - 
 
 Note that migrating from the plist backend to the plist group backend is inherently likely to result in more plists compared to the source, as each midnight-spanning plist is split into two.
 
+Concerns specific to the plist group backend -
+1. the last plist may be split across two days. In such a situation -
+   * changing key-values for the last plist would only apply to the most recent one
+   * +deleting the last plist via =chronometrist-remove-last= would only delete the recent part of the split plist+ fixed
+   * resetting is unaffected, since that only applies to the last interval, whether or not it's a split plist
+   * restarting is unaffected, since that only applies to the active interval, and split intervals are always inactive ones
+
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
