@@ -850,7 +850,8 @@ unchanged."
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist.")
+  "Return the latest entry from BACKEND as a plist.
+Return value may be active, i.e. it may or may not have a :stop key-value.")
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]

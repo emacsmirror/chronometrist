@@ -1421,7 +1421,8 @@ unchanged."
 **** latest-record                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist.")
+  "Return the latest entry from BACKEND as a plist.
+Return value may be active, i.e. it may or may not have a :stop key-value.")
 #+END_SRC
 
 **** task-records-for-date                              :generic:function:
