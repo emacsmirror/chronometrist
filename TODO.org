@@ -756,6 +756,8 @@ protocol implementation progress
 * New backends                                                      :feature:
 1. Org time tracking
 2. timeclock
+3. [[https://klog.jotaen.net/][klog]]
+4. SQLite
 
 * Functions doing similar things                                       :code:
 1. =task-time-one-day=
