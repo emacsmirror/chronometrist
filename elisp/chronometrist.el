@@ -714,11 +714,6 @@ Value must be a keyword corresponding to a key in
   (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 ;; active-backend:1 ends here
 
-;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
-(cl-defgeneric chronometrist-latest-date-records (backend)
-  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).")
-;; latest-date-records:1 ends here
-
 ;; [[file:chronometrist.org::*switch-backend][switch-backend:1]]
 (defun chronometrist-switch-backend ()
   (interactive)
@@ -785,7 +780,7 @@ return a list of tasks from the active backend."
 
 ;; [[file:chronometrist.org::*list-tasks][list-tasks:1]]
 (defun chronometrist-list-tasks (backend)
-  "Return a list of all tasks recorded in BACKEND. Each task is a string."
+  "Return all tasks recorded in BACKEND as a list of strings."
   (cl-loop for plist in (chronometrist-to-list backend)
     collect (plist-get plist :name) into names
     finally return
@@ -848,22 +843,16 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 ;; remove-from-task-list:1 ends here
 
-;; [[file:chronometrist.org::*latest-record][latest-record:1]]
-(cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
-;; latest-record:1 ends here
+;; [[file:chronometrist.org::*preconditions][preconditions:1]]
+(cl-defgeneric chronometrist-backend-check-preconditions (backend)
+  "Check common preconditions for any operations on BACKEND.")
+;; preconditions:1 ends here
 
-;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
-(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
-  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
-DATE-TS must be a `ts.el' struct.")
-;; task-records-for-date:1 ends here
-
-;; [[file:chronometrist.org::*active-days][active-days:1]]
-(cl-defgeneric chronometrist-active-days (backend task &key start end)
-  "From BACKEND, return number of days on which TASK had recorded time.")
-;; active-days:1 ends here
+;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
+(cl-defgeneric chronometrist-latest-date-records (backend)
+  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
+Return nil if BACKEND contains no records.")
+;; latest-date-records:1 ends here
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defgeneric chronometrist-insert (backend plist)
@@ -874,11 +863,6 @@ DATE-TS must be a `ts.el' struct.")
 (cl-defgeneric chronometrist-remove-last (backend)
   "Remove last record from BACKEND.")
 ;; remove-last:1 ends here
-
-;; [[file:chronometrist.org::*replace-last][replace-last:1]]
-(cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
-;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*update-properties][update-properties:1]]
 (cl-defgeneric chronometrist-update-properties (backend plist)
@@ -901,11 +885,6 @@ Use FILE as a path, if provided.")
 (cl-defgeneric chronometrist-edit-file (backend)
   "Open file associated with BACKEND for interactive editing.")
 ;; edit-file:1 ends here
-
-;; [[file:chronometrist.org::*count-records][count-records:1]]
-(cl-defgeneric chronometrist-count-records (backend)
-  "Return number of records in BACKEND.")
-;; count-records:1 ends here
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defgeneric chronometrist-to-list (backend)
@@ -960,6 +939,35 @@ is clocked in to a task. Additionally, do not refresh buffers if
 if BACKEND is a file-based backend and the file is modified but
 not saved.")
 ;; timer:1 ends here
+
+;; [[file:chronometrist.org::*latest-record][latest-record:1]]
+(cl-defgeneric chronometrist-latest-record (backend)
+  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a :stop key-value.")
+;; latest-record:1 ends here
+
+;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
+(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
+  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
+DATE-TS must be a `ts.el' struct.
+
+Return nil if BACKEND contains no records.")
+;; task-records-for-date:1 ends here
+
+;; [[file:chronometrist.org::*active-days][active-days:1]]
+(cl-defgeneric chronometrist-active-days (backend task &key start end)
+  "From BACKEND, return number of days on which TASK had recorded time.")
+;; active-days:1 ends here
+
+;; [[file:chronometrist.org::*replace-last][replace-last:1]]
+(cl-defgeneric chronometrist-replace-last (backend plist)
+  "Replace last record in BACKEND with PLIST.")
+;; replace-last:1 ends here
+
+;; [[file:chronometrist.org::*count-records][count-records:1]]
+(cl-defgeneric chronometrist-count-records (backend)
+  "Return number of records in BACKEND.")
+;; count-records:1 ends here
 
 ;; [[file:chronometrist.org::#file-backend-mixin][file-backend-mixin:1]]
 (defclass chronometrist-file-backend-mixin ()

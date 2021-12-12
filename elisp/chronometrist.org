@@ -1275,12 +1275,6 @@ Value must be a keyword corresponding to a key in
   (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 #+END_SRC
 
-**** latest-date-records                                :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-latest-date-records (backend)
-  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).")
-#+END_SRC
-
 **** switch-backend                                              :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-switch-backend ()
@@ -1352,7 +1346,7 @@ return a list of tasks from the active backend."
 **** list-tasks                                                 :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-list-tasks (backend)
-  "Return a list of all tasks recorded in BACKEND. Each task is a string."
+  "Return all tasks recorded in BACKEND as a list of strings."
   (cl-loop for plist in (chronometrist-to-list backend)
     collect (plist-get plist :name) into names
     finally return
@@ -1418,24 +1412,17 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 #+END_SRC
 
-**** latest-record                                      :generic:function:
+**** preconditions                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
+(cl-defgeneric chronometrist-backend-check-preconditions (backend)
+  "Check common preconditions for any operations on BACKEND.")
 #+END_SRC
 
-**** task-records-for-date                              :generic:function:
+**** latest-date-records                                :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
-  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
-DATE-TS must be a `ts.el' struct.")
-#+END_SRC
-
-**** active-days                                        :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-active-days (backend task &key start end)
-  "From BACKEND, return number of days on which TASK had recorded time.")
+(cl-defgeneric chronometrist-latest-date-records (backend)
+  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
+Return nil if BACKEND contains no records.")
 #+END_SRC
 
 **** insert                                             :generic:function:
@@ -1448,12 +1435,6 @@ DATE-TS must be a `ts.el' struct.")
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-remove-last (backend)
   "Remove last record from BACKEND.")
-#+END_SRC
-
-**** replace-last                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
 #+END_SRC
 
 **** update-properties                                  :generic:function:
@@ -1480,12 +1461,6 @@ Use FILE as a path, if provided.")
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-edit-file (backend)
   "Open file associated with BACKEND for interactive editing.")
-#+END_SRC
-
-**** count-records                                      :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-count-records (backend)
-  "Return number of records in BACKEND.")
 #+END_SRC
 
 **** to-list                                            :generic:function:
@@ -1550,6 +1525,44 @@ is clocked in to a task. Additionally, do not refresh buffers if
 if BACKEND is a file-based backend and the file is modified but
 not saved.")
 #+END_SRC
+
+**** extended protocol
+These can be implemented in terms of the minimal protocol above.
+
+***** latest-record                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-latest-record (backend)
+  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a :stop key-value.")
+#+END_SRC
+
+***** task-records-for-date                            :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
+  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
+DATE-TS must be a `ts.el' struct.
+
+Return nil if BACKEND contains no records.")
+#+END_SRC
+
+***** active-days                                      :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-active-days (backend task &key start end)
+  "From BACKEND, return number of days on which TASK had recorded time.")
+#+END_SRC
+
+***** replace-last                                     :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-replace-last (backend plist)
+  "Replace last record in BACKEND with PLIST.")
+#+END_SRC
+
+***** count-records                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-count-records (backend)
+  "Return number of records in BACKEND.")
+#+END_SRC
+
 *** Common definitions for s-expression backends
 **** file-backend-mixin                                            :mixin:
 :PROPERTIES:
