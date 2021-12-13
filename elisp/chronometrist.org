@@ -2289,33 +2289,12 @@ Concerns specific to the plist group backend -
   (save-excursion (read buffer)))
 #+END_SRC
 
-**** latest-record                                         :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (first (last (chronometrist-latest-date-records backend))))
-#+END_SRC
-
 **** latest-date-records                                   :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-group-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (chronometrist-backward-read-sexp (current-buffer))))
-#+END_SRC
-
-**** task-records-for-date                                 :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend)
-                                      task date-ts)
-  (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
-                                 (chronometrist-backend-hash-table backend))
-    when (equal task (plist-get plist :name))
-    collect plist))
-#+END_SRC
-
-**** active-days                                           :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
 #+END_SRC
 
 **** HACK insert                                           :writer:method:
@@ -2401,19 +2380,6 @@ Return value is either a list in the form
           (t (error "Attempt to unify plists with non-identical key-values")))))
 #+END_SRC
 
-**** replace-last                                          :writer:method:
-=chronometrist-replace-last= is what is used for clocking out, so we split midnight-spanning intervals in this operation.
-
-We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] method, removing and inserting the plist group instead of just the specific plist, to avoid having to update the pretty printer.
-
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-   (chronometrist-remove-last backend :save nil)
-   (chronometrist-insert backend plist :save nil)
-   (save-buffer)))
-#+END_SRC
-
 **** remove-last                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend) &key (save t))
@@ -2460,11 +2426,6 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
         (chronometrist-replace-last backend new-plist)))))
 #+END_SRC
 
-**** count-records                                         :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
-#+END_SRC
-
 **** to-list                                               :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
@@ -2502,6 +2463,46 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
   (chronometrist-reset-internal backend))
+#+END_SRC
+
+**** extended protocol
+***** latest-record                                       :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
+  (first (last (chronometrist-latest-date-records backend))))
+#+END_SRC
+
+***** task-records-for-date                               :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend)
+                                      task date-ts)
+  (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
+                                 (chronometrist-backend-hash-table backend))
+    when (equal task (plist-get plist :name))
+    collect plist))
+#+END_SRC
+
+***** active-days                                         :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
+#+END_SRC
+
+***** replace-last                                        :writer:method:
+=chronometrist-replace-last= is what is used for clocking out, so we split midnight-spanning intervals in this operation.
+
+We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] method, removing and inserting the plist group instead of just the specific plist, to avoid having to update the pretty printer.
+
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+   (chronometrist-remove-last backend :save nil)
+   (chronometrist-insert backend plist :save nil)
+   (save-buffer)))
+#+END_SRC
+
+***** count-records                                       :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
 #+END_SRC
 
 ** Migration

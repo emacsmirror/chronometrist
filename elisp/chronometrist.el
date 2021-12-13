@@ -1446,30 +1446,12 @@ Return
   (save-excursion (read buffer)))
 ;; backward-read-sexp:1 ends here
 
-;; [[file:chronometrist.org::*latest-record][latest-record:1]]
-(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (first (last (chronometrist-latest-date-records backend))))
-;; latest-record:1 ends here
-
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-group-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (chronometrist-backward-read-sexp (current-buffer))))
 ;; latest-date-records:1 ends here
-
-;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
-(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend)
-                                      task date-ts)
-  (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
-                                 (chronometrist-backend-hash-table backend))
-    when (equal task (plist-get plist :name))
-    collect plist))
-;; task-records-for-date:1 ends here
-
-;; [[file:chronometrist.org::*active-days][active-days:1]]
-(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
-;; active-days:1 ends here
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
@@ -1547,14 +1529,6 @@ Return value is either a list in the form
           (t (error "Attempt to unify plists with non-identical key-values")))))
 ;; plist-unify:1 ends here
 
-;; [[file:chronometrist.org::*replace-last][replace-last:1]]
-(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-   (chronometrist-remove-last backend :save nil)
-   (chronometrist-insert backend plist :save nil)
-   (save-buffer)))
-;; replace-last:1 ends here
-
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-group-backend) &key (save t))
   (with-slots (file) backend
@@ -1599,10 +1573,6 @@ Return value is either a list in the form
         (chronometrist-replace-last backend new-plist)))))
 ;; update-properties:1 ends here
 
-;; [[file:chronometrist.org::*count-records][count-records:1]]
-(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
-;; count-records:1 ends here
-
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
@@ -1637,6 +1607,36 @@ Return value is either a list in the form
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
   (chronometrist-reset-internal backend))
 ;; on-change:1 ends here
+
+;; [[file:chronometrist.org::*latest-record][latest-record:1]]
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
+  (first (last (chronometrist-latest-date-records backend))))
+;; latest-record:1 ends here
+
+;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend)
+                                      task date-ts)
+  (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
+                                 (chronometrist-backend-hash-table backend))
+    when (equal task (plist-get plist :name))
+    collect plist))
+;; task-records-for-date:1 ends here
+
+;; [[file:chronometrist.org::*active-days][active-days:1]]
+(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
+;; active-days:1 ends here
+
+;; [[file:chronometrist.org::*replace-last][replace-last:1]]
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+   (chronometrist-remove-last backend :save nil)
+   (chronometrist-insert backend plist :save nil)
+   (save-buffer)))
+;; replace-last:1 ends here
+
+;; [[file:chronometrist.org::*count-records][count-records:1]]
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
+;; count-records:1 ends here
 
 ;; [[file:chronometrist.org::*remove-prefix][remove-prefix:1]]
 (defun chronometrist-remove-prefix (string)
