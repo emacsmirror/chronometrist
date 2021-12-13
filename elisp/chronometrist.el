@@ -186,6 +186,10 @@ TS must be a ts struct (see `ts.el')."
     (null list)))
 ;; plist-p:1 ends here
 
+;; [[file:chronometrist.org::*plist type][plist type:1]]
+(cl-deftype chronometrist-plist () '(satisfies chronometrist-plist-p))
+;; plist type:1 ends here
+
 ;; [[file:chronometrist.org::*delete-list][delete-list:1]]
 (defun chronometrist-sexp-delete-list (&optional arg)
   "Delete ARG lists after point.
@@ -1446,8 +1450,15 @@ Return
   (save-excursion (read buffer)))
 ;; backward-read-sexp:1 ends here
 
+;; [[file:chronometrist.org::*check-preconditions][check-preconditions:1]]
+(cl-defmethod chronometrist-backend-check-preconditions ((backend chronometrist-file-backend-mixin))
+  (with-slots (file) backend
+    (cl-assert (file-exists-p file) t "Backend file %S does not exist")))
+;; check-preconditions:1 ends here
+
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-group-backend))
+  (chronometrist-backend-check-preconditions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (chronometrist-backward-read-sexp (current-buffer))))
@@ -1455,6 +1466,8 @@ Return
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
+  (cl-check-type plist chronometrist-plist)
+  (chronometrist-backend-check-preconditions backend)
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
     (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1590,6 +1603,7 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*to-file][to-file:1]]
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-group-backend) file)
+  (cl-check-type hash-table hash-table)
   (delete-file file)
   (chronometrist-create-file backend file)
   (chronometrist-reset-internal backend)
@@ -1616,6 +1630,9 @@ Return value is either a list in the form
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
 (cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-group-backend)
                                       task date-ts)
+  (cl-check-type task string)
+  (cl-check-type date-ts ts)
+  (chronometrist-backend-check-preconditions backend)
   (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
                                  (chronometrist-backend-hash-table backend))
     when (equal task (plist-get plist :name))
@@ -1623,11 +1640,14 @@ Return value is either a list in the form
 ;; task-records-for-date:1 ends here
 
 ;; [[file:chronometrist.org::*active-days][active-days:1]]
-(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end))
+(cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end)
+  (cl-check-type task string)
+  (chronometrist-backend-check-preconditions backend))
 ;; active-days:1 ends here
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
+  (cl-check-type plist chronometrist-plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
    (chronometrist-remove-last backend :save nil)
    (chronometrist-insert backend plist :save nil)
