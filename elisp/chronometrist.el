@@ -847,10 +847,11 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 ;; remove-from-task-list:1 ends here
 
-;; [[file:chronometrist.org::*preconditions][preconditions:1]]
-(cl-defgeneric chronometrist-backend-check-preconditions (backend)
-  "Check common preconditions for any operations on BACKEND.")
-;; preconditions:1 ends here
+;; [[file:chronometrist.org::*run-assertions][run-assertions:1]]
+(cl-defgeneric chronometrist-backend-run-assertions (backend)
+  "Check common preconditions for any operations on BACKEND.
+Signal errors for any unmet preconditions.")
+;; run-assertions:1 ends here
 
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
 (cl-defgeneric chronometrist-latest-date-records (backend)
@@ -1450,15 +1451,15 @@ Return
   (save-excursion (read buffer)))
 ;; backward-read-sexp:1 ends here
 
-;; [[file:chronometrist.org::*check-preconditions][check-preconditions:1]]
-(cl-defmethod chronometrist-backend-check-preconditions ((backend chronometrist-file-backend-mixin))
+;; [[file:chronometrist.org::*run-assertions][run-assertions:1]]
+(cl-defmethod chronometrist-backend-run-assertions ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
     (cl-assert (file-exists-p file) t "Backend file %S does not exist")))
-;; check-preconditions:1 ends here
+;; run-assertions:1 ends here
 
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-group-backend))
-  (chronometrist-backend-check-preconditions backend)
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (chronometrist-backward-read-sexp (current-buffer))))
@@ -1467,7 +1468,7 @@ Return
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (cl-check-type plist chronometrist-plist)
-  (chronometrist-backend-check-preconditions backend)
+  (chronometrist-backend-run-assertions backend)
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
     (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1632,7 +1633,7 @@ Return value is either a list in the form
                                       task date-ts)
   (cl-check-type task string)
   (cl-check-type date-ts ts)
-  (chronometrist-backend-check-preconditions backend)
+  (chronometrist-backend-run-assertions backend)
   (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
                                  (chronometrist-backend-hash-table backend))
     when (equal task (plist-get plist :name))
@@ -1642,7 +1643,7 @@ Return value is either a list in the form
 ;; [[file:chronometrist.org::*active-days][active-days:1]]
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end)
   (cl-check-type task string)
-  (chronometrist-backend-check-preconditions backend))
+  (chronometrist-backend-run-assertions backend))
 ;; active-days:1 ends here
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]

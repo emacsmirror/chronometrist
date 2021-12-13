@@ -1417,10 +1417,11 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 #+END_SRC
 
-**** preconditions                                      :generic:function:
+**** run-assertions                                     :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-backend-check-preconditions (backend)
-  "Check common preconditions for any operations on BACKEND.")
+(cl-defgeneric chronometrist-backend-run-assertions (backend)
+  "Check common preconditions for any operations on BACKEND.
+Signal errors for any unmet preconditions.")
 #+END_SRC
 
 **** latest-date-records                                :generic:function:
@@ -2294,9 +2295,9 @@ Concerns specific to the plist group backend -
   (save-excursion (read buffer)))
 #+END_SRC
 
-**** check-preconditions                                   :reader:method:
+**** run-assertions                                        :reader:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-backend-check-preconditions ((backend chronometrist-file-backend-mixin))
+(cl-defmethod chronometrist-backend-run-assertions ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
     (cl-assert (file-exists-p file) t "Backend file %S does not exist")))
 #+END_SRC
@@ -2304,7 +2305,7 @@ Concerns specific to the plist group backend -
 **** latest-date-records                                   :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-group-backend))
-  (chronometrist-backend-check-preconditions backend)
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     (chronometrist-backward-read-sexp (current-buffer))))
@@ -2317,7 +2318,7 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (cl-check-type plist chronometrist-plist)
-  (chronometrist-backend-check-preconditions backend)
+  (chronometrist-backend-run-assertions backend)
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
     (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -2494,7 +2495,7 @@ Return value is either a list in the form
                                       task date-ts)
   (cl-check-type task string)
   (cl-check-type date-ts ts)
-  (chronometrist-backend-check-preconditions backend)
+  (chronometrist-backend-run-assertions backend)
   (cl-loop for plist in (gethash (chronometrist-date-iso date-ts)
                                  (chronometrist-backend-hash-table backend))
     when (equal task (plist-get plist :name))
@@ -2505,7 +2506,7 @@ Return value is either a list in the form
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end)
   (cl-check-type task string)
-  (chronometrist-backend-check-preconditions backend))
+  (chronometrist-backend-run-assertions backend))
 #+END_SRC
 
 ***** replace-last                                        :writer:method:
