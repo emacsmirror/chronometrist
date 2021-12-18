@@ -2299,7 +2299,8 @@ Concerns specific to the plist group backend -
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-backend-run-assertions ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (cl-assert (file-exists-p file) t "Backend file %S does not exist")))
+    (unless (file-exists-p file)
+      (error "Backend file %S does not exist" file))))
 #+END_SRC
 
 **** latest-date-records                                   :reader:method:

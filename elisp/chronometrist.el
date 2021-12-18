@@ -1454,7 +1454,8 @@ Return
 ;; [[file:chronometrist.org::*run-assertions][run-assertions:1]]
 (cl-defmethod chronometrist-backend-run-assertions ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (cl-assert (file-exists-p file) t "Backend file %S does not exist")))
+    (unless (file-exists-p file)
+      (error "Backend file %S does not exist" file))))
 ;; run-assertions:1 ends here
 
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
