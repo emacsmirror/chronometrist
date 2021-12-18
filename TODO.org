@@ -792,3 +792,24 @@ With different checks, for different levels of speed/thoroughness -
 2. intersecting timestamps
 3. sequence of records
 4. (plist group) midnight spanning interval check (first and last intervals)
+
+* format changes
+** multiple intervals per record                                   :feature:
+#+BEGIN_SRC emacs-lisp
+(:name "<name>"
+ [<keyword-value pair>] ...
+ :intervals
+ (("<start>" . "<stop>")
+  ...))
+#+END_SRC
+
+It doesn't do anything not already possible in the current formats. At best, it removes some duplication when the same task is "paused" and "resumed".
+
+** "event"/non-interval records                                    :feature:
+<2021-12-18T11:48:53+0530>
+
+Records not used for time tracking, but to store data associated with a date or timestamp. More than one record may exist for the same date.
+#+BEGIN_SRC emacs-lisp
+(event "<date or timestamp>"
+ [<keyword-value pair>] ...)
+#+END_SRC
