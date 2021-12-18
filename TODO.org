@@ -813,3 +813,12 @@ Records not used for time tracking, but to store data associated with a date or 
 (event "<date or timestamp>"
  [<keyword-value pair>] ...)
 #+END_SRC
+
+* undesired file watcher created after literate-elisp-load              :bug:
+<2021-12-18T15:13:35+0530>
+
+1. Type =M-x chronometrist=; =(chronometrist-backend-file-watch (chronometrist-active-backend))= probably returns a descriptor
+2. Visit literate source and type =M-x literate-elisp-load=; =(chronometrist-backend-file-watch (chronometrist-active-backend))= returns nil
+3. Type =M-x chronometrist=; =file-notify-descriptors= likely contains two descriptors for the same file and the same function (=chronometrist-file-refresh=)
+
+=chronometrist-register-backend= removes the old backend object and replaces it with a new one.
