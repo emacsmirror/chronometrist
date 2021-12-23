@@ -878,7 +878,8 @@ Properties of the existing record are not preserved.")
 ;; [[file:chronometrist.org::*create-file][create-file:1]]
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
-Use FILE as a path, if provided.")
+Use FILE as a path, if provided.
+Return non-nil if FILE is successfully created.")
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*view-file][view-file:1]]
@@ -1082,7 +1083,8 @@ Return nil if BACKEND contains no records.")
         (erase-buffer)
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
-        (write-file file)))))
+        (write-file file))
+      t)))
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*in-file][in-file:1]]

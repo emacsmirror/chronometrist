@@ -1454,7 +1454,8 @@ Properties of the existing record are not preserved.")
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
-Use FILE as a path, if provided.")
+Use FILE as a path, if provided.
+Return non-nil if FILE is successfully created.")
 #+END_SRC
 
 **** view-file                                          :generic:function:
@@ -1692,7 +1693,8 @@ Return nil if BACKEND contains no records.")
         (erase-buffer)
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
-        (write-file file)))))
+        (write-file file))
+      t)))
 #+END_SRC
 
 **** in-file                                                       :macro:
