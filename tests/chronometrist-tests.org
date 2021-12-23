@@ -9,12 +9,18 @@
   (format "%stest" (file-name-directory (or load-file-name default-directory))))
 #+END_SRC
 
-** test-backend
+** test-backends
+=chronometrist-test-backend= is just here till I finish writing the tests for a single backend. Will tackle how to apply the same tests to different backends afterwards - possibly with a [[#chronometrist-ert-deftest][wrapper macro]] around =ert-deftest=.
+
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-test-backend
-  (make-instance 'chronometrist-plist-backend :path chronometrist-test-file-path-stem))
+  (make-instance 'chronometrist-plist-group-backend :path chronometrist-test-file-path-stem))
 
-(chronometrist-reset-internal chronometrist-test-backend)
+(defvar chronometrist-test-backends
+  (cl-loop for backend in '(chronometrist-plist-backend chronometrist-plist-group-backend)
+    collect (make-instance backend :path chronometrist-test-file-path-stem)))
+
+(mapc #'chronometrist-reset-internal chronometrist-test-backends)
 #+END_SRC
 
 ** test-first-record
@@ -104,7 +110,6 @@
                    :start  "2021-12-01T00:00:00+0530"
                    :stop   "2021-12-01T00:06:22+0530")))))
 #+END_SRC
-
 
 ** data structures
 *** list-tasks
@@ -275,6 +280,63 @@
 #+END_SRC
 
 ** backend
+Situations
+1. no file
+2. empty file
+3. non-empty file with no records
+4. single record
+   * active
+   * inactive
+   * active, day-crossing
+   * inactive, day-crossing
+5. multiple records
+6. [plist-group] latest plist is split
+
+*** ert-deftest                                                     :macro:
+:PROPERTIES:
+:CUSTOM_ID: chronometrist-ert-deftest
+:END:
+#+BEGIN_SRC emacs-lisp :load no :tangle no
+(defmacro chronometrist-ert-deftest (backend-var &rest deftest-forms)
+  "Generate test groups for each backend in `chronometrist-test-backends'.
+Each backend object is bound to BACKEND-VAR. DEFTEST-FORMS are
+passed to `ert-deftest'."
+  (declare (indent defun) (debug t))
+  (cl-loop for backend in chronometrist-test-backends collect
+    (let ((backend-name (symbol-name (eieio-object-class-name backend))))
+      `(ert-deftest ,(intern (concat backend-name "-tests")) ()
+         (let ((,backend-var ,backend))
+           ,@deftest-forms)))
+    into test-groups
+    finally return (cons 'progn test-groups)))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(ert-deftest chronometrist-backend-tests ()
+  (unwind-protect
+      (progn
+        ;; no file
+        (should-error (chronometrist-latest-date-records chronometrist-test-backend))
+        (should-error (chronometrist-latest-record chronometrist-test-backend))
+        (should-error (chronometrist-task-records-for-date chronometrist-test-backend "Test" (chronometrist-date-iso)))
+        (should-error (chronometrist-active-days chronometrist-test-backend "Test"))
+        (should-error (chronometrist-remove-last chronometrist-test-backend))
+        (should-error (chronometrist-insert chronometrist-test-backend ...))
+
+        (should (chronometrist-create-file chronometrist-test-backend))
+        ;; (should (chronometrist-replace-last chronometrist-test-backend ...))
+
+        ;; (should (chronometrist-create-file chronometrist-test-backend))
+        ;; (should (chronometrist-count-records chronometrist-test-backend))
+        ;; (should (chronometrist-to-list chronometrist-test-backend))
+        ;; (should (chronometrist-to-hash-table chronometrist-test-backend))
+        ;; (should (chronometrist-to-file ... chronometrist-test-backend ...))
+        ;; (should (chronometrist-backend-empty-p chronometrist-test-backend))
+        )
+    ;; cleanup - remove test backend files
+    (delete-file (chronometrist-backend-file chronometrist-test-backend))))
+#+END_SRC
+
 *** count-records
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-count-records ()
