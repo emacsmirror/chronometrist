@@ -758,6 +758,8 @@ protocol implementation progress
 2. timeclock
 3. [[https://klog.jotaen.net/][klog]]
 4. SQLite
+5. https://github.com/projecthamster/hamster
+   + https://github.com/projecthamster/hamster/wiki/Our-datamodel
 
 * Functions doing similar things                                       :code:
 1. =task-time-one-day=
