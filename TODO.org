@@ -709,12 +709,13 @@ Midnight-spanning intervals are split in the hash table when the file is read, b
 * Duplication - accessing the latest-record                            :code:
 Many functions use the latest record. A =(chronometrist-with-latest-record var &rest body)= might help...
 
-* STARTED Plist-group backend [70%]                    :feature:optimization:
+* STARTED Plist-group backend [72%]                    :feature:optimization:
 See branch =grouped-plist-format=
 1. [X] Migrate backend code to use CLOS
 2. [-] Implement plist-group backend code
 3. [ ] Change hash table format - omit dates from plists
-4. [ ] Mark split intervals with =:split t=
+4. +[ ] Mark split intervals with =:split t=+
+   * Not required, since we can detect them with enough certainty for my liking. (See =chronometrist-plists-split-p=)
 5. [X] make generic =cl-loop= backend interface - =chronometrist-loop-sexp-file=
 6. [X] =chronometrist-loop-sexp-file= - optimize grouped-plist iterator
 7. [X] key-values code is not yet generic
