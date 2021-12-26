@@ -1434,7 +1434,8 @@ Return nil if BACKEND contains no records.")
 **** insert                                             :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-insert (backend plist)
-  "Insert PLIST as new record in BACKEND.")
+  "Insert PLIST as new record in BACKEND.
+Return non-nil if record is inserted successfully.")
 #+END_SRC
 
 **** remove-last                                        :generic:function:
@@ -1455,7 +1456,7 @@ Properties of the existing record are not preserved.")
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
 Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created.")
+Return non-nil if FILE is successfully created, and nil if it already exists.")
 #+END_SRC
 
 **** view-file                                          :generic:function:
@@ -2311,7 +2312,8 @@ Concerns specific to the plist group backend -
   (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (chronometrist-backward-read-sexp (current-buffer))))
+    (ignore-errors
+      (chronometrist-backward-read-sexp (current-buffer)))))
 #+END_SRC
 
 **** HACK insert                                           :writer:method:
@@ -2338,7 +2340,8 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
           (chronometrist-sexp-pre-read-check (current-buffer))
           (chronometrist-sexp-delete-list))
         (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
-        (when save (save-buffer))))))
+        (when save (save-buffer))
+        t))))
 #+END_SRC
 
 **** plists-split-p                                             :function:
@@ -2448,6 +2451,7 @@ Return value is either a list in the form
 **** to-list                                               :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
     append (reverse (rest expr))))
 #+END_SRC

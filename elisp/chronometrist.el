@@ -861,7 +861,8 @@ Return nil if BACKEND contains no records.")
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defgeneric chronometrist-insert (backend plist)
-  "Insert PLIST as new record in BACKEND.")
+  "Insert PLIST as new record in BACKEND.
+Return non-nil if record is inserted successfully.")
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
@@ -879,7 +880,7 @@ Properties of the existing record are not preserved.")
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
 Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created.")
+Return non-nil if FILE is successfully created, and nil if it already exists.")
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*view-file][view-file:1]]
@@ -1465,7 +1466,8 @@ Return
   (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
-    (chronometrist-backward-read-sexp (current-buffer))))
+    (ignore-errors
+      (chronometrist-backward-read-sexp (current-buffer)))))
 ;; latest-date-records:1 ends here
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
@@ -1488,7 +1490,8 @@ Return
           (chronometrist-sexp-pre-read-check (current-buffer))
           (chronometrist-sexp-delete-list))
         (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
-        (when save (save-buffer))))))
+        (when save (save-buffer))
+        t))))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
@@ -1592,6 +1595,7 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
     append (reverse (rest expr))))
 ;; to-list:1 ends here
