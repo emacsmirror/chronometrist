@@ -368,11 +368,18 @@ passed to `ert-deftest'."
       (progn
         ;; no file
         (should-error (chronometrist-latest-date-records chronometrist-test-backend))
-        (should-error (chronometrist-latest-record chronometrist-test-backend))
-        (should-error (chronometrist-task-records-for-date chronometrist-test-backend "Test" (chronometrist-date-iso)))
-        (should-error (chronometrist-active-days chronometrist-test-backend "Test"))
+        (should-error (chronometrist-insert chronometrist-test-backend
+                                (car chronometrist-test-records)))
         (should-error (chronometrist-remove-last chronometrist-test-backend))
-        (should-error (chronometrist-insert chronometrist-test-backend ...))
+        (should-error (chronometrist-to-list chronometrist-test-backend))
+
+        (should-error (chronometrist-latest-record chronometrist-test-backend))
+        (should-error (chronometrist-task-records-for-date chronometrist-test-backend
+                                               "Test" (chronometrist-date-ts)))
+        (should-error (chronometrist-active-days chronometrist-test-backend
+                                     "Test"))
+        (should-error (chronometrist-replace-last chronometrist-test-backend
+                                      (cl-second chronometrist-test-records)))
 
         (should (chronometrist-create-file chronometrist-test-backend))
         ;; (should (chronometrist-replace-last chronometrist-test-backend ...))
