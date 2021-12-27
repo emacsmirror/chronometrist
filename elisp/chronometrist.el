@@ -853,6 +853,13 @@ unchanged."
 Signal errors for any unmet preconditions.")
 ;; run-assertions:1 ends here
 
+;; [[file:chronometrist.org::*create-file][create-file:1]]
+(cl-defgeneric chronometrist-create-file (backend &optional file)
+  "Create file associated with BACKEND.
+Use FILE as a path, if provided.
+Return non-nil if FILE is successfully created, and nil if it already exists.")
+;; create-file:1 ends here
+
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
 (cl-defgeneric chronometrist-latest-date-records (backend)
   "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
@@ -877,13 +884,6 @@ Signal an error if there is no record to remove.")
   "Apply key-values from PLIST to the latest record in BACKEND.
 Properties of the existing record are not preserved.")
 ;; update-properties:1 ends here
-
-;; [[file:chronometrist.org::*create-file][create-file:1]]
-(cl-defgeneric chronometrist-create-file (backend &optional file)
-  "Create file associated with BACKEND.
-Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
-;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*view-file][view-file:1]]
 (cl-defgeneric chronometrist-view-file (backend)

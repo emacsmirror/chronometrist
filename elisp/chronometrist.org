@@ -1424,6 +1424,14 @@ unchanged."
 Signal errors for any unmet preconditions.")
 #+END_SRC
 
+**** create-file                                        :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-create-file (backend &optional file)
+  "Create file associated with BACKEND.
+Use FILE as a path, if provided.
+Return non-nil if FILE is successfully created, and nil if it already exists.")
+#+END_SRC
+
 **** latest-date-records                                :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-date-records (backend)
@@ -1451,14 +1459,6 @@ Signal an error if there is no record to remove.")
 (cl-defgeneric chronometrist-update-properties (backend plist)
   "Apply key-values from PLIST to the latest record in BACKEND.
 Properties of the existing record are not preserved.")
-#+END_SRC
-
-**** create-file                                        :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-create-file (backend &optional file)
-  "Create file associated with BACKEND.
-Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
 #+END_SRC
 
 **** view-file                                          :generic:function:
