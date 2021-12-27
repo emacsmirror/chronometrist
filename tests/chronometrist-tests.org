@@ -19,8 +19,6 @@
 (defvar chronometrist-test-backends
   (cl-loop for backend in '(chronometrist-plist-backend chronometrist-plist-group-backend)
     collect (make-instance backend :path chronometrist-test-file-path-stem)))
-
-(mapc #'chronometrist-reset-internal chronometrist-test-backends)
 #+END_SRC
 
 ** test-first-record
