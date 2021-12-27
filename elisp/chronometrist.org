@@ -1441,7 +1441,9 @@ Return non-nil if record is inserted successfully.")
 **** remove-last                                        :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-remove-last (backend)
-  "Remove last record from BACKEND.")
+  "Remove last record from BACKEND.
+Return non-nil if record is successfully removed.
+Signal an error if there is no record to remove.")
 #+END_SRC
 
 **** update-properties                                  :generic:function:
@@ -2426,7 +2428,8 @@ Return value is either a list in the form
           (backward-list)
           (chronometrist-sexp-delete-list)
           (join-line))
-        (when save (save-buffer))))))
+        (when save (save-buffer))
+        t))))
 #+END_SRC
 
 **** update-properties                                     :writer:method:
@@ -2524,10 +2527,12 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (cl-check-type plist chronometrist-plist)
+  (when (chronometrist-backend-empty-p backend)
+    (error "No record to replace in %s" (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-   (chronometrist-remove-last backend :save nil)
-   (chronometrist-insert backend plist :save nil)
-   (save-buffer)))
+    (chronometrist-remove-last backend :save nil)
+    (chronometrist-insert backend plist :save nil)
+    (save-buffer)))
 #+END_SRC
 
 ***** count-records                                       :reader:method:

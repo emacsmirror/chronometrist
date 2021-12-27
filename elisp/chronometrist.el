@@ -867,7 +867,9 @@ Return non-nil if record is inserted successfully.")
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defgeneric chronometrist-remove-last (backend)
-  "Remove last record from BACKEND.")
+  "Remove last record from BACKEND.
+Return non-nil if record is successfully removed.
+Signal an error if there is no record to remove.")
 ;; remove-last:1 ends here
 
 ;; [[file:chronometrist.org::*update-properties][update-properties:1]]
@@ -1572,7 +1574,8 @@ Return value is either a list in the form
           (backward-list)
           (chronometrist-sexp-delete-list)
           (join-line))
-        (when save (save-buffer))))))
+        (when save (save-buffer))
+        t))))
 ;; remove-last:1 ends here
 
 ;; [[file:chronometrist.org::*update-properties][update-properties:1]]
@@ -1656,10 +1659,12 @@ Return value is either a list in the form
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
   (cl-check-type plist chronometrist-plist)
+  (when (chronometrist-backend-empty-p backend)
+    (error "No record to replace in %s" (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-   (chronometrist-remove-last backend :save nil)
-   (chronometrist-insert backend plist :save nil)
-   (save-buffer)))
+    (chronometrist-remove-last backend :save nil)
+    (chronometrist-insert backend plist :save nil)
+    (save-buffer)))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
