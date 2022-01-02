@@ -885,15 +885,15 @@ Signal an error if there is no record to remove.")
 Properties of the existing record are not preserved.")
 ;; update-properties:1 ends here
 
-;; [[file:chronometrist.org::*view-file][view-file:1]]
-(cl-defgeneric chronometrist-view-file (backend)
-  "Open file associated with BACKEND for interactive viewing.")
-;; view-file:1 ends here
+;; [[file:chronometrist.org::*view-backend][view-backend:1]]
+(cl-defgeneric chronometrist-view-backend (backend)
+  "Open BACKEND for interactive viewing.")
+;; view-backend:1 ends here
 
-;; [[file:chronometrist.org::*edit-file][edit-file:1]]
-(cl-defgeneric chronometrist-edit-file (backend)
-  "Open file associated with BACKEND for interactive editing.")
-;; edit-file:1 ends here
+;; [[file:chronometrist.org::*edit-backend][edit-backend:1]]
+(cl-defgeneric chronometrist-edit-backend (backend)
+  "Open BACKEND for interactive editing.")
+;; edit-backend:1 ends here
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defgeneric chronometrist-to-list (backend)
@@ -1016,11 +1016,11 @@ Return nil if BACKEND contains no records.")
             (file-notify-add-watch file '(change) callback)))))
 ;; setup-file-watch:1 ends here
 
-;; [[file:chronometrist.org::*edit-file][edit-file:1]]
-(cl-defmethod chronometrist-edit-file ((backend chronometrist-file-backend-mixin))
+;; [[file:chronometrist.org::*edit-backend][edit-backend:1]]
+(cl-defmethod chronometrist-edit-backend ((backend chronometrist-file-backend-mixin))
   (find-file-other-window (chronometrist-backend-file backend))
   (goto-char (point-max)))
-;; edit-file:1 ends here
+;; edit-backend:1 ends here
 
 ;; [[file:chronometrist.org::*initialize-instance][initialize-instance:1]]
 (cl-defmethod initialize-instance :after ((backend chronometrist-file-backend-mixin)
@@ -1931,7 +1931,7 @@ The default is \"*\""
 Argument _BUTTON is for the purpose of using this command as a
 button action."
   (interactive)
-  (chronometrist-edit-file (chronometrist-active-backend)))
+  (chronometrist-edit-backend (chronometrist-active-backend)))
 ;; open-log:1 ends here
 
 ;; [[file:chronometrist.org::*task-active-p][task-active-p:1]]

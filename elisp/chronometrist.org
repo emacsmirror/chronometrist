@@ -1461,16 +1461,16 @@ Signal an error if there is no record to remove.")
 Properties of the existing record are not preserved.")
 #+END_SRC
 
-**** view-file                                          :generic:function:
+**** view-backend                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-view-file (backend)
-  "Open file associated with BACKEND for interactive viewing.")
+(cl-defgeneric chronometrist-view-backend (backend)
+  "Open BACKEND for interactive viewing.")
 #+END_SRC
 
-**** edit-file                                          :generic:function:
+**** edit-backend                                       :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-edit-file (backend)
-  "Open file associated with BACKEND for interactive editing.")
+(cl-defgeneric chronometrist-edit-backend (backend)
+  "Open BACKEND for interactive editing.")
 #+END_SRC
 
 **** to-list                                            :generic:function:
@@ -1618,9 +1618,9 @@ Return nil if BACKEND contains no records.")
             (file-notify-add-watch file '(change) callback)))))
 #+END_SRC
 
-**** edit-file                                                    :method:
+**** edit-backend                                                 :method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-edit-file ((backend chronometrist-file-backend-mixin))
+(cl-defmethod chronometrist-edit-backend ((backend chronometrist-file-backend-mixin))
   (find-file-other-window (chronometrist-backend-file backend))
   (goto-char (point-max)))
 #+END_SRC
@@ -2845,7 +2845,7 @@ The default is \"*\""
 Argument _BUTTON is for the purpose of using this command as a
 button action."
   (interactive)
-  (chronometrist-edit-file (chronometrist-active-backend)))
+  (chronometrist-edit-backend (chronometrist-active-backend)))
 #+END_SRC
 
 **** task-active-p                                                :reader:
