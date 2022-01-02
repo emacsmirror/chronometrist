@@ -1152,31 +1152,15 @@ STREAM (which is the value of `current-buffer')."
   :group 'chronometrist)
 ;; pretty-print-function:1 ends here
 
-;; [[file:chronometrist.org::*count-records][count-records:1]]
-(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-min))
-    (cl-loop with count = 0
-      while (ignore-errors (read (current-buffer)))
-      do (cl-incf count)
-      finally return count)))
-;; count-records:1 ends here
-
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
   (with-slots (hash-table) backend
-    (let ((latest-date (chronometrist-events-last-date hash-table)))
-      (cons latest-date
-            (gethash latest-date hash-table)))))
+    (when-let*
+        ((latest-date (chronometrist-events-last-date hash-table))
+         (records     (gethash latest-date hash-table)))
+      (cons latest-date records))))
 ;; latest-date-records:1 ends here
-
-;; [[file:chronometrist.org::*latest-record][latest-record:1]]
-(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (backward-list)
-    (ignore-errors (read (current-buffer)))))
-;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*to-hash-table][to-hash-table:1]]
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-backend))
@@ -1209,6 +1193,7 @@ STREAM (which is the value of `current-buffer')."
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -1221,6 +1206,7 @@ STREAM (which is the value of `current-buffer')."
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -1229,14 +1215,6 @@ STREAM (which is the value of `current-buffer')."
     (backward-list 1)
     (chronometrist-sexp-delete-list)))
 ;; remove-last:1 ends here
-
-;; [[file:chronometrist.org::*replace-last][replace-last:1]]
-(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (chronometrist-remove-last backend))
-    (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
-;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*reindent-buffer][reindent-buffer:1]]
 (defun chronometrist-sexp-reindent-buffer ()
@@ -1358,15 +1336,6 @@ Return
            :modify))))
 ;; file-change-type:1 ends here
 
-;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
-(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-backend) task date-ts)
-  (let* ((date         (chronometrist-date-iso date-ts))
-         (records      (gethash date (chronometrist-backend-hash-table backend))))
-    (cl-loop for record in records
-      when (equal task (plist-get record :name))
-      collect record)))
-;; task-records-for-date:1 ends here
-
 ;; [[file:chronometrist.org::*to-file][to-file:1]]
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-backend) file)
   (delete-file file)
@@ -1435,8 +1404,46 @@ Return
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) collect expr))
 ;; to-list:1 ends here
+
+;; [[file:chronometrist.org::#program-backend-plist-latest-record][latest-record:1]]
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (backward-list)
+    (ignore-errors (read (current-buffer)))))
+;; latest-record:1 ends here
+
+;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-backend) task date-ts)
+  (chronometrist-backend-run-assertions backend)
+  (let* ((date    (chronometrist-date-iso date-ts))
+         (records (gethash date (chronometrist-backend-hash-table backend))))
+    (cl-loop for record in records
+      when (equal task (plist-get record :name))
+      collect record)))
+;; task-records-for-date:1 ends here
+
+;; [[file:chronometrist.org::*replace-last][replace-last:1]]
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (chronometrist-remove-last backend))
+    (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+    (save-buffer)))
+;; replace-last:1 ends here
+
+;; [[file:chronometrist.org::*count-records][count-records:1]]
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-min))
+    (cl-loop with count = 0
+      while (ignore-errors (read (current-buffer)))
+      do (cl-incf count)
+      finally return count)))
+;; count-records:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
 (defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)

@@ -1866,36 +1866,20 @@ STREAM (which is the value of `current-buffer')."
   :group 'chronometrist)
 #+END_SRC
 
-**** count-records                                         :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-min))
-    (cl-loop with count = 0
-      while (ignore-errors (read (current-buffer)))
-      do (cl-incf count)
-      finally return count)))
-#+END_SRC
-
 **** latest-date-records                                   :reader:method:
+In this backend, it's easier to implement this in terms of [[#program-backend-plist-latest-record][=chronometrist-latest-record=]] than the other way round.
+
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-date-records ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
   (with-slots (hash-table) backend
-    (let ((latest-date (chronometrist-events-last-date hash-table)))
-      (cons latest-date
-            (gethash latest-date hash-table)))))
+    (when-let*
+        ((latest-date (chronometrist-events-last-date hash-table))
+         (records     (gethash latest-date hash-table)))
+      (cons latest-date records))))
 #+END_SRC
 
-**** latest-record                                         :reader:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (point-max))
-    (backward-list)
-    (ignore-errors (read (current-buffer)))))
-#+END_SRC
-
-**** to-hash-table                                                :writer:
+**** to-hash-table                                         :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-hash-table ((backend chronometrist-plist-backend))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1928,6 +1912,7 @@ STREAM (which is the value of `current-buffer')."
 **** insert                                                :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -1941,6 +1926,7 @@ STREAM (which is the value of `current-buffer')."
 **** remove-last                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -1948,15 +1934,6 @@ STREAM (which is the value of `current-buffer')."
     (unless (and (bobp) (bolp)) (insert "\n"))
     (backward-list 1)
     (chronometrist-sexp-delete-list)))
-#+END_SRC
-
-**** replace-last                                          :writer:method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
-  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-    (goto-char (chronometrist-remove-last backend))
-    (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
 #+END_SRC
 
 **** reindent-buffer                                             :command:
@@ -2174,15 +2151,6 @@ Return
       (setq chronometrist--file-state chronometrist--file-state-old
             chronometrist-events      chronometrist-events-old))))
 #+END_SRC
-**** task-records-for-date                                        :reader:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-backend) task date-ts)
-  (let* ((date         (chronometrist-date-iso date-ts))
-         (records      (gethash date (chronometrist-backend-hash-table backend))))
-    (cl-loop for record in records
-      when (equal task (plist-get record :name))
-      collect record)))
-#+END_SRC
 **** to-file                                               :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-backend) file)
@@ -2254,7 +2222,53 @@ Return
 **** to-list                                               :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) collect expr))
+#+END_SRC
+
+**** extended protocol
+***** latest-record                                       :reader:method:
+:PROPERTIES:
+:CUSTOM_ID: program-backend-plist-latest-record
+:END:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
+  (chronometrist-backend-run-assertions backend)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-max))
+    (backward-list)
+    (ignore-errors (read (current-buffer)))))
+#+END_SRC
+
+***** task-records-for-date                               :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-task-records-for-date ((backend chronometrist-plist-backend) task date-ts)
+  (chronometrist-backend-run-assertions backend)
+  (let* ((date    (chronometrist-date-iso date-ts))
+         (records (gethash date (chronometrist-backend-hash-table backend))))
+    (cl-loop for record in records
+      when (equal task (plist-get record :name))
+      collect record)))
+#+END_SRC
+
+***** replace-last                                        :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (chronometrist-remove-last backend))
+    (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
+    (save-buffer)))
+#+END_SRC
+
+***** count-records                                       :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-count-records ((backend chronometrist-plist-backend))
+  (chronometrist-sexp-in-file (chronometrist-backend-file backend)
+    (goto-char (point-min))
+    (cl-loop with count = 0
+      while (ignore-errors (read (current-buffer)))
+      do (cl-incf count)
+      finally return count)))
 #+END_SRC
 
 *** plist group backend
