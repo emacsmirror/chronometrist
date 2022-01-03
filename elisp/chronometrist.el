@@ -884,12 +884,6 @@ Return non-nil if record is successfully removed.
 Signal an error if there is no record to remove.")
 ;; remove-last:1 ends here
 
-;; [[file:chronometrist.org::*update-properties][update-properties:1]]
-(cl-defgeneric chronometrist-update-properties (backend plist)
-  "Apply key-values from PLIST to the latest record in BACKEND.
-Properties of the existing record are not preserved.")
-;; update-properties:1 ends here
-
 ;; [[file:chronometrist.org::*view-backend][view-backend:1]]
 (cl-defgeneric chronometrist-view-backend (backend)
   "Open BACKEND for interactive viewing.")
@@ -1583,24 +1577,6 @@ Return value is either a list in the form
         (when save (save-buffer))
         t))))
 ;; remove-last:1 ends here
-
-;; [[file:chronometrist.org::*update-properties][update-properties:1]]
-(cl-defmethod chronometrist-update-properties ((backend chronometrist-plist-group-backend) plist)
-  (if (chronometrist-backend-empty-p backend)
-      (error "Backend has no records")
-    (with-slots (file) backend
-      (-let* (((split-1 split-2)         (chronometrist-last-two-split-p file))
-              ((unified-plist &as &plist :name name
-                              :start start :stop stop)
-               (or (chronometrist-plist-unify split-1 split-2)
-                   (chronometrist-latest-record backend)))
-              (new-plist         (copy-list plist))
-              (new-plist         (chronometrist-plist-remove new-plist :name :start :stop))
-              (new-plist         (when new-plist
-                                   (append (list :name name) new-plist
-                                           (list :start start :stop stop)))))
-        (chronometrist-replace-last backend new-plist)))))
-;; update-properties:1 ends here
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
