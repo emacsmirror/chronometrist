@@ -1647,11 +1647,11 @@ the file and the end of the second-last s-expression."))
 **** reset-backend                                         :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-reset-backend ((backend chronometrist-file-backend-mixin))
-  (chronometrist-reset-task-list backend)
-  (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
-        chronometrist--file-state nil)
-  (chronometrist-setup-file-watch)
-  (chronometrist-refresh))
+  (with-slots (hash-table file-state) backend
+    (chronometrist-reset-task-list backend)
+    (setf hash-table (chronometrist-to-hash-table backend)
+          file-state nil)
+    (chronometrist-setup-file-watch)))
 #+END_SRC
 
 **** backend-empty-p                                       :reader:method:
@@ -2402,7 +2402,7 @@ Return value is either a list in the form
         (new-plist-wo-time (chronometrist-plist-remove new-plist :start :stop)))
     (cond ((not (and old-plist new-plist)) nil)
           ((equal old-plist-wo-time new-plist-wo-time)
-           (let ((plist (copy-list old-plist)))
+           (let ((plist (cl-copy-list old-plist)))
              (plist-put plist :stop (plist-get new-plist :stop))))
           (t (error "Attempt to unify plists with non-identical key-values")))))
 #+END_SRC
@@ -2472,7 +2472,7 @@ Return value is either a list in the form
 
 **** on-change                                                    :method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
+(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) _fs-event)
   (chronometrist-reset-backend backend))
 #+END_SRC
 
@@ -3031,7 +3031,8 @@ Re-read `chronometrist-file', update caches, and
 refresh the `chronometrist' buffer."
   (run-hooks 'chronometrist-file-change-hook)
   ;; (message "chronometrist - file %s" fs-event)
-  (chronometrist-on-change (chronometrist-active-backend) fs-event))
+  (chronometrist-on-change (chronometrist-active-backend) fs-event)
+  (chronometrist-refresh))
 #+END_SRC
 
 **** query-stop                                                :procedure:
@@ -3467,10 +3468,10 @@ Merge this into `chronometrist-refresh-file', while moving the -refresh call to 
 #+END_SRC
 **** refresh-file                                                 :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-report-refresh-file (_fs-event)
-  "Re-read `chronometrist-file' and refresh the `chronometrist-report' buffer.
-Argument _FS-EVENT is ignored."
-  (chronometrist-events-populate)
+(defun chronometrist-report-refresh-file (fs-event)
+  "Re-read `chronometrist-file' and refresh the `chronometrist-report' buffer."
+  (run-hooks 'chronometrist-file-change-hook)
+  (chronometrist-on-change (chronometrist-active-backend) fs-event)
   (chronometrist-report-refresh))
 #+END_SRC
 **** report-mode-map                                              :keymap:
@@ -3626,13 +3627,11 @@ displayed. They must be ts structs (see `ts.el').")
 #+END_SRC
 **** count-average-time-spent                                   :function:
 #+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-statistics-count-average-time-spent (task &optional (table chronometrist-events) (backend (chronometrist-active-backend)))
-  "Return the average time the user has spent on TASK from TABLE.
-TABLE should be a hash table - if not supplied,
-`chronometrist-events' is used."
+(cl-defun chronometrist-statistics-count-average-time-spent (task &optional (backend (chronometrist-active-backend)))
+  "Return the average time the user has spent on TASK in BACKEND."
   (cl-loop with days = 0
     with events-in-day
-    for date being the hash-keys of table
+    for date being the hash-keys of (chronometrist-backend-hash-table backend)
     when (setq events-in-day (chronometrist-task-records-for-date backend task date))
     do (cl-incf days) and
     collect
