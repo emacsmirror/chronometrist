@@ -714,7 +714,7 @@ Value must be a keyword corresponding to a key in
 ;; [[file:chronometrist.org::*active-backend][active-backend:1]]
 (defun chronometrist-active-backend ()
   "Return an object representing the currently active backend."
-  (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
+  (cl-second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 ;; active-backend:1 ends here
 
 ;; [[file:chronometrist.org::*switch-backend][switch-backend:1]]
@@ -768,7 +768,7 @@ PROMPT and PREDICATE have the same meanings as in
                            predicate t))))
     (if return-keyword
         backend-keyword
-      (second (alist-get backend-keyword backend-alist)))))
+      (cl-second (alist-get backend-keyword backend-alist)))))
 ;; read-backend-name:1 ends here
 
 ;; [[file:chronometrist.org::*task-list][task-list:1]]
@@ -1672,7 +1672,7 @@ Return value is either a list in the form
                           "Backend to write: "
                           chronometrist-backends-alist
                           (lambda (keyword)
-                            (not (equal (second
+                            (not (equal (cl-second
                                          (alist-get keyword chronometrist-backends-alist))
                                         input-backend)))))
          (output-file-suggestion (chronometrist-backend-file output-backend))

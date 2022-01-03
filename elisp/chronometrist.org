@@ -1276,7 +1276,7 @@ Value must be a keyword corresponding to a key in
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-active-backend ()
   "Return an object representing the currently active backend."
-  (second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
+  (cl-second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 #+END_SRC
 
 **** switch-backend                                              :command:
@@ -1333,7 +1333,7 @@ PROMPT and PREDICATE have the same meanings as in
                            predicate t))))
     (if return-keyword
         backend-keyword
-      (second (alist-get backend-keyword backend-alist)))))
+      (cl-second (alist-get backend-keyword backend-alist)))))
 #+END_SRC
 
 **** task-list                                                  :function:
@@ -2547,7 +2547,7 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
                           "Backend to write: "
                           chronometrist-backends-alist
                           (lambda (keyword)
-                            (not (equal (second
+                            (not (equal (cl-second
                                          (alist-get keyword chronometrist-backends-alist))
                                         input-backend)))))
          (output-file-suggestion (chronometrist-backend-file output-backend))
