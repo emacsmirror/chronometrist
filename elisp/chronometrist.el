@@ -62,6 +62,7 @@
 (require 'filenotify)
 (require 'subr-x)
 (require 'parse-time)
+(require 'eieio)
 
 (eval-when-compile
   (defvar chronometrist-mode-map)
@@ -1532,7 +1533,7 @@ Return value is either a list in the form
            (older-group (unless (equal older-group newer-group)
                           older-group))
            (newer-plist (cl-second newer-group))
-           (older-plist (cl-first (cl-last older-group))))
+           (older-plist (cl-first (last older-group))))
       (when (and older-plist newer-plist
                  (chronometrist-plists-split-p older-plist newer-plist))
         (list older-plist newer-plist)))))
@@ -1616,7 +1617,7 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (cl-first (cl-last (chronometrist-latest-date-records backend))))
+  (cl-first (last (chronometrist-latest-date-records backend))))
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
