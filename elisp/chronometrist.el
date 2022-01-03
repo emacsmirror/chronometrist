@@ -685,6 +685,14 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
   (locate-user-emacs-file "chronometrist")
   "Name (without extension) and full path of the Chronometrist database."
   :type 'file)
+
+(defun chronometrist-file-variable-watcher (symbol newval operation where)
+  "Update slots of the active backend when `chronometrist-file' is changed."
+  (with-slots (path extension file) (chronometrist-active-backend)
+    (setf path newval
+          file (concat path "." extension))))
+
+(add-variable-watcher 'chronometrist-file #'chronometrist-file-variable-watcher)
 ;; chronometrist-file:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
