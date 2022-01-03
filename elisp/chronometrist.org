@@ -653,7 +653,7 @@ The data from =chronometrist-events= is used by most (all?) interval-consuming f
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-reset-internal (chronometrist-active-backend)))
+  (chronometrist-reset-backend (chronometrist-active-backend)))
 #+END_SRC
 
 *** apply-time                                                   :function:
@@ -1293,7 +1293,7 @@ Value must be a keyword corresponding to a key in
                                                 keyword)))
                                      t)))
     (setq chronometrist-active-backend choice)
-    (chronometrist-reset-internal (chronometrist-active-backend))
+    (chronometrist-reset-backend (chronometrist-active-backend))
     ;; timer function is backend-dependent
     (chronometrist-force-restart-timer)))
 #+END_SRC
@@ -1417,6 +1417,12 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 #+END_SRC
 
+**** reset-backend                                      :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-reset-backend (backend)
+  "Reset data structures for BACKEND.")
+#+END_SRC
+
 **** run-assertions                                     :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-backend-run-assertions (backend)
@@ -1500,12 +1506,6 @@ Any existing data in OUTPUT-FILE is overwritten.")
 (cl-defgeneric chronometrist-on-change (backend fs-event)
   "Function to be run when BACKEND changes on disk.
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
-#+END_SRC
-
-**** reset-internal                                     :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-reset-internal (backend)
-  "Reset data structures for BACKEND.")
 #+END_SRC
 
 **** backend-empty-p                                    :generic:function:
@@ -1635,9 +1635,9 @@ Return nil if BACKEND contains no records.")
       (setf file (concat path "." extension)))))
 #+END_SRC
 
-**** reset-internal                                        :writer:method:
+**** reset-backend                                         :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-reset-internal ((backend chronometrist-file-backend-mixin))
+(cl-defmethod chronometrist-reset-backend ((backend chronometrist-file-backend-mixin))
   (chronometrist-reset-task-list backend)
   (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
         chronometrist--file-state nil)
@@ -2156,7 +2156,7 @@ Return
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-backend) file)
   (delete-file file)
   (chronometrist-create-file backend file)
-  (chronometrist-reset-internal backend)
+  (chronometrist-reset-backend backend)             ; possibly to ensure BACKEND is up to date
   (chronometrist-sexp-in-file file
     (goto-char (point-max))
     (cl-loop
@@ -2489,7 +2489,7 @@ Return value is either a list in the form
   (cl-check-type hash-table hash-table)
   (delete-file file)
   (chronometrist-create-file backend file)
-  (chronometrist-reset-internal backend)
+  (chronometrist-reset-backend backend)
   (chronometrist-sexp-in-file file
     (goto-char (point-max))
     (cl-loop for date being the hash-keys of hash-table
@@ -2503,7 +2503,7 @@ Return value is either a list in the form
 **** on-change                                                    :method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
-  (chronometrist-reset-internal backend))
+  (chronometrist-reset-backend backend))
 #+END_SRC
 
 **** extended protocol
@@ -3348,7 +3348,7 @@ run `chronometrist-statistics'."
                      (hl-line-mode))
                    (switch-to-buffer buffer)
                    (if (chronometrist-memory-layer-empty-p backend)
-                       (chronometrist-reset-internal backend)
+                       (chronometrist-reset-backend backend)
                      (chronometrist-refresh))
                    (if chronometrist--point
                        (goto-char chronometrist--point)

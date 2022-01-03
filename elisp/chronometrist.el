@@ -241,7 +241,7 @@ Return new position of point."
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-reset-internal (chronometrist-active-backend)))
+  (chronometrist-reset-backend (chronometrist-active-backend)))
 ;; reset:1 ends here
 
 ;; [[file:chronometrist.org::*apply-time][apply-time:1]]
@@ -730,7 +730,7 @@ Value must be a keyword corresponding to a key in
                                                 keyword)))
                                      t)))
     (setq chronometrist-active-backend choice)
-    (chronometrist-reset-internal (chronometrist-active-backend))
+    (chronometrist-reset-backend (chronometrist-active-backend))
     ;; timer function is backend-dependent
     (chronometrist-force-restart-timer)))
 ;; switch-backend:1 ends here
@@ -847,6 +847,11 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 ;; remove-from-task-list:1 ends here
 
+;; [[file:chronometrist.org::*reset-backend][reset-backend:1]]
+(cl-defgeneric chronometrist-reset-backend (backend)
+  "Reset data structures for BACKEND.")
+;; reset-backend:1 ends here
+
 ;; [[file:chronometrist.org::*run-assertions][run-assertions:1]]
 (cl-defgeneric chronometrist-backend-run-assertions (backend)
   "Check common preconditions for any operations on BACKEND.
@@ -919,11 +924,6 @@ Any existing data in OUTPUT-FILE is overwritten.")
   "Function to be run when BACKEND changes on disk.
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
 ;; on-change:1 ends here
-
-;; [[file:chronometrist.org::*reset-internal][reset-internal:1]]
-(cl-defgeneric chronometrist-reset-internal (backend)
-  "Reset data structures for BACKEND.")
-;; reset-internal:1 ends here
 
 ;; [[file:chronometrist.org::*backend-empty-p][backend-empty-p:1]]
 (cl-defgeneric chronometrist-backend-empty-p (backend)
@@ -1031,14 +1031,14 @@ Return nil if BACKEND contains no records.")
       (setf file (concat path "." extension)))))
 ;; initialize-instance:1 ends here
 
-;; [[file:chronometrist.org::*reset-internal][reset-internal:1]]
-(cl-defmethod chronometrist-reset-internal ((backend chronometrist-file-backend-mixin))
+;; [[file:chronometrist.org::*reset-backend][reset-backend:1]]
+(cl-defmethod chronometrist-reset-backend ((backend chronometrist-file-backend-mixin))
   (chronometrist-reset-task-list backend)
   (setf (chronometrist-backend-hash-table backend) (chronometrist-to-hash-table backend)
         chronometrist--file-state nil)
   (chronometrist-setup-file-watch)
   (chronometrist-refresh))
-;; reset-internal:1 ends here
+;; reset-backend:1 ends here
 
 ;; [[file:chronometrist.org::*backend-empty-p][backend-empty-p:1]]
 (cl-defmethod chronometrist-backend-empty-p ((backend chronometrist-file-backend-mixin))
@@ -1340,7 +1340,7 @@ Return
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-backend) file)
   (delete-file file)
   (chronometrist-create-file backend file)
-  (chronometrist-reset-internal backend)
+  (chronometrist-reset-backend backend)             ; possibly to ensure BACKEND is up to date
   (chronometrist-sexp-in-file file
     (goto-char (point-max))
     (cl-loop
@@ -1624,7 +1624,7 @@ Return value is either a list in the form
   (cl-check-type hash-table hash-table)
   (delete-file file)
   (chronometrist-create-file backend file)
-  (chronometrist-reset-internal backend)
+  (chronometrist-reset-backend backend)
   (chronometrist-sexp-in-file file
     (goto-char (point-max))
     (cl-loop for date being the hash-keys of hash-table
@@ -1637,7 +1637,7 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) fs-event)
-  (chronometrist-reset-internal backend))
+  (chronometrist-reset-backend backend))
 ;; on-change:1 ends here
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
@@ -2416,7 +2416,7 @@ run `chronometrist-statistics'."
                      (hl-line-mode))
                    (switch-to-buffer buffer)
                    (if (chronometrist-memory-layer-empty-p backend)
-                       (chronometrist-reset-internal backend)
+                       (chronometrist-reset-backend backend)
                      (chronometrist-refresh))
                    (if chronometrist--point
                        (goto-char chronometrist--point)
