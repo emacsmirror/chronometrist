@@ -791,6 +791,121 @@ return a list of tasks from the active backend."
           #'string-lessp)))
 ;; list-tasks:1 ends here
 
+;; [[file:chronometrist.org::*run-assertions][run-assertions:1]]
+(cl-defgeneric chronometrist-backend-run-assertions (backend)
+  "Check common preconditions for any operations on BACKEND.
+Signal errors for any unmet preconditions.")
+;; run-assertions:1 ends here
+
+;; [[file:chronometrist.org::*view-backend][view-backend:1]]
+(cl-defgeneric chronometrist-view-backend (backend)
+  "Open BACKEND for interactive viewing.")
+;; view-backend:1 ends here
+
+;; [[file:chronometrist.org::*edit-backend][edit-backend:1]]
+(cl-defgeneric chronometrist-edit-backend (backend)
+  "Open BACKEND for interactive editing.")
+;; edit-backend:1 ends here
+
+;; [[file:chronometrist.org::*backend-empty-p][backend-empty-p:1]]
+(cl-defgeneric chronometrist-backend-empty-p (backend)
+  "Return non-nil if BACKEND contains no records, else nil.")
+;; backend-empty-p:1 ends here
+
+;; [[file:chronometrist.org::*timer][timer:1]]
+(cl-defgeneric chronometrist-timer (backend)
+  "Refresh Chronometrist and related buffers.
+Buffers will be refreshed only if they are visible and the user
+is clocked in to a task. Additionally, do not refresh buffers if
+if BACKEND is a file-based backend and the file is modified but
+not saved.")
+;; timer:1 ends here
+
+;; [[file:chronometrist.org::*create-file][create-file:1]]
+(cl-defgeneric chronometrist-create-file (backend &optional file)
+  "Create file associated with BACKEND.
+Use FILE as a path, if provided.
+Return non-nil if FILE is successfully created, and nil if it already exists.")
+;; create-file:1 ends here
+
+;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
+(cl-defgeneric chronometrist-latest-date-records (backend)
+  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
+Return nil if BACKEND contains no records.")
+;; latest-date-records:1 ends here
+
+;; [[file:chronometrist.org::*insert][insert:1]]
+(cl-defgeneric chronometrist-insert (backend plist)
+  "Insert PLIST as new record in BACKEND.
+Return non-nil if record is inserted successfully.")
+;; insert:1 ends here
+
+;; [[file:chronometrist.org::*remove-last][remove-last:1]]
+(cl-defgeneric chronometrist-remove-last (backend)
+  "Remove last record from BACKEND.
+Return non-nil if record is successfully removed.
+Signal an error if there is no record to remove.")
+;; remove-last:1 ends here
+
+;; [[file:chronometrist.org::*latest-record][latest-record:1]]
+(cl-defgeneric chronometrist-latest-record (backend)
+  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a :stop key-value.")
+;; latest-record:1 ends here
+
+;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
+(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
+  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
+DATE-TS must be a `ts.el' struct.
+
+Return nil if BACKEND contains no records.")
+;; task-records-for-date:1 ends here
+
+;; [[file:chronometrist.org::*replace-last][replace-last:1]]
+(cl-defgeneric chronometrist-replace-last (backend plist)
+  "Replace last record in BACKEND with PLIST.")
+;; replace-last:1 ends here
+
+;; [[file:chronometrist.org::*to-file][to-file:1]]
+(cl-defgeneric chronometrist-to-file (input-hash-table output-backend output-file)
+  "Save data from INPUT-HASH-TABLE to OUTPUT-FILE, in OUTPUT-BACKEND format.
+Any existing data in OUTPUT-FILE is overwritten.")
+;; to-file:1 ends here
+
+;; [[file:chronometrist.org::*on-change][on-change:1]]
+(cl-defgeneric chronometrist-on-change (backend fs-event)
+  "Function to be run when BACKEND changes on disk.
+FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
+;; on-change:1 ends here
+
+;; [[file:chronometrist.org::*verify][verify:1]]
+(cl-defgeneric chronometrist-verify (backend)
+  "Check BACKEND for errors in data.")
+;; verify:1 ends here
+
+;; [[file:chronometrist.org::*reset-backend][reset-backend:1]]
+(cl-defgeneric chronometrist-reset-backend (backend)
+  "Reset data structures for BACKEND.")
+;; reset-backend:1 ends here
+
+;; [[file:chronometrist.org::*to-hash-table][to-hash-table:1]]
+(cl-defgeneric chronometrist-to-hash-table (backend)
+  "Return data in BACKEND as a hash table in chronological order.
+Hash table keys are ISO-8601 date strings. Hash table values are
+lists of records, represented by plists. Both hash table keys and
+hash table values must be in chronological order.")
+;; to-hash-table:1 ends here
+
+;; [[file:chronometrist.org::*to-list][to-list:1]]
+(cl-defgeneric chronometrist-to-list (backend)
+  "Return all records in BACKEND as a list of plists.")
+;; to-list:1 ends here
+
+;; [[file:chronometrist.org::*memory-layer-empty-p][memory-layer-empty-p:1]]
+(cl-defgeneric chronometrist-memory-layer-empty-p (backend)
+  "Return non-nil if memory layer of BACKEND contains no records, else nil.")
+;; memory-layer-empty-p:1 ends here
+
 ;; [[file:chronometrist.org::*reset-task-list][reset-task-list:1]]
 (cl-defun chronometrist-reset-task-list (backend)
   "Regenerate BACKEND's task list from its data.
@@ -846,131 +961,10 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 ;; remove-from-task-list:1 ends here
 
-;; [[file:chronometrist.org::*reset-backend][reset-backend:1]]
-(cl-defgeneric chronometrist-reset-backend (backend)
-  "Reset data structures for BACKEND.")
-;; reset-backend:1 ends here
-
-;; [[file:chronometrist.org::*run-assertions][run-assertions:1]]
-(cl-defgeneric chronometrist-backend-run-assertions (backend)
-  "Check common preconditions for any operations on BACKEND.
-Signal errors for any unmet preconditions.")
-;; run-assertions:1 ends here
-
-;; [[file:chronometrist.org::*create-file][create-file:1]]
-(cl-defgeneric chronometrist-create-file (backend &optional file)
-  "Create file associated with BACKEND.
-Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
-;; create-file:1 ends here
-
-;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
-(cl-defgeneric chronometrist-latest-date-records (backend)
-  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
-Return nil if BACKEND contains no records.")
-;; latest-date-records:1 ends here
-
-;; [[file:chronometrist.org::*insert][insert:1]]
-(cl-defgeneric chronometrist-insert (backend plist)
-  "Insert PLIST as new record in BACKEND.
-Return non-nil if record is inserted successfully.")
-;; insert:1 ends here
-
-;; [[file:chronometrist.org::*remove-last][remove-last:1]]
-(cl-defgeneric chronometrist-remove-last (backend)
-  "Remove last record from BACKEND.
-Return non-nil if record is successfully removed.
-Signal an error if there is no record to remove.")
-;; remove-last:1 ends here
-
-;; [[file:chronometrist.org::*update-properties][update-properties:1]]
-(cl-defgeneric chronometrist-update-properties (backend plist)
-  "Apply key-values from PLIST to the latest record in BACKEND.
-Properties of the existing record are not preserved.")
-;; update-properties:1 ends here
-
-;; [[file:chronometrist.org::*view-backend][view-backend:1]]
-(cl-defgeneric chronometrist-view-backend (backend)
-  "Open BACKEND for interactive viewing.")
-;; view-backend:1 ends here
-
-;; [[file:chronometrist.org::*edit-backend][edit-backend:1]]
-(cl-defgeneric chronometrist-edit-backend (backend)
-  "Open BACKEND for interactive editing.")
-;; edit-backend:1 ends here
-
-;; [[file:chronometrist.org::*to-list][to-list:1]]
-(cl-defgeneric chronometrist-to-list (backend)
-  "Return all records in BACKEND as a list of plists.")
-;; to-list:1 ends here
-
-;; [[file:chronometrist.org::*to-hash-table][to-hash-table:1]]
-(cl-defgeneric chronometrist-to-hash-table (backend)
-  "Return data in BACKEND as a hash table in chronological order.
-Hash table keys are ISO-8601 date strings. Hash table values are
-lists of records, represented by plists. Both hash table keys and
-hash table values must be in chronological order.")
-;; to-hash-table:1 ends here
-
-;; [[file:chronometrist.org::*to-file][to-file:1]]
-(cl-defgeneric chronometrist-to-file (input-hash-table output-backend output-file)
-  "Save data from INPUT-HASH-TABLE to OUTPUT-FILE, in OUTPUT-BACKEND format.
-Any existing data in OUTPUT-FILE is overwritten.")
-;; to-file:1 ends here
-
-;; [[file:chronometrist.org::*on-change][on-change:1]]
-(cl-defgeneric chronometrist-on-change (backend fs-event)
-  "Function to be run when BACKEND changes on disk.
-FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
-;; on-change:1 ends here
-
-;; [[file:chronometrist.org::*backend-empty-p][backend-empty-p:1]]
-(cl-defgeneric chronometrist-backend-empty-p (backend)
-  "Return non-nil if BACKEND contains no records, else nil.")
-;; backend-empty-p:1 ends here
-
-;; [[file:chronometrist.org::*memory-layer-empty-p][memory-layer-empty-p:1]]
-(cl-defgeneric chronometrist-memory-layer-empty-p (backend)
-  "Return non-nil if memory layer of BACKEND contains no records, else nil.")
-;; memory-layer-empty-p:1 ends here
-
-;; [[file:chronometrist.org::*verify][verify:1]]
-(cl-defgeneric chronometrist-verify (backend)
-  "Check BACKEND for errors in data.")
-;; verify:1 ends here
-
-;; [[file:chronometrist.org::*timer][timer:1]]
-(cl-defgeneric chronometrist-timer (backend)
-  "Refresh Chronometrist and related buffers.
-Buffers will be refreshed only if they are visible and the user
-is clocked in to a task. Additionally, do not refresh buffers if
-if BACKEND is a file-based backend and the file is modified but
-not saved.")
-;; timer:1 ends here
-
-;; [[file:chronometrist.org::*latest-record][latest-record:1]]
-(cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
-;; latest-record:1 ends here
-
-;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
-(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
-  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
-DATE-TS must be a `ts.el' struct.
-
-Return nil if BACKEND contains no records.")
-;; task-records-for-date:1 ends here
-
 ;; [[file:chronometrist.org::*active-days][active-days:1]]
 (cl-defgeneric chronometrist-active-days (backend task &key start end)
   "From BACKEND, return number of days on which TASK had recorded time.")
 ;; active-days:1 ends here
-
-;; [[file:chronometrist.org::*replace-last][replace-last:1]]
-(cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
-;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
 (cl-defgeneric chronometrist-count-records (backend)
@@ -986,7 +980,7 @@ Return nil if BACKEND contains no records.")
     :documentation
     "Path to backend file, without extension.")
    (extension ;; :initform (error "Extension is required")
-    :initarg :ext
+    :initarg :extension
     :accessor chronometrist-backend-ext
     :custom 'string
     :documentation
@@ -1002,7 +996,22 @@ Return nil if BACKEND contains no records.")
    (file-watch :initform nil
                :initarg :file-watch
                :accessor chronometrist-backend-file-watch
-               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'."))
+               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'.")
+   (file-state :initarg :file-state
+               :initform nil
+               :accessor chronometrist-backend-file-state
+               :documentation "List containing the state of `chronometrist-file'.
+`chronometrist-refresh-file' sets this to a plist in the form
+
+\(:last (LAST-START LAST-END) :rest (REST-START REST-END HASH))
+
+\(see `chronometrist-file-hash')
+
+LAST-START and LAST-END are integers representing the start and
+the end of the last s-expression.
+
+REST-START and REST-END are integers representing the start of
+the file and the end of the second-last s-expression."))
   :documentation "Mixin for backends storing data in a single file.")
 ;; file-backend-mixin:1 ends here
 
@@ -1232,22 +1241,6 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
       (unless (eobp) (insert "\n")))))
 ;; reindent-buffer:1 ends here
 
-;; [[file:chronometrist.org::*file-state][file-state:1]]
-(defvar chronometrist--file-state nil
-  "List containing the state of `chronometrist-file'.
-`chronometrist-refresh-file' sets this to a plist in the form
-
-\(:last (LAST-START LAST-END) :rest (REST-START REST-END HASH))
-
-\(see `chronometrist-file-hash')
-
-LAST-START and LAST-END are integers representing the start and
-the end of the last s-expression.
-
-REST-START and REST-END are integers representing the start of
-the file and the end of the second-last s-expression.")
-;; file-state:1 ends here
-
 ;; [[file:chronometrist.org::*file-hash][file-hash:1]]
 (cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
   "Calculate hash of `chronometrist-file' between START and END.
@@ -1351,25 +1344,25 @@ Return
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
-  (with-slots (hash-table file-watch) backend
+  (with-slots (hash-table file-watch file-state) backend
     (-let* (((descriptor action _ _) fs-event)
-            (change      (when chronometrist--file-state
-                           (chronometrist-file-change-type chronometrist--file-state)))
+            (change      (when file-state
+                           (chronometrist-file-change-type file-state)))
             (reset-watch (or (eq action 'deleted)
                              (eq action 'renamed))))
       ;; (message "chronometrist - file change type is %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch
-                 (not chronometrist--file-state) ;; why?
+                 (not file-state) ;; why?
                  (eq change t))
              ;; Don't keep a watch for a nonexistent file.
              (when reset-watch
                (file-notify-rm-watch file-watch)
-               (setq file-watch nil  chronometrist--file-state nil))
+               (setf file-watch nil file-state nil))
              (setf hash-table (chronometrist-to-hash-table backend))
              (chronometrist-reset-task-list backend))
-            (chronometrist--file-state
+            (file-state
              (-let* (((&plist :name old-task)  (chronometrist-events-last))
                      (latest-record-file       (chronometrist-latest-record backend))
                      ((&plist :name new-task)  latest-record-file))
@@ -1394,7 +1387,7 @@ Return
                          (-drop-last 1 it)
                          (setf (gethash date (chronometrist-backend-hash-table backend)) it))))
                  ((pred null) nil)))))
-      (setq chronometrist--file-state
+      (setf file-state
             (list :last (chronometrist-file-hash :before-last nil)
                   :rest (chronometrist-file-hash nil :before-last t)))
       ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
@@ -1583,24 +1576,6 @@ Return value is either a list in the form
         (when save (save-buffer))
         t))))
 ;; remove-last:1 ends here
-
-;; [[file:chronometrist.org::*update-properties][update-properties:1]]
-(cl-defmethod chronometrist-update-properties ((backend chronometrist-plist-group-backend) plist)
-  (if (chronometrist-backend-empty-p backend)
-      (error "Backend has no records")
-    (with-slots (file) backend
-      (-let* (((split-1 split-2)         (chronometrist-last-two-split-p file))
-              ((unified-plist &as &plist :name name
-                              :start start :stop stop)
-               (or (chronometrist-plist-unify split-1 split-2)
-                   (chronometrist-latest-record backend)))
-              (new-plist         (copy-list plist))
-              (new-plist         (chronometrist-plist-remove new-plist :name :start :stop))
-              (new-plist         (when new-plist
-                                   (append (list :name name) new-plist
-                                           (list :start start :stop stop)))))
-        (chronometrist-replace-last backend new-plist)))))
-;; update-properties:1 ends here
 
 ;; [[file:chronometrist.org::*to-list][to-list:1]]
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
