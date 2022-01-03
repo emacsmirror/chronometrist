@@ -987,7 +987,7 @@ Return nil if BACKEND contains no records.")
     :documentation
     "Path to backend file, without extension.")
    (extension ;; :initform (error "Extension is required")
-    :initarg :ext
+    :initarg :extension
     :accessor chronometrist-backend-ext
     :custom 'string
     :documentation
@@ -998,12 +998,27 @@ Return nil if BACKEND contains no records.")
          :custom 'string
          :documentation "Full path to backend file, with extension.")
    (hash-table :initform (chronometrist-make-hash-table)
-               :initarg :ht
+               :initarg :hash-table
                :accessor chronometrist-backend-hash-table)
    (file-watch :initform nil
                :initarg :file-watch
                :accessor chronometrist-backend-file-watch
-               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'."))
+               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'.")
+   (file-state :initarg :file-state
+               :initform nil
+               :accessor chronometrist-backend-file-state
+               :documentation "List containing the state of `chronometrist-file'.
+`chronometrist-refresh-file' sets this to a plist in the form
+
+\(:last (LAST-START LAST-END) :rest (REST-START REST-END HASH))
+
+\(see `chronometrist-file-hash')
+
+LAST-START and LAST-END are integers representing the start and
+the end of the last s-expression.
+
+REST-START and REST-END are integers representing the start of
+the file and the end of the second-last s-expression."))
   :documentation "Mixin for backends storing data in a single file.")
 ;; file-backend-mixin:1 ends here
 
@@ -1233,22 +1248,6 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
       (unless (eobp) (insert "\n")))))
 ;; reindent-buffer:1 ends here
 
-;; [[file:chronometrist.org::*file-state][file-state:1]]
-(defvar chronometrist--file-state nil
-  "List containing the state of `chronometrist-file'.
-`chronometrist-refresh-file' sets this to a plist in the form
-
-\(:last (LAST-START LAST-END) :rest (REST-START REST-END HASH))
-
-\(see `chronometrist-file-hash')
-
-LAST-START and LAST-END are integers representing the start and
-the end of the last s-expression.
-
-REST-START and REST-END are integers representing the start of
-the file and the end of the second-last s-expression.")
-;; file-state:1 ends here
-
 ;; [[file:chronometrist.org::*file-hash][file-hash:1]]
 (cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
   "Calculate hash of `chronometrist-file' between START and END.
@@ -1352,25 +1351,25 @@ Return
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
 (cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
-  (with-slots (hash-table file-watch) backend
+  (with-slots (hash-table file-watch file-state) backend
     (-let* (((descriptor action _ _) fs-event)
-            (change      (when chronometrist--file-state
-                           (chronometrist-file-change-type chronometrist--file-state)))
+            (change      (when file-state
+                           (chronometrist-file-change-type file-state)))
             (reset-watch (or (eq action 'deleted)
                              (eq action 'renamed))))
       ;; (message "chronometrist - file change type is %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch
-                 (not chronometrist--file-state) ;; why?
+                 (not file-state) ;; why?
                  (eq change t))
              ;; Don't keep a watch for a nonexistent file.
              (when reset-watch
                (file-notify-rm-watch file-watch)
-               (setq file-watch nil  chronometrist--file-state nil))
+               (setf file-watch nil file-state nil))
              (setf hash-table (chronometrist-to-hash-table backend))
              (chronometrist-reset-task-list backend))
-            (chronometrist--file-state
+            (file-state
              (-let* (((&plist :name old-task)  (chronometrist-events-last))
                      (latest-record-file       (chronometrist-latest-record backend))
                      ((&plist :name new-task)  latest-record-file))
@@ -1395,7 +1394,7 @@ Return
                          (-drop-last 1 it)
                          (setf (gethash date (chronometrist-backend-hash-table backend)) it))))
                  ((pred null) nil)))))
-      (setq chronometrist--file-state
+      (setf file-state
             (list :last (chronometrist-file-hash :before-last nil)
                   :rest (chronometrist-file-hash nil :before-last t)))
       ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
