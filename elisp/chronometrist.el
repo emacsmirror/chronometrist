@@ -2258,17 +2258,13 @@ If INHIBIT-HOOKS is non-nil, the hooks
 `chronometrist-before-out-functions', and
 `chronometrist-after-out-functions' will not be run."
   (interactive "P")
-  (let* ((empty-file   (chronometrist-file-empty-p chronometrist-file))
+  (let* ((empty-file   (chronometrist-backend-empty-p (chronometrist-active-backend)))
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
          (target       (or nth at-point))
          (current      (chronometrist-current-task))
-         (in-function  (if inhibit-hooks
-                           #'chronometrist-in
-                         #'chronometrist-run-functions-and-clock-in))
-         (out-function (if inhibit-hooks
-                           #'chronometrist-out
-                         #'chronometrist-run-functions-and-clock-out)))
+         (in-function  (if inhibit-hooks #'chronometrist-in  #'chronometrist-run-functions-and-clock-in))
+         (out-function (if inhibit-hooks #'chronometrist-out #'chronometrist-run-functions-and-clock-out)))
     ;; do not run hooks - chronometrist-add-new-task will do it
     (cond (empty-file (chronometrist-add-new-task))
           ;; What should we do if the user provides an invalid
