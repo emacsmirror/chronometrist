@@ -180,7 +180,7 @@ TS must be a ts struct (see `ts.el')."
   "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
   (when list
     (while (consp list)
-      (setq list (if (and (keywordp (first list)) (consp (rest list)))
+      (setq list (if (and (keywordp (cl-first list)) (consp (cl-rest list)))
                      (cddr list)
                    'not-plist)))
     (null list)))
@@ -538,9 +538,9 @@ considers it an alist."
 (defun chronometrist-plist-group-p (list)
   "Return non-nil if LIST is in the form \(ATOM PLIST+\)."
   (and (consp list)
-       (not (consp (first list)))
-       (rest list)
-       (seq-every-p #'chronometrist-plist-p (rest list))))
+       (not (consp (cl-first list)))
+       (cl-rest list)
+       (seq-every-p #'chronometrist-plist-p (cl-rest list))))
 ;; plist-group-p:1 ends here
 
 ;; [[file:chronometrist.org::*longest-keyword-length][longest-keyword-length:1]]
@@ -708,7 +708,7 @@ Value must be a keyword corresponding to a key in
 `chronometrist-backends-alist'."
   :type `(choice
           ,@(cl-loop for elt in chronometrist-backends-alist
-              collect `(const :tag ,(cl-second elt) ,(first elt)))))
+              collect `(const :tag ,(cl-second elt) ,(cl-first elt)))))
 ;; active-backend:1 ends here
 
 ;; [[file:chronometrist.org::*active-backend][active-backend:1]]
@@ -764,7 +764,7 @@ PROMPT and PREDICATE have the same meanings as in
          (read
           (completing-read prompt
                            (cl-loop for list in backend-alist
-                             collect (first list))
+                             collect (cl-first list))
                            predicate t))))
     (if return-keyword
         backend-keyword
@@ -1479,7 +1479,7 @@ Return
       (error "%s" "`chronometrist-insert' was called with an empty plist")
     (chronometrist-sexp-in-file (chronometrist-backend-file backend)
       (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
-             (backend-latest-date (first latest-plist-group))
+             (backend-latest-date (cl-first latest-plist-group))
              (date-today          (chronometrist-date-iso))
              (insert-new-group    (not (equal date-today backend-latest-date)))
              (new-plist-group     (if insert-new-group
@@ -1532,7 +1532,7 @@ Return value is either a list in the form
            (older-group (unless (equal older-group newer-group)
                           older-group))
            (newer-plist (cl-second newer-group))
-           (older-plist (first (last older-group))))
+           (older-plist (cl-first (cl-last older-group))))
       (when (and older-plist newer-plist
                  (chronometrist-plists-split-p older-plist newer-plist))
         (list older-plist newer-plist)))))
@@ -1581,7 +1581,7 @@ Return value is either a list in the form
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-group-backend))
   (chronometrist-backend-run-assertions backend)
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend)
-    append (reverse (rest expr))))
+    append (reverse (cl-rest expr))))
 ;; to-list:1 ends here
 
 ;; [[file:chronometrist.org::*to-hash-table][to-hash-table:1]]
@@ -1589,7 +1589,7 @@ Return value is either a list in the form
   (with-slots (file) backend
     (chronometrist-loop-sexp-file for plist-group in file
       with table = (chronometrist-make-hash-table) do
-      (puthash (first plist-group) (rest plist-group) table)
+      (puthash (cl-first plist-group) (cl-rest plist-group) table)
       finally return table)))
 ;; to-hash-table:1 ends here
 
@@ -1616,7 +1616,7 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (first (last (chronometrist-latest-date-records backend))))
+  (cl-first (cl-last (chronometrist-latest-date-records backend))))
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
