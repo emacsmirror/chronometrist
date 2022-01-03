@@ -4,8 +4,8 @@
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
-;; Package-Requires: ((emacs "25.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
-;; Version: 0.9.0
+;; Package-Requires: ((emacs "27.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
+;; ;; Version: 0.9.0
 
 ;; This is free and unencumbered software released into the public domain.
 ;;
@@ -708,8 +708,7 @@ Value must be a keyword corresponding to a key in
 `chronometrist-backends-alist'."
   :type `(choice
           ,@(cl-loop for elt in chronometrist-backends-alist
-              collect `(const :tag ,(second elt)
-                              ,(first elt)))))
+              collect `(const :tag ,(cl-second elt) ,(first elt)))))
 ;; active-backend:1 ends here
 
 ;; [[file:chronometrist.org::*active-backend][active-backend:1]]
@@ -998,7 +997,7 @@ Return nil if BACKEND contains no records.")
          :custom 'string
          :documentation "Full path to backend file, with extension.")
    (hash-table :initform (chronometrist-make-hash-table)
-               :initarg :ht
+               :initarg :hash-table
                :accessor chronometrist-backend-hash-table)
    (file-watch :initform nil
                :initarg :file-watch
@@ -1024,7 +1023,7 @@ Return nil if BACKEND contains no records.")
 
 ;; [[file:chronometrist.org::*initialize-instance][initialize-instance:1]]
 (cl-defmethod initialize-instance :after ((backend chronometrist-file-backend-mixin)
-                                          &rest initargs)
+                                          &rest _initargs)
   "Initialize FILE based on PATH and EXTENSION."
   (with-slots (path extension file) backend
     (when (and path extension (not file))
