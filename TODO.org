@@ -484,7 +484,9 @@ Ensure that the user manual is easily discoverable.
 3. open changelog on update
 
 * macro for extensions                                       :code:extension:
-<2021-06-07T16:33:54+0530>
+:PROPERTIES:
+:CREATED:  2021-06-07T16:33:54+0530
+:END:
 A macro to create new columns for Chronometrist.
 
 Extension writer specifies
@@ -512,7 +514,9 @@ Current uses -
 2. =chronometrist-spark=
 
 * macro for frontends                                                  :code:
-<2021-06-26T08:49:25+0530>
+:PROPERTIES:
+:CREATED:  2021-06-26T08:49:25+0530
+:END:
 A macro to create Chronometrist frontends (based on =tabulated-list-mode=). If implemented, would shorten code for all four existing and two planned frontends.
 
 Programmer specifies -
@@ -528,8 +532,9 @@ Macro creates -
 3. custom variables =frontend-schema=, =frontend-row-transformers=, =frontend-schema-transformers=, =frontend-buffer-name=
 
 * unified format-duration function                       :code:customization:
-<2021-06-08T11:17:54+0530>
-
+:PROPERTIES:
+:CREATED:  2021-06-08T11:17:54+0530
+:END:
 Currently we have at least three ways of displaying durations - ="HH:MM:SS"= , ="XhYm"= , and =X hour(s), Y minutes(s)"= . Make a single function similar to =format-time-string=, but for durations. =ts-human-format-duration= from =ts.el= is not nearly as flexible as I'd like. When completed, we can have a single custom variable accepting a format string, which can be used to customize display of durations for the entire application at once.
 
 + user provides a duration (in seconds), a format string, and an optional separator string
@@ -566,7 +571,9 @@ Alternative syntax
 + to display long units, use ="~[<separator>]<code>"=
 
 * DONE error - =min= called with nil                              :spark:bug:
-<2021-06-11T03:44:17+0530>
+:PROPERTIES:
+:CREATED:  2021-06-11T03:44:17+0530
+:END:
 1. clock in
 2. change =:start= of active interval to another time on the same date
 3. error
@@ -620,7 +627,9 @@ Debugger entered--Lisp error: (wrong-number-of-arguments #<subr min> 0)
 #+END_SRC
 
 * STARTED discoverability and mouse-accessibility of commands [33%]      :ux:
-<2021-06-15T16:18:49+0530>
+:PROPERTIES:
+:CREATED:  2021-06-15T16:18:49+0530
+:END:
 Goals
 1. discoverability of commands
 2. discoverability of default keybindings
@@ -636,15 +645,18 @@ Strategies
      + The menu does not make the behavior of the numeric argument discoverable. Doesn't make sense to put it there, either.
 
 * querying the file buffer and editing the results                  :feature:
-<2021-06-16T07:50:21+0530>
-
+:PROPERTIES:
+:CREATED:  2021-06-16T07:50:21+0530
+:END:
 =chronometrist-loop-file= can be used to run queries against user data. It would be cool to be able to edit the file directly from the query results.
 1. The result data may just be plists, which could be displayed/edited directly from the search results ([[info:elisp#Invisible Text][invisible text]] or [[info:elisp#Selective Display][selective display]] + [[info:elisp#Narrowing][narrowing]]?)
 2. The result data may be something which corresponds to the input data, in which case we could jump to the corresponding plist.
 3. The result data may be impossible to trace back to the input data (e.g. a sum of intervals from many plists), in which case we cannot provide direct editing.
 
 * error in change type detection                     :core:bug:plist_backend:
-<2021-06-16T18:40:18+0530>
+:PROPERTIES:
+:CREATED:  2021-06-16T18:40:18+0530
+:END:
 Steps
 1. Clock in
 2. Delete active task plist, but don't save
@@ -779,9 +791,11 @@ protocol implementation progress
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
+
 * STARTED customizable task list                                    :feature:
 1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
 2. Adding a task? We can modify the task list, but how to persist it?
+
 * Extend time range prompt                                          :feature:
 Support inputs like "today", "yesterday", "5 days ago", etc.
  * =date(1)= does something like this, right? Maybe we could shell out to it.
@@ -790,6 +804,7 @@ A general library for this could convert between (both to and from) such strings
  * today, yesterday, day before yesterday, tomorrow, day after tomorrow
  * N <seconds/minutes/hours/days/weeks/months/years> (ago|from now/today)
    + plus multiples of those units e.g. "1 year, 5 months, ... from now"
+
 * DONE Kill/discard command                                         :feature:
 Command to delete the interval currently being recorded. (bind to 'k')
 + Most conservative option - it will only operate on the project at point, and will only kill for a clocked-in project.
@@ -797,6 +812,7 @@ Command to delete the interval currently being recorded. (bind to 'k')
 + It _should_ ask for confirmation.
 + Alternatively, or as a complement - an *undo command*, which will undo your last action (clock in or clock out).
   - Undo and redo seem like the best bets.
+
 * pretty printer
 ** fix handling of tagged alist group values                           :bug:
 ** put each list element on its own line if length of list exceeds fill-column :feature:
@@ -822,8 +838,9 @@ With different checks, for different levels of speed/thoroughness -
 It doesn't do anything not already possible in the current formats. At best, it removes some duplication when the same task is "paused" and "resumed".
 
 ** "event"/non-interval records                                    :feature:
-<2021-12-18T11:48:53+0530>
-
+:PROPERTIES:
+:CREATED:  2021-12-18T11:48:53+0530
+:END:
 Records not used for time tracking, but to store data associated with a date or timestamp. More than one record may exist for the same date.
 #+BEGIN_SRC emacs-lisp
 (event "<date or timestamp>"
@@ -831,8 +848,9 @@ Records not used for time tracking, but to store data associated with a date or 
 #+END_SRC
 
 * undesired file watcher created after literate-elisp-load              :bug:
-<2021-12-18T15:13:35+0530>
-
+:PROPERTIES:
+:CREATED:  2021-12-18T15:13:35+0530
+:END:
 1. Type =M-x chronometrist=; =(chronometrist-backend-file-watch (chronometrist-active-backend))= probably returns a descriptor
 2. Visit literate source and type =M-x literate-elisp-load=; =(chronometrist-backend-file-watch (chronometrist-active-backend))= returns nil
 3. Type =M-x chronometrist=; =file-notify-descriptors= likely contains two descriptors for the same file and the same function (=chronometrist-file-refresh=)
