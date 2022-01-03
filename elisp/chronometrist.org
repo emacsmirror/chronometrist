@@ -1359,7 +1359,143 @@ return a list of tasks from the active backend."
           #'string-lessp)))
 #+END_SRC
 
-**** reset-task-list                                              :writer:
+**** run-assertions                                     :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-backend-run-assertions (backend)
+  "Check common preconditions for any operations on BACKEND.
+Signal errors for any unmet preconditions.")
+#+END_SRC
+
+**** view-backend                                       :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-view-backend (backend)
+  "Open BACKEND for interactive viewing.")
+#+END_SRC
+
+**** edit-backend                                       :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-edit-backend (backend)
+  "Open BACKEND for interactive editing.")
+#+END_SRC
+
+**** backend-empty-p                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-backend-empty-p (backend)
+  "Return non-nil if BACKEND contains no records, else nil.")
+#+END_SRC
+
+**** timer                                              :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-timer (backend)
+  "Refresh Chronometrist and related buffers.
+Buffers will be refreshed only if they are visible and the user
+is clocked in to a task. Additionally, do not refresh buffers if
+if BACKEND is a file-based backend and the file is modified but
+not saved.")
+#+END_SRC
+
+**** file operations
+***** create-file                                      :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-create-file (backend &optional file)
+  "Create file associated with BACKEND.
+Use FILE as a path, if provided.
+Return non-nil if FILE is successfully created, and nil if it already exists.")
+#+END_SRC
+
+***** latest-date-records                              :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-latest-date-records (backend)
+  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
+Return nil if BACKEND contains no records.")
+#+END_SRC
+
+***** insert                                           :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-insert (backend plist)
+  "Insert PLIST as new record in BACKEND.
+Return non-nil if record is inserted successfully.")
+#+END_SRC
+
+***** remove-last                                      :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-remove-last (backend)
+  "Remove last record from BACKEND.
+Return non-nil if record is successfully removed.
+Signal an error if there is no record to remove.")
+#+END_SRC
+
+***** latest-record                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-latest-record (backend)
+  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a :stop key-value.")
+#+END_SRC
+
+***** task-records-for-date                            :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
+  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
+DATE-TS must be a `ts.el' struct.
+
+Return nil if BACKEND contains no records.")
+#+END_SRC
+
+***** replace-last                                     :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-replace-last (backend plist)
+  "Replace last record in BACKEND with PLIST.")
+#+END_SRC
+
+***** to-file                                          :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-to-file (input-hash-table output-backend output-file)
+  "Save data from INPUT-HASH-TABLE to OUTPUT-FILE, in OUTPUT-BACKEND format.
+Any existing data in OUTPUT-FILE is overwritten.")
+#+END_SRC
+
+***** on-change                                        :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-on-change (backend fs-event)
+  "Function to be run when BACKEND changes on disk.
+FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
+#+END_SRC
+
+***** verify                                           :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-verify (backend)
+  "Check BACKEND for errors in data.")
+#+END_SRC
+
+**** memory operations
+***** reset-backend                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-reset-backend (backend)
+  "Reset data structures for BACKEND.")
+#+END_SRC
+
+***** to-hash-table                                    :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-to-hash-table (backend)
+  "Return data in BACKEND as a hash table in chronological order.
+Hash table keys are ISO-8601 date strings. Hash table values are
+lists of records, represented by plists. Both hash table keys and
+hash table values must be in chronological order.")
+#+END_SRC
+
+***** to-list                                          :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-to-list (backend)
+  "Return all records in BACKEND as a list of plists.")
+#+END_SRC
+
+***** memory-layer-empty-p                             :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-memory-layer-empty-p (backend)
+  "Return non-nil if memory layer of BACKEND contains no records, else nil.")
+#+END_SRC
+
+***** reset-task-list                                            :writer:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-reset-task-list (backend)
   "Regenerate BACKEND's task list from its data.
@@ -1369,7 +1505,7 @@ user has not defined their own task list)."
     (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
 #+END_SRC
 
-**** add-to-task-list                                             :writer:
+***** add-to-task-list                                           :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-add-to-task-list (task backend)
   "Add TASK to BACKEND's task list, if it is not already present.
@@ -1383,7 +1519,7 @@ user has not defined their own task list)."
                   #'string-lessp)))))
 #+END_SRC
 
-**** remove-from-task-list                                        :writer:
+***** remove-from-task-list                                      :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-remove-from-task-list (task backend)
   "Remove TASK from BACKEND's task list if necessary.
@@ -1417,147 +1553,13 @@ unchanged."
           (setf task-list (remove task task-list)))))))
 #+END_SRC
 
-**** reset-backend                                      :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-reset-backend (backend)
-  "Reset data structures for BACKEND.")
-#+END_SRC
-
-**** run-assertions                                     :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-backend-run-assertions (backend)
-  "Check common preconditions for any operations on BACKEND.
-Signal errors for any unmet preconditions.")
-#+END_SRC
-
-**** create-file                                        :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-create-file (backend &optional file)
-  "Create file associated with BACKEND.
-Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
-#+END_SRC
-
-**** latest-date-records                                :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-latest-date-records (backend)
-  "Return intervals of latest day in BACKEND as a tagged list (\"DATE\" PLIST*).
-Return nil if BACKEND contains no records.")
-#+END_SRC
-
-**** insert                                             :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-insert (backend plist)
-  "Insert PLIST as new record in BACKEND.
-Return non-nil if record is inserted successfully.")
-#+END_SRC
-
-**** remove-last                                        :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-remove-last (backend)
-  "Remove last record from BACKEND.
-Return non-nil if record is successfully removed.
-Signal an error if there is no record to remove.")
-#+END_SRC
-
-**** view-backend                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-view-backend (backend)
-  "Open BACKEND for interactive viewing.")
-#+END_SRC
-
-**** edit-backend                                       :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-edit-backend (backend)
-  "Open BACKEND for interactive editing.")
-#+END_SRC
-
-**** to-list                                            :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-to-list (backend)
-  "Return all records in BACKEND as a list of plists.")
-#+END_SRC
-
-**** to-hash-table                                      :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-to-hash-table (backend)
-  "Return data in BACKEND as a hash table in chronological order.
-Hash table keys are ISO-8601 date strings. Hash table values are
-lists of records, represented by plists. Both hash table keys and
-hash table values must be in chronological order.")
-#+END_SRC
-
-**** to-file                                            :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-to-file (input-hash-table output-backend output-file)
-  "Save data from INPUT-HASH-TABLE to OUTPUT-FILE, in OUTPUT-BACKEND format.
-Any existing data in OUTPUT-FILE is overwritten.")
-#+END_SRC
-
-**** on-change                                          :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-on-change (backend fs-event)
-  "Function to be run when BACKEND changes on disk.
-FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
-#+END_SRC
-
-**** backend-empty-p                                    :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-backend-empty-p (backend)
-  "Return non-nil if BACKEND contains no records, else nil.")
-#+END_SRC
-
-**** memory-layer-empty-p                               :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-memory-layer-empty-p (backend)
-  "Return non-nil if memory layer of BACKEND contains no records, else nil.")
-#+END_SRC
-
-**** verify                                             :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-verify (backend)
-  "Check BACKEND for errors in data.")
-#+END_SRC
-
-**** timer                                              :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-timer (backend)
-  "Refresh Chronometrist and related buffers.
-Buffers will be refreshed only if they are visible and the user
-is clocked in to a task. Additionally, do not refresh buffers if
-if BACKEND is a file-based backend and the file is modified but
-not saved.")
-#+END_SRC
-
-**** extended protocol
+**** extended protocol (unimplemented)
 These can be implemented in terms of the minimal protocol above.
-
-***** latest-record                                    :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
-#+END_SRC
-
-***** task-records-for-date                            :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-task-records-for-date (backend task date-ts)
-  "From BACKEND, return records for TASK on DATE-TS as a list of plists.
-DATE-TS must be a `ts.el' struct.
-
-Return nil if BACKEND contains no records.")
-#+END_SRC
 
 ***** active-days                                      :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-active-days (backend task &key start end)
   "From BACKEND, return number of days on which TASK had recorded time.")
-#+END_SRC
-
-***** replace-last                                     :generic:function:
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
 #+END_SRC
 
 ***** count-records                                    :generic:function:
