@@ -1,4 +1,4 @@
-# -*- eval: (add-hook 'org-insert-heading-hook #'(lambda nil (save-excursion (insert "\n<" (format-time-string "%FT%T%z") ">"))) nil t); -*-
+# -*- eval: (add-hook 'org-insert-heading-hook #'(lambda nil (save-excursion (org-set-property "CREATED" (format-time-string "%FT%T%z")))) nil t); -*-
 #+TITLE: The Chronometrist TODO List
 #+AUTHOR: contrapunctus
 
@@ -110,6 +110,18 @@
 1. Add a new kind of plist - =(:name "NAME" :time "TIME" ...)=
    To record events for which the time interval is not relevant. These won't be shown in =chronometrist= - perhaps in a different buffer.
 * Optimization
+** When clocking in/out, do not save file until hooks are run
+:PROPERTIES:
+:CREATED:  2022-01-03T16:09:36+0530
+:END:
+Currently, the file is probably being saved twice - once when we insert/update the record, and once again when a hook function modifies and saves the file. If this is the case, the file-notify callback is probably called twice.
+
+** Don't modify file until exit and/or Emacs idle
+:PROPERTIES:
+:CREATED:  2022-01-03T16:09:04+0530
+:END:
+A risky strategy - if there is unsaved data, it will be lost.
+
 ** DONE Deferred (tag/key/value) history generation
 Defer (tag/key/value) history generation from file-change-time to prompt-time, and make it per-task instead of all tasks at once
 + The biggest resource hog is splitting of midnight-spanning intervals, however.
@@ -118,6 +130,7 @@ Defer (tag/key/value) history generation from file-change-time to prompt-time, a
   * Tags and keys are already task-sensitive; just don't make values task-sensitive.
 ** DONE Hash file contents to optimize for common changes
 Compare partial hashes of file to know what has changed - only update memory when necessary.
+
 ** In-memory cache
 Don't store entire file into memory; instead, split midnight-spanning intervals just for the requested data.
 + Will increase load time for each forward/backward command in =chronometrist-report= and =chronometrist-statistics=
@@ -216,8 +229,6 @@ Cons
           * Or even the first expression of the current date. That way, we just re-read the intervals for today. Because chronometrist-events uses dates as keys, it's easy to work on the basis of dates.
    6. [ ] Don't generate tag/keyword/value history from the entire log, just from the last N days (where N is user-customizable).
    7. [ ] Just why are we reading the whole file? ~chronometrist~ should not read more than a day; ~chronometrist-report~ should not read more than a week at a time, and so on. Make a branch which works on this logic, see if it is faster.
-** Clocking in/out might be too slow for my liking
-
 * Certain
 1. [ ] statistics UI for arbitrary queries
    * user provides a predicate
