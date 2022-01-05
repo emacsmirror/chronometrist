@@ -242,7 +242,8 @@ Return new position of point."
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-reset-backend (chronometrist-active-backend)))
+  (chronometrist-reset-backend (chronometrist-active-backend))
+  (chronometrist-refresh))
 ;; reset:1 ends here
 
 ;; [[file:chronometrist.org::*apply-time][apply-time:1]]

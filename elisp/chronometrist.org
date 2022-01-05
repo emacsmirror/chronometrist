@@ -661,7 +661,8 @@ The data from =chronometrist-events= is used by most (all?) interval-consuming f
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-reset-backend (chronometrist-active-backend)))
+  (chronometrist-reset-backend (chronometrist-active-backend))
+  (chronometrist-refresh))
 #+END_SRC
 
 *** apply-time                                                   :function:
