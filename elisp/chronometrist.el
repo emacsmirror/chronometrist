@@ -1429,25 +1429,31 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ;; to-list:1 ends here
 
 ;; [[file:chronometrist.org::*on-add][on-add:1]]
-(cl-defmethod chronometrist-on-add (new-sexp (backend chronometrist-plist-backend))
+(cl-defmethod chronometrist-on-add (new-plist (backend chronometrist-plist-backend))
+  "Function run when a new plist is added at the end of a
+`chronometrist-plist-backend' file."
   (with-slots (hash-table) backend
-    (-let [(new-plist &plist :name new-task) new-sexp]
+    (-let [(&plist :name new-task) new-plist]
       (setf hash-table (chronometrist-events-update new-plist hash-table))
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-add:1 ends here
 
 ;; [[file:chronometrist.org::*on-modify][on-modify:1]]
-(cl-defmethod chronometrist-on-modify (new-sexp old-sexp (backend chronometrist-plist-backend))
+(cl-defmethod chronometrist-on-modify (new-plist old-plist (backend chronometrist-plist-backend))
+  "Function run when the newest plist in a
+`chronometrist-plist-backend' file is modified."
   (with-slots (hash-table) backend
-    (-let (((new-plist &plist :name new-task) new-sexp)
-           ((old-plist &plist :name old-task) old-sexp))
+    (-let (((&plist :name new-task) new-plist)
+           ((&plist :name old-task) old-plist))
       (setf hash-table (chronometrist-events-update new-plist hash-table t))
       (chronometrist-remove-from-task-list old-task backend)
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-modify:1 ends here
 
 ;; [[file:chronometrist.org::*on-remove][on-remove:1]]
-(cl-defmethod chronometrist-on-remove (old-sexp (backend chronometrist-plist-backend))
+(cl-defmethod chronometrist-on-remove (old-plist (backend chronometrist-plist-backend))
+  "Function run when the newest plist in a
+`chronometrist-plist-backend' file is deleted."
   (with-slots (hash-table) backend
     (let ((date (chronometrist-events-last-date hash-table)))
       ;; `chronometrist-remove-from-task-list' checks the hash table to
