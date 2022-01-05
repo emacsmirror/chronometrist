@@ -100,6 +100,13 @@ Challenges -
    * =:modify= - normally, replace in table; for spanning intervals, split and replace
    * =:remove= - normally, remove from table; for spanning intervals, split and remove
 
+Effects on the task list
+1. When a plist is added, the =:name= might be new, in which case we need to add it to the task list.
+2. When the last plist is modified, the =:name= may have changed -
+   1. the =:name= might be new and require addition to the task list.
+   2. the old plist may have been the only plist for the old =:name=, so we need to check if there are any other plists with the old =:name=. If there are none, the old =:name= needs to be removed from the task list.
+3. When the last plist is removed, it may have been the only plist for the old =:name=, so we need to check if there are any other plists with the old =:name=. If there are none, the old =:name= needs to be removed from the task list.
+
 ** Midnight-spanning intervals
 :PROPERTIES:
 :DESCRIPTION: Events starting on one day and ending on another
@@ -1462,6 +1469,27 @@ Return nil if BACKEND contains no records.")
 Any existing data in OUTPUT-FILE is overwritten.")
 #+END_SRC
 
+***** on-add                                           :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-on-add (new-data backend)
+  "Function called when data is added to BACKEND.
+NEW-DATA is the data to be added.")
+#+END_SRC
+
+***** on-modify                                        :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-on-modify (new-data old-data backend)
+  "Function called when data in BACKEND is modified.
+NEW-DATA is the data to be added; OLD-DATA is the data that was modified.")
+#+END_SRC
+
+***** on-remove                                        :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-on-remove (old-data backend)
+  "Function called when data is removed from BACKEND.
+OLD-DATA is the data that was modified.")
+#+END_SRC
+
 ***** on-change                                        :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-on-change (backend fs-event)
@@ -1763,6 +1791,220 @@ expression first)."
            (read (current-buffer))))))
 #+END_SRC
 
+**** file-hash                                                    :reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
+  "Calculate hash of `chronometrist-file' between START and END.
+START can be
+a number or marker,
+:before-last - the position at the start of the last s-expression
+nil or any other value - the value of `point-min'.
+
+END can be
+a number or marker,
+:before-last - the position at the end of the second-last s-expression,
+nil or any other value - the position at the end of the last s-expression.
+
+Return (START END) if HASH is nil, else (START END HASH).
+
+Return a list in the form (A B HASH), where A and B are markers
+in `chronometrist-file' describing the region for which HASH was calculated."
+  (chronometrist-sexp-in-file file
+    (let* ((start (cond ((number-or-marker-p start) start)
+                        ((eq :before-last start)
+                         (goto-char (point-max))
+                         (backward-list))
+                        (t (point-min))))
+           (end   (cond ((number-or-marker-p end) end)
+                        ((eq :before-last end)
+                         (goto-char (point-max))
+                         (backward-list 2)
+                         (forward-list))
+                        (t (goto-char (point-max))
+                           (backward-list)
+                           (forward-list)))))
+      (if hash
+          (--> (buffer-substring-no-properties start end)
+               (secure-hash 'sha1 it)
+               (list start end it))
+        (list start end)))))
+#+END_SRC
+***** tests
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
+(ert-deftest file-hash ()
+  (-let* ((file chronometrist-test-file)
+          ((last-start last-end)
+           (chronometrist-file-hash :before-last nil nil file))
+          ((rest-start rest-end rest-hash)
+           (chronometrist-file-hash nil :before-last t file)))
+    (message "chronometrist - file-hash test - file path is %s" file)
+    (should (= 1 rest-start))
+    (should (= 1254 rest-end))
+    (should (= 1256 last-start))
+    (should (= 1426 last-end))))
+#+END_SRC
+**** read-from                                                    :reader:
+#+BEGIN_SRC emacs-lisp
+(cl-defun chronometrist-read-from (position &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
+  (chronometrist-sexp-in-file file
+    (goto-char (if (number-or-marker-p position)
+                   position
+                 (funcall position)))
+    (ignore-errors (read (current-buffer)))))
+#+END_SRC
+**** TODO file-change-type                                        :reader:
+1. [ ] add newline after last expression and save => nil
+2. [ ] remove newline after last expession and save => nil
+
+The initial idea was to use two pairs of hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
++ the expression may shrink, and if we try to compute the hash of the previously-known region again, we will get an args-out-of-range error.
++ false negatives for whitespace/indentation differences.
+Thus, we use =read= for the last expression.
+
+Possible states
+: <rest-start> <rest-end> <last-start> <last-end>
+1. :append - rest same, last same, new expr after last-end
+2. :modify - rest same, last not same, no expr after last-end
+3. :remove - rest same, last not same, no expr after last-start
+4. nil     - rest same, last same, no expr after last-end
+5. t       - rest changed
+
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-file-change-type (state)
+  "Determine the type of change made to `chronometrist-file'.
+STATE must be a plist. (see `chronometrist--file-state')
+
+Return
+:append  if a new s-expression was added to the end,
+:modify  if the last s-expression was modified,
+:remove  if the last s-expression was removed,
+    nil  if the contents didn't change, and
+      t  for any other change."
+  (-let*
+      (((last-start last-end)           (plist-get state :last))
+       ((rest-start rest-end rest-hash) (plist-get state :rest))
+       (last-expr-file  (chronometrist-read-from last-start))
+       (last-expr-ht    (chronometrist-events-last))
+       (file            (chronometrist-backend-file (chronometrist-active-backend)))
+       (last-same-p     (equal last-expr-ht last-expr-file))
+       (file-new-length (chronometrist-sexp-in-file file (point-max)))
+       (rest-same-p     (unless (< file-new-length rest-end)
+                          (--> (chronometrist-file-hash rest-start rest-end t)
+                            (cl-third it)
+                            (equal rest-hash it)))))
+    ;; (message "chronometrist - last-start\nlast-expr-file - %S\nlast-expr-ht - %S"
+    ;;          last-expr-file
+    ;;          last-expr-ht)
+    ;; (message "chronometrist - last-same-p - %S, rest-same-p - %S"
+    ;;          last-same-p rest-same-p)
+    (cond ((not rest-same-p) t)
+          (last-same-p
+           (when (chronometrist-read-from last-end) :append))
+          ((not (chronometrist-read-from last-start))
+           :remove)
+          ((not (chronometrist-read-from
+                 (lambda ()
+                   (progn (goto-char last-start)
+                          (forward-list)))))
+           :modify))))
+#+END_SRC
+***** tests
+#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
+(ert-deftest chronometrist-file-change-type ()
+  (let* ((file          (chronometrist-backend-file chronometrist-plist-test-backend))
+         (test-contents (with-current-buffer (find-file-noselect file)
+                          (buffer-substring (point-min) (point-max))))
+         (chronometrist--file-state-old chronometrist--file-state)
+         (chronometrist--file-state     (list :last (chronometrist-file-hash :before-last nil)
+                                 :rest (chronometrist-file-hash nil :before-last t)))
+         (chronometrist-events-old      chronometrist-events))
+    (chronometrist-events-populate)
+    (unwind-protect
+        (progn
+          (should
+           (eq nil (chronometrist-file-change-type chronometrist--file-state)))
+          (should
+           (eq :append
+               (progn
+                 (chronometrist-insert chronometrist-plist-test-backend
+                          '(:name "Append Test"
+                                  :start "2021-02-01T13:06:46+0530"
+                                  :stop "2021-02-01T13:06:49+0530"))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
+          (should
+           (eq :modify
+               (progn
+                 (chronometrist-replace-last chronometrist-plist-test-backend
+                                '(:name "Modify Test"
+                                        :tags (some tags)
+                                        :start "2021-02-01T13:06:46+0530"
+                                        :stop "2021-02-01T13:06:49+0530"))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
+          (should
+           (eq :remove
+               (progn
+                 (chronometrist-sexp-in-file file
+                   (goto-char (point-max))
+                   (backward-list 1)
+                   (chronometrist-sexp-delete-list 1)
+                   (save-buffer))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
+          (should
+           (eq t
+               (progn
+                 (chronometrist-sexp-in-file file
+                   (goto-char (point-min))
+                   (chronometrist-plist-pp '(:name "Other Change Test"
+                                      :start "2021-02-02T17:39:40+0530"
+                                      :stop "2021-02-02T17:39:44+0530")
+                              (current-buffer))
+                   (save-buffer))
+                 (chronometrist-tests--change-type-and-update chronometrist--file-state file)))))
+      (with-current-buffer
+          (find-file-noselect file)
+        (delete-region (point-min) (point-max))
+        (insert test-contents)
+        (save-buffer))
+      (setq chronometrist--file-state chronometrist--file-state-old
+            chronometrist-events      chronometrist-events-old))))
+#+END_SRC
+
+**** on-change                                             :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-change ((backend chronometrist-elisp-sexp-backend) fs-event)
+  (with-slots (hash-table file-watch file-state) backend
+    (-let* (((descriptor action _ _) fs-event)
+            (change      (when file-state
+                           (chronometrist-file-change-type file-state)))
+            (reset-watch (or (eq action 'deleted)
+                             (eq action 'renamed))))
+      (message "chronometrist - file change type is %s" change)
+      ;; If only the last plist was changed, update hash table and
+      ;; task list, otherwise clear and repopulate hash table.
+      (cond ((or reset-watch
+                 (not file-state) ;; why?
+                 (eq change t))
+             ;; Don't keep a watch for a nonexistent file.
+             (when reset-watch
+               (file-notify-rm-watch file-watch)
+               (setf file-watch nil file-state nil))
+             (chronometrist-reset-backend backend))
+            (file-state
+             (let* ((old-sexp (chronometrist-events-last))
+                    (new-sexp (chronometrist-latest-record backend)))
+               (pcase change
+                 (:append ;; A new s-expression was added at the end of the file
+                  (chronometrist-on-add new-sexp backend))
+                 (:modify ;; The last s-expression in the file was changed
+                  (chronometrist-on-modify new-sexp old-sexp backend))
+                 (:remove ;; The last s-expression in the file was removed
+                  (chronometrist-on-remove old-sexp))
+                 ((pred null) nil)))))
+      (setf file-state
+            (list :last (chronometrist-file-hash :before-last nil)
+                  :rest (chronometrist-file-hash nil :before-last t))))))
+#+END_SRC
+
 *** plist backend
 In this format, user data is stored as Elisp plists in a plain text file. A basic plist in this file looks like this -
 
@@ -1972,183 +2214,6 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
       (unless (eobp) (insert "\n")))))
 #+END_SRC
 
-**** file-hash                                                    :reader:
-#+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
-  "Calculate hash of `chronometrist-file' between START and END.
-START can be
-a number or marker,
-:before-last - the position at the start of the last s-expression
-nil or any other value - the value of `point-min'.
-
-END can be
-a number or marker,
-:before-last - the position at the end of the second-last s-expression,
-nil or any other value - the position at the end of the last s-expression.
-
-Return (START END) if HASH is nil, else (START END HASH).
-
-Return a list in the form (A B HASH), where A and B are markers
-in `chronometrist-file' describing the region for which HASH was calculated."
-  (chronometrist-sexp-in-file file
-    (let* ((start (cond ((number-or-marker-p start) start)
-                        ((eq :before-last start)
-                         (goto-char (point-max))
-                         (backward-list))
-                        (t (point-min))))
-           (end   (cond ((number-or-marker-p end) end)
-                        ((eq :before-last end)
-                         (goto-char (point-max))
-                         (backward-list 2)
-                         (forward-list))
-                        (t (goto-char (point-max))
-                           (backward-list)
-                           (forward-list)))))
-      (if hash
-          (--> (buffer-substring-no-properties start end)
-               (secure-hash 'sha1 it)
-               (list start end it))
-        (list start end)))))
-#+END_SRC
-***** tests
-#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
-(ert-deftest file-hash ()
-  (-let* ((file chronometrist-test-file)
-          ((last-start last-end)
-           (chronometrist-file-hash :before-last nil nil file))
-          ((rest-start rest-end rest-hash)
-           (chronometrist-file-hash nil :before-last t file)))
-    (message "chronometrist - file-hash test - file path is %s" file)
-    (should (= 1 rest-start))
-    (should (= 1254 rest-end))
-    (should (= 1256 last-start))
-    (should (= 1426 last-end))))
-#+END_SRC
-**** read-from                                                    :reader:
-#+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-read-from (position &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
-  (chronometrist-sexp-in-file file
-    (goto-char (if (number-or-marker-p position)
-                   position
-                 (funcall position)))
-    (ignore-errors (read (current-buffer)))))
-#+END_SRC
-**** TODO file-change-type                                        :reader:
-1. [ ] add newline after last expression and save => nil
-2. [ ] remove newline after last expession and save => nil
-
-The initial idea was to use two pairs of hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
-+ the expression may shrink, and if we try to compute the hash of the previously-known region again, we will get an args-out-of-range error.
-+ false negatives for whitespace/indentation differences.
-Thus, we use =read= for the last expression.
-
-Possible states
-: <rest-start> <rest-end> <last-start> <last-end>
-1. :append - rest same, last same, new expr after last-end
-2. :modify - rest same, last not same, no expr after last-end
-3. :remove - rest same, last not same, no expr after last-start
-4. nil     - rest same, last same, no expr after last-end
-5. t       - rest changed
-
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-file-change-type (state)
-  "Determine the type of change made to `chronometrist-file'.
-STATE must be a plist. (see `chronometrist--file-state')
-
-Return
-:append  if a new s-expression was added to the end,
-:modify  if the last s-expression was modified,
-:remove  if the last s-expression was removed,
-    nil  if the contents didn't change, and
-      t  for any other change."
-  (-let*
-      (((last-start last-end)           (plist-get state :last))
-       ((rest-start rest-end rest-hash) (plist-get state :rest))
-       (last-expr-file  (chronometrist-read-from last-start))
-       (last-expr-ht    (chronometrist-events-last))
-       (file            (chronometrist-backend-file (chronometrist-active-backend)))
-       (last-same-p     (equal last-expr-ht last-expr-file))
-       (file-new-length (chronometrist-sexp-in-file file (point-max)))
-       (rest-same-p     (unless (< file-new-length rest-end)
-                          (--> (chronometrist-file-hash rest-start rest-end t)
-                            (cl-third it)
-                            (equal rest-hash it)))))
-    ;; (message "chronometrist - last-start\nlast-expr-file - %S\nlast-expr-ht - %S"
-    ;;          last-expr-file
-    ;;          last-expr-ht)
-    ;; (message "chronometrist - last-same-p - %S, rest-same-p - %S"
-    ;;          last-same-p rest-same-p)
-    (cond ((not rest-same-p) t)
-          (last-same-p
-           (when (chronometrist-read-from last-end) :append))
-          ((not (chronometrist-read-from last-start))
-           :remove)
-          ((not (chronometrist-read-from
-                 (lambda ()
-                   (progn (goto-char last-start)
-                          (forward-list)))))
-           :modify))))
-#+END_SRC
-***** tests
-#+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
-(ert-deftest chronometrist-file-change-type ()
-  (let* ((file          (chronometrist-backend-file chronometrist-plist-test-backend))
-         (test-contents (with-current-buffer (find-file-noselect file)
-                          (buffer-substring (point-min) (point-max))))
-         (chronometrist--file-state-old chronometrist--file-state)
-         (chronometrist--file-state     (list :last (chronometrist-file-hash :before-last nil)
-                                 :rest (chronometrist-file-hash nil :before-last t)))
-         (chronometrist-events-old      chronometrist-events))
-    (chronometrist-events-populate)
-    (unwind-protect
-        (progn
-          (should
-           (eq nil (chronometrist-file-change-type chronometrist--file-state)))
-          (should
-           (eq :append
-               (progn
-                 (chronometrist-insert chronometrist-plist-test-backend
-                          '(:name "Append Test"
-                                  :start "2021-02-01T13:06:46+0530"
-                                  :stop "2021-02-01T13:06:49+0530"))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
-          (should
-           (eq :modify
-               (progn
-                 (chronometrist-replace-last chronometrist-plist-test-backend
-                                '(:name "Modify Test"
-                                        :tags (some tags)
-                                        :start "2021-02-01T13:06:46+0530"
-                                        :stop "2021-02-01T13:06:49+0530"))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
-          (should
-           (eq :remove
-               (progn
-                 (chronometrist-sexp-in-file file
-                   (goto-char (point-max))
-                   (backward-list 1)
-                   (chronometrist-sexp-delete-list 1)
-                   (save-buffer))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
-          (should
-           (eq t
-               (progn
-                 (chronometrist-sexp-in-file file
-                   (goto-char (point-min))
-                   (chronometrist-plist-pp '(:name "Other Change Test"
-                                      :start "2021-02-02T17:39:40+0530"
-                                      :stop "2021-02-02T17:39:44+0530")
-                              (current-buffer))
-                   (save-buffer))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file)))))
-      (with-current-buffer
-          (find-file-noselect file)
-        (delete-region (point-min) (point-max))
-        (insert test-contents)
-        (save-buffer))
-      (setq chronometrist--file-state chronometrist--file-state-old
-            chronometrist-events      chronometrist-events-old))))
-#+END_SRC
 **** to-file                                               :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-plist-backend) file)
@@ -2164,64 +2229,45 @@ Return
       finally do (save-buffer))))
 #+END_SRC
 
-**** on-change                                                    :method:
-#+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-backend) fs-event)
-  (with-slots (hash-table file-watch file-state) backend
-    (-let* (((descriptor action _ _) fs-event)
-            (change      (when file-state
-                           (chronometrist-file-change-type file-state)))
-            (reset-watch (or (eq action 'deleted)
-                             (eq action 'renamed))))
-      ;; (message "chronometrist - file change type is %s" change)
-      ;; If only the last plist was changed, update hash table and
-      ;; task list, otherwise clear and repopulate hash table.
-      (cond ((or reset-watch
-                 (not file-state) ;; why?
-                 (eq change t))
-             ;; Don't keep a watch for a nonexistent file.
-             (when reset-watch
-               (file-notify-rm-watch file-watch)
-               (setf file-watch nil file-state nil))
-             (setf hash-table (chronometrist-to-hash-table backend))
-             (chronometrist-reset-task-list backend))
-            (file-state
-             (-let* (((&plist :name old-task)  (chronometrist-events-last))
-                     (latest-record-file       (chronometrist-latest-record backend))
-                     ((&plist :name new-task)  latest-record-file))
-               (pcase change
-                 (:append ;; a new plist was added at the end of the file
-                  (setf hash-table
-                        (chronometrist-events-update latest-record-file hash-table))
-                  (chronometrist-add-to-task-list new-task backend))
-                 (:modify ;; the last plist in the file was changed
-                  (setf hash-table
-                        (chronometrist-events-update latest-record-file hash-table t))
-                  (chronometrist-remove-from-task-list old-task backend)
-                  (chronometrist-add-to-task-list new-task backend))
-                 (:remove ;; the last plist in the file was removed
-                  (let ((date (chronometrist-events-last-date hash-table)))
-                    ;; `chronometrist-remove-from-task-list' checks the hash table to
-                    ;; determine if `chronometrist-task-list' is to be updated.
-                    ;; Thus, the update of the latter must occur before
-                    ;; the update of the former.
-                    (chronometrist-remove-from-task-list old-task backend)
-                    (--> (gethash date hash-table)
-                         (-drop-last 1 it)
-                         (setf (gethash date (chronometrist-backend-hash-table backend)) it))))
-                 ((pred null) nil)))))
-      (setf file-state
-            (list :last (chronometrist-file-hash :before-last nil)
-                  :rest (chronometrist-file-hash nil :before-last t)))
-      ;; REVIEW - can we move most/all of this to the `chronometrist-file-change-hook'?
-      (chronometrist-refresh))))
-#+END_SRC
-
 **** to-list                                               :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-list ((backend chronometrist-plist-backend))
   (chronometrist-backend-run-assertions backend)
   (chronometrist-loop-sexp-file for expr in (chronometrist-backend-file backend) collect expr))
+#+END_SRC
+
+**** on-add                                                :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-add (new-sexp (backend chronometrist-plist-backend))
+  (with-slots (hash-table) backend
+    (-let [(new-plist &plist :name new-task) new-sexp]
+      (setf hash-table (chronometrist-events-update new-plist hash-table))
+      (chronometrist-add-to-task-list new-task backend))))
+#+END_SRC
+
+**** on-modify                                             :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-modify (new-sexp old-sexp (backend chronometrist-plist-backend))
+  (with-slots (hash-table) backend
+    (-let (((new-plist &plist :name new-task) new-sexp)
+           ((old-plist &plist :name old-task) old-sexp))
+      (setf hash-table (chronometrist-events-update new-plist hash-table t))
+      (chronometrist-remove-from-task-list old-task backend)
+      (chronometrist-add-to-task-list new-task backend))))
+#+END_SRC
+
+**** on-remove                                             :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-remove (old-sexp (backend chronometrist-plist-backend))
+  (with-slots (hash-table) backend
+    (let ((date (chronometrist-events-last-date hash-table)))
+      ;; `chronometrist-remove-from-task-list' checks the hash table to
+      ;; determine if `chronometrist-task-list' is to be updated. Thus, the
+      ;; task list must be updated before the hash table.
+      (chronometrist-remove-from-task-list old-task backend)
+      (--> (gethash date hash-table)
+           (-drop-last 1 it)
+           (setf (gethash date hash-table) it)))))
 #+END_SRC
 
 **** extended protocol
@@ -2479,10 +2525,31 @@ Return value is either a list in the form
       finally do (save-buffer))))
 #+END_SRC
 
-**** on-change                                                    :method:
+**** on-add                                                :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-on-change ((backend chronometrist-plist-group-backend) _fs-event)
-  (chronometrist-reset-backend backend))
+(cl-defmethod chronometrist-on-add (new-sexp (backend chronometrist-plist-group-backend))
+  (with-slots (hash-table) backend
+    (-let [(date plist) new-sexp]
+      (puthash date plist hash-table)
+      (chronometrist-add-to-task-list (plist-get plist :name) backend))))
+#+END_SRC
+
+**** on-modify                                             :writer:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-modify (new-sexp old-sexp (backend chronometrist-plist-group-backend))
+  (with-slots (hash-table) backend
+    (-let [(date . plists) new-sexp]
+      (puthash date plists hash-table)
+      (cl-loop for plist in plists
+        do (chronometrist-add-to-task-list (plist-get plist :name) backend)))))
+#+END_SRC
+
+**** on-remove                                             :writer:method:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-on-remove (old-sexp (backend chronometrist-plist-group-backend))
+  (with-slots (hash-table) backend
+    (-let [(date . plists) new-sexp]
+      (puthash date plists hash-table))))
 #+END_SRC
 
 **** extended protocol
