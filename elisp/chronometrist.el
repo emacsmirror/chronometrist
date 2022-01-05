@@ -885,25 +885,40 @@ Any existing data in OUTPUT-FILE is overwritten.")
 ;; [[file:chronometrist.org::*on-add][on-add:1]]
 (cl-defgeneric chronometrist-on-add (new-data backend)
   "Function called when data is added to BACKEND.
-NEW-DATA is the data to be added.")
+This may happen within Chronometrist (e.g. via
+`chronometrist-insert') or outside it (e.g. a user editing the
+backend file).
+
+NEW-DATA is the data that was added.")
 ;; on-add:1 ends here
 
 ;; [[file:chronometrist.org::*on-modify][on-modify:1]]
 (cl-defgeneric chronometrist-on-modify (new-data old-data backend)
-  "Function called when data in BACKEND is modified.
-NEW-DATA is the data to be added; OLD-DATA is the data that was modified.")
+  "Function called when data in BACKEND is modified (rather than added or removed).
+This may happen within Chronometrist (e.g. via
+`chronometrist-replace-last') or outside it (e.g. a user editing
+the backend file).
+
+OLD-DATA and NEW-DATA is the data before and after the changes,
+respectively.")
 ;; on-modify:1 ends here
 
 ;; [[file:chronometrist.org::*on-remove][on-remove:1]]
 (cl-defgeneric chronometrist-on-remove (old-data backend)
   "Function called when data is removed from BACKEND.
+This may happen within Chronometrist (e.g. via
+`chronometrist-remove-last') or outside it (e.g. a user editing
+the backend file).
+
 OLD-DATA is the data that was modified.")
 ;; on-remove:1 ends here
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
-(cl-defgeneric chronometrist-on-change (backend fs-event)
+(cl-defgeneric chronometrist-on-change (backend)
   "Function to be run when BACKEND changes on disk.
-FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch').")
+This may happen within Chronometrist (e.g. via
+`chronometrist-insert') or outside it (e.g. a user editing the
+backend file).")
 ;; on-change:1 ends here
 
 ;; [[file:chronometrist.org::*verify][verify:1]]
@@ -1257,6 +1272,8 @@ unchanged."
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
 (cl-defmethod chronometrist-on-change ((backend chronometrist-elisp-sexp-backend) fs-event)
+  "FS-EVENT is the event passed by the `filenotify' library (see
+`file-notify-add-watch')."
   (with-slots (hash-table file-watch file-state) backend
     (-let* (((descriptor action _ _) fs-event)
             (change      (when file-state
@@ -1652,24 +1669,30 @@ Return value is either a list in the form
 ;; to-file:1 ends here
 
 ;; [[file:chronometrist.org::*on-add][on-add:1]]
-(cl-defmethod chronometrist-on-add (new-sexp (backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-on-add (new-plist-group (backend chronometrist-plist-group-backend))
+  "Function run when a new plist-group is added at the end of a
+`chronometrist-plist-group-backend' file."
   (with-slots (hash-table) backend
-    (-let [(date plist) new-sexp]
+    (-let [(date plist) new-plist-group]
       (puthash date plist hash-table)
       (chronometrist-add-to-task-list (plist-get plist :name) backend))))
 ;; on-add:1 ends here
 
 ;; [[file:chronometrist.org::*on-modify][on-modify:1]]
-(cl-defmethod chronometrist-on-modify (new-sexp old-sexp (backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-on-modify (new-plist-group old-plist-group (backend chronometrist-plist-group-backend))
+  "Function run when the newest plist-group in a
+`chronometrist-plist-group-backend' file is modified."
   (with-slots (hash-table) backend
-    (-let [(date . plists) new-sexp]
+    (-let [(date . plists) new-plist-group]
       (puthash date plists hash-table)
       (cl-loop for plist in plists
         do (chronometrist-add-to-task-list (plist-get plist :name) backend)))))
 ;; on-modify:1 ends here
 
 ;; [[file:chronometrist.org::*on-remove][on-remove:1]]
-(defun chronometrist-on-remove (old-sexp (backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-on-remove (old-plist-group (backend chronometrist-plist-group-backend))
+  "Function run when the newest plist-group in a
+`chronometrist-plist-group-backend' file is deleted."
   (with-slots (hash-table) backend
     (-let [(date . plists) new-sexp]
       (puthash date plists hash-table))))
