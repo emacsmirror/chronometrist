@@ -1188,7 +1188,7 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 
 *** buffer-plist-group                                             :writer:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-pp-buffer-plist-group (&optional in-sublist)
+(defun chronometrist-pp-buffer-plist-group (&optional _in-sublist)
   (down-list)
   (forward-sexp)
   (default-indent-new-line)
@@ -1249,11 +1249,10 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
   "Name (without extension) and full path of the Chronometrist database."
   :type 'file)
 
-(defun chronometrist-file-variable-watcher (symbol newval operation where)
-  "Update slots of the active backend when `chronometrist-file' is changed."
-  (with-slots (path extension file) (chronometrist-active-backend)
-    (setf path newval
-          file (concat path "." extension))))
+(defun chronometrist-file-variable-watcher (_symbol newval _operation _where)
+  "Update slots of the active backend when `chronometrist-file' is changed.
+For SYMBOL, NEWVAL, OPERATION, and WHERE, see `add-variable-watcher'."
+  (chronometrist-on-file-path-change (chronometrist-active-backend) chronometrist-file newval))
 
 (add-variable-watcher 'chronometrist-file #'chronometrist-file-variable-watcher)
 #+END_SRC
@@ -1519,6 +1518,14 @@ backend file).")
   "Check BACKEND for errors in data.")
 #+END_SRC
 
+***** on-file-path-change                              :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-on-file-path-change (backend old-path new-path)
+  "Function run when the value of `chronometrist-file' is changed.
+OLD-PATH and NEW-PATH are the old and new values of
+`chronometrist-file', respectively.")
+#+END_SRC
+
 **** memory operations
 ***** reset-backend                                    :generic:function:
 #+BEGIN_SRC emacs-lisp
@@ -1666,6 +1673,7 @@ the file and the end of the second-last s-expression."))
 
 **** timer                                                        :method:
 #+BEGIN_SRC emacs-lisp
+(defvar chronometrist-buffer-name)
 (cl-defmethod chronometrist-timer ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
     (let ((file-buffer (get-buffer-create (find-file-noselect file))))
@@ -1676,6 +1684,14 @@ the file and the end of the second-last s-expression."))
         (when (get-buffer-window chronometrist-buffer-name)
           (chronometrist-refresh))
         (run-hooks 'chronometrist-timer-hook)))))
+#+END_SRC
+
+**** on-file-path-change                                :generic:function:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-on-file-path-change ((backend chronometrist-file-backend-mixin) _old-path new-path)
+  (with-slots (path extension file) backend
+    (setf path new-path
+          file (concat path "." extension))))
 #+END_SRC
 
 **** elisp-sexp-backend                                            :class:
@@ -1995,7 +2011,7 @@ protocol) or outside it (e.g. a user editing the backend file).
 
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
   (with-slots (hash-table file-watch file-state) backend
-    (-let* (((descriptor action _ _) fs-event)
+    (-let* (((_ action _ _) fs-event)
             (change      (when file-state
                            (chronometrist-file-change-type file-state)))
             (reset-watch (or (eq action 'deleted)
@@ -2274,7 +2290,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 `chronometrist-plist-backend' file is modified."
   (with-slots (hash-table) backend
     (-let (((new-plist &plist :name new-task) (chronometrist-latest-record backend))
-           ((old-plist &plist :name old-task) (chronometrist-events-last backend)))
+           ((&plist :name old-task) (chronometrist-events-last backend)))
       (setf hash-table (chronometrist-events-update new-plist hash-table t))
       (chronometrist-remove-from-task-list old-task backend)
       (chronometrist-add-to-task-list new-task backend))))
@@ -2585,11 +2601,11 @@ Return value is either a list in the form
   "Function run when the newest plist-group in a
 `chronometrist-plist-group-backend' file is deleted."
   (with-slots (hash-table) backend
-    (-let ((old-date        (chronometrist-events-last-date hash-table))
-           (old-plists      (gethash old-date hash-table)))
+    (-let* ((old-date        (chronometrist-events-last-date hash-table))
+            (old-plists      (gethash old-date hash-table)))
       (cl-loop for plist in old-plists
         do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
-      (puthash date nil hash-table))))
+      (puthash old-date nil hash-table))))
 #+END_SRC
 
 **** extended protocol
@@ -2612,8 +2628,8 @@ Return value is either a list in the form
     collect plist))
 #+END_SRC
 
-***** TODO active-days                                    :reader:method:
-#+BEGIN_SRC emacs-lisp
+***** TODO active-days                           :reader:method:NOEXPORT:
+#+BEGIN_SRC emacs-lisp :tangle no
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end)
   (cl-check-type task string)
   (chronometrist-backend-run-assertions backend))
@@ -2635,8 +2651,8 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
     (save-buffer)))
 #+END_SRC
 
-***** count-records                                       :reader:method:
-#+BEGIN_SRC emacs-lisp
+***** count-records                              :reader:method:NOEXPORT:
+#+BEGIN_SRC emacs-lisp :tangle no
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
 #+END_SRC
 
@@ -3061,6 +3077,7 @@ is the name of the task to be clocked out of."
   "Functions to be run after `chronometrist-file' is changed on disk."
   :type '(repeat function))
 #+END_SRC
+
 **** rows                                                      :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-rows ()
@@ -3078,6 +3095,7 @@ is the name of the task to be clocked out of."
            (chronometrist-run-transformers chronometrist-row-transformers it)))
     do (cl-incf index)))
 #+END_SRC
+
 **** task-at-point                                             :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-task-at-point ()
@@ -3087,6 +3105,7 @@ is the name of the task to be clocked out of."
     (when (re-search-forward "[0-9]+ +" nil t)
       (get-text-property (point) 'tabulated-list-id))))
 #+END_SRC
+
 **** goto-last-task                                            :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-goto-last-task ()
@@ -3110,6 +3129,7 @@ is the name of the task to be clocked out of."
            (format "%s%- 26s%s" w "Total" it)
            (insert it)))))
 #+END_SRC
+
 **** goto-nth-task                                             :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-goto-nth-task (n)
@@ -3121,6 +3141,7 @@ task. N must be a positive integer."
     (beginning-of-line)
     (chronometrist-task-at-point)))
 #+END_SRC
+
 **** refresh                                                   :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-refresh (&optional _ignore-auto _noconfirm)
@@ -3137,6 +3158,7 @@ value of `revert-buffer-function'."
         (chronometrist-maybe-start-timer)
         (set-window-point window point)))))
 #+END_SRC
+
 **** refresh-file                                                 :writer:
 =chronometrist-file-change-type= must be run /before/ we update =chronometrist--file-state= (the latter represents the old state of the file, which =chronometrist-file-change-type= compares with the newer current state).
 
@@ -3786,18 +3808,19 @@ reduced to the desired range using
   "Return rows to be displayed in the buffer created by `chronometrist-statistics'."
   ;; We assume that all fields in `chronometrist-statistics--ui-state' are set, so they must
   ;; be changed by the view-changing functions.
-  (cl-case (plist-get chronometrist-statistics--ui-state :mode)
-    ('week
-     (let* ((start (plist-get chronometrist-statistics--ui-state :start))
-            (end   (plist-get chronometrist-statistics--ui-state :end))
-            (ht    (chronometrist-events-subset start end)))
-       (chronometrist-statistics-rows-internal ht)))
-    (t ;; `chronometrist-statistics--ui-state' is nil, show current week's data
-     (let* ((start (chronometrist-previous-week-start (chronometrist-date-ts)))
-            (end   (ts-adjust 'day 7 start))
-            (ht    (chronometrist-events-subset start end)))
-       (setq chronometrist-statistics--ui-state `(:mode week :start ,start :end ,end))
-       (chronometrist-statistics-rows-internal ht)))))
+  (with-slots (hash-table) (chronometrist-active-backend)
+    (cl-case (plist-get chronometrist-statistics--ui-state :mode)
+      ('week
+       (let* ((start (plist-get chronometrist-statistics--ui-state :start))
+              (end   (plist-get chronometrist-statistics--ui-state :end))
+              (ht    (chronometrist-events-subset start end hash-table)))
+         (chronometrist-statistics-rows-internal ht)))
+      (t ;; `chronometrist-statistics--ui-state' is nil, show current week's data
+       (let* ((start (chronometrist-previous-week-start (chronometrist-date-ts)))
+              (end   (ts-adjust 'day 7 start))
+              (ht    (chronometrist-events-subset start end hash-table)))
+         (setq chronometrist-statistics--ui-state `(:mode week :start ,start :end ,end))
+         (chronometrist-statistics-rows-internal ht))))))
 #+END_SRC
 **** print-keybind                                             :procedure:
 #+BEGIN_SRC emacs-lisp
@@ -4116,41 +4139,6 @@ will also need to modify the value of `tabulated-list-format' by
 using `chronometrist-details-schema-transformers'.")
 #+END_SRC
 
-**** rows                                                       :function:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-details-rows ()
-  "Return rows to be displayed in the `chronometrist-details' buffer.
-Return value is a list as specified by `tabulated-list-entries'."
-  (cl-loop with index = 1
-    for plist in (chronometrist-details-intervals chronometrist-details-range chronometrist-details-filter (chronometrist-active-backend))
-    collect
-    (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
-            ;; whether tags or key-values are actually displayed is handled later
-            (tags       (chronometrist-details-rows-helper tags))
-            (key-values (chronometrist-details-rows-helper plist))
-            ;; resetting seconds with `ts-apply' is necessary to
-            ;; prevent situations like "1 hour  from 00:08 to 01:09"
-            (start   (ts-apply :second 0 (chronometrist-iso-to-ts start)))
-            (stop    (ts-apply :second 0 (if stop
-                                             (chronometrist-iso-to-ts stop)
-                                           (ts-now))))
-            (interval      (floor (ts-diff stop start)))
-            (index-string  (format "%s" index))
-            (duration      (chronometrist-format-duration-long interval))
-            (timespan (format "from %s to %s"
-                              (ts-format chronometrist-details-time-format-string
-                                         start)
-                              (ts-format chronometrist-details-time-format-string
-                                         stop))))
-      (--> (vconcat (vector index-string name)
-                    (when chronometrist-details-display-tags (vector tags))
-                    (when chronometrist-details-display-key-values (vector key-values))
-                    (vector duration timespan))
-        (list index it)
-        (chronometrist-run-transformers chronometrist-details-row-transformers it)))
-    do (cl-incf index)))
-#+END_SRC
-
 **** map                                                          :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-details-mode-map
@@ -4225,6 +4213,7 @@ range.")
 (make-variable-buffer-local 'chronometrist-details-range)
 
 #+END_SRC
+
 **** iso-date-p                                                 :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-iso-date-p (string)
@@ -4379,7 +4368,7 @@ FILTER must be a filter specifier as described by
          (sexp (ignore-errors (read input))))
     (cond ((equal input "") (setq-local chronometrist-details-filter nil))
           ((consp sexp)     (setq-local chronometrist-details-filter sexp))
-          (_ (error "Unsupported filter %S" input)))
+          (t (error "Unsupported filter %S" input)))
     (tabulated-list-revert)))
 
 #+END_SRC
@@ -4394,6 +4383,41 @@ be a hash table as returned by `chronometrist-to-hash-table'."
     when (chronometrist-details-filter-match-p plist filter)
     collect plist))
 #+END_SRC
+**** rows                                                       :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details-rows ()
+  "Return rows to be displayed in the `chronometrist-details' buffer.
+Return value is a list as specified by `tabulated-list-entries'."
+  (cl-loop with index = 1
+    for plist in (chronometrist-details-intervals chronometrist-details-range chronometrist-details-filter (chronometrist-active-backend))
+    collect
+    (-let* (((&plist :name name :tags tags :start start :stop stop) plist)
+            ;; whether tags or key-values are actually displayed is handled later
+            (tags       (chronometrist-details-rows-helper tags))
+            (key-values (chronometrist-details-rows-helper plist))
+            ;; resetting seconds with `ts-apply' is necessary to
+            ;; prevent situations like "1 hour  from 00:08 to 01:09"
+            (start   (ts-apply :second 0 (chronometrist-iso-to-ts start)))
+            (stop    (ts-apply :second 0 (if stop
+                                             (chronometrist-iso-to-ts stop)
+                                           (ts-now))))
+            (interval      (floor (ts-diff stop start)))
+            (index-string  (format "%s" index))
+            (duration      (chronometrist-format-duration-long interval))
+            (timespan (format "from %s to %s"
+                              (ts-format chronometrist-details-time-format-string
+                                         start)
+                              (ts-format chronometrist-details-time-format-string
+                                         stop))))
+      (--> (vconcat (vector index-string name)
+                    (when chronometrist-details-display-tags (vector tags))
+                    (when chronometrist-details-display-key-values (vector key-values))
+                    (vector duration timespan))
+        (list index it)
+        (chronometrist-run-transformers chronometrist-details-row-transformers it)))
+    do (cl-incf index)))
+#+END_SRC
+
 ** Provide
 #+BEGIN_SRC emacs-lisp :comments no
 (provide 'chronometrist)
