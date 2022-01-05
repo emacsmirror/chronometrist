@@ -3013,6 +3013,7 @@ If ARG is a numeric argument, go forward that many times."
 
 ;; [[file:chronometrist.org::*buffer-name][buffer-name:1]]
 (defun chronometrist-details-buffer-name (&optional suffix)
+  "Return buffer name based on `chronometrist-details-buffer-name-base' and SUFFIX."
   (if suffix
       (format "*%s_%s*" chronometrist-details-buffer-name-base suffix)
     (format "*%s*" chronometrist-details-buffer-name-base)))
@@ -3192,6 +3193,7 @@ BUFFER-OR-NAME must be an existing buffer."
 
 ;; [[file:chronometrist.org::*chronometrist-details][chronometrist-details:1]]
 (defun chronometrist-details ()
+  "Display details of time tracked over a period of time."
   (interactive)
   (let* ((buffer (get-buffer-create (chronometrist-details-buffer-name)))
          (window (save-excursion
@@ -3215,6 +3217,7 @@ range.")
 
 ;; [[file:chronometrist.org::*iso-date-p][iso-date-p:1]]
 (defun chronometrist-iso-date-p (string)
+  "Return non-nil if STRING is a date in the ISO-8601 format."
   (string-match-p
    (rx (and string-start
             (>= 1 num) "-" (= 2 num) "-" (= 2 num)
@@ -3261,6 +3264,7 @@ TABLE must be a hash table as returned by
 
 ;; [[file:chronometrist.org::*input-to-value][input-to-value:1]]
 (defun chronometrist-details-input-to-value (input)
+  "Return INPUT as a value acceptable to `chronometrist-details-range'."
   (pcase input
     ('nil nil)
     (`(,date) date)
