@@ -732,10 +732,10 @@ Midnight-spanning intervals are split in the hash table when the file is read, b
 * Duplication - accessing the latest-record                            :code:
 Many functions use the latest record. A =(chronometrist-with-latest-record var &rest body)= might help...
 
-* STARTED Plist-group backend [72%]                    :feature:optimization:
+* STARTED Plist-group backend [68%]                    :feature:optimization:
 See branch =grouped-plist-format=
 1. [X] Migrate backend code to use CLOS
-2. [-] Implement plist-group backend code
+2. [-] Implement plist-group backend methods
 3. [ ] <<dates-in-timestamps>> Omit dates from plists
 4. +[ ] Mark split intervals with =:split t=+
    * Not required, since we can detect them with enough certainty for my liking. (See =chronometrist-plists-split-p=)
@@ -744,13 +744,16 @@ See branch =grouped-plist-format=
 7. [X] key-values code is not yet generic
 8. [ ] update plist-pp to indent tagged lists differently
 9. [X] optimize program startup and file change callback
-10. [X] remove all references to =chronometrist-events=
+10. [X] remove all references to =chronometrist-events= (hash table)
 11. [X] create new tagged list if required when clocking in
 12. [X] split midnight-spanning intervals when clocking out
 13. [X] interactive backend-switching command with completion; reset backend state after switching to account for changes made to the file in the meantime
 14. [ ] (maybe) handle existing (in-file) split tasks. Currently, if an interval is split, commands such as =chronometrist-key-values-unified-prompt= operate on the second split interval, but not the first. Instead, plist-group methods for =chronometrist-replace-last= and =chronometrist-remove-last= could check if the last interval is split, and operate on both of them. (=chronometrist-insert= already splits plists when inserting.)
     * Don't modify =chronometrist-latest-record=; code using it generally only wants the latter half of a split plist.
     * See branch =plist-group-handle-split-plists=
+15. [ ] use file-change-detection optimization
+    * [ ] fix bugs in change-type detection
+16. [ ] fix bug - extra newlines in file
 
 Optional
 1. define generic backend protocol for key-values package
@@ -791,7 +794,6 @@ protocol implementation progress
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
-
 * STARTED customizable task list                                    :feature:
 1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
 2. Adding a task? We can modify the task list, but how to persist it?
