@@ -1272,15 +1272,18 @@ unchanged."
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
 (cl-defmethod chronometrist-on-change ((backend chronometrist-elisp-sexp-backend) fs-event)
-  "FS-EVENT is the event passed by the `filenotify' library (see
-`file-notify-add-watch')."
+  "Function called when BACKEND file is changed.
+This may happen within Chronometrist (through the backend
+protocol) or outside it (e.g. a user editing the backend file).
+
+FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
   (with-slots (hash-table file-watch file-state) backend
     (-let* (((descriptor action _ _) fs-event)
             (change      (when file-state
                            (chronometrist-file-change-type file-state)))
             (reset-watch (or (eq action 'deleted)
                              (eq action 'renamed))))
-      (message "chronometrist - file change type is %s" change)
+      ;; (message "chronometrist - file change type is %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch
