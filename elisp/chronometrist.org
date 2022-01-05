@@ -1531,64 +1531,6 @@ hash table values must be in chronological order.")
   "Return non-nil if memory layer of BACKEND contains no records, else nil.")
 #+END_SRC
 
-***** reset-task-list                                            :writer:
-#+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-reset-task-list (backend)
-  "Regenerate BACKEND's task list from its data.
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list)."
-  (unless chronometrist-task-list
-    (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
-#+END_SRC
-
-***** add-to-task-list                                           :writer:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-add-to-task-list (task backend)
-  "Add TASK to BACKEND's task list, if it is not already present.
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list)."
-  (with-slots (task-list) backend
-    (unless (and (not chronometrist-task-list)
-                 (cl-member task task-list :test #'equal))
-      (setf task-list
-            (sort (cons task task-list)
-                  #'string-lessp)))))
-#+END_SRC
-
-***** remove-from-task-list                                      :writer:
-#+BEGIN_SRC emacs-lisp
-(defun chronometrist-remove-from-task-list (task backend)
-  "Remove TASK from BACKEND's task list if necessary.
-TASK is removed if it does not occur in BACKEND's hash table, or
-if it only occurs in the newest plist of the same.
-
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list).
-
-Return new value of BACKEND's task list, or nil if
-unchanged."
-  (with-slots (hash-table task-list) backend
-    (unless chronometrist-task-list
-      (let (;; number of plists in hash table
-            (ht-plist-count (cl-loop with count = 0
-                              for intervals being the hash-values of hash-table
-                              do (cl-loop for _interval in intervals
-                                   do (cl-incf count))
-                              finally return count))
-            ;; index of first occurrence of TASK in hash table, or nil if not found
-            (ht-task-first-result (cl-loop with count = 0
-                                    for intervals being the hash-values of hash-table
-                                    when (cl-loop for interval in intervals
-                                           do (cl-incf count)
-                                           when (equal task (plist-get interval :name))
-                                           return t)
-                                    return count)))
-        (when (or (not ht-task-first-result)
-                  (= ht-task-first-result ht-plist-count))
-          ;; The only interval for TASK is the last expression
-          (setf task-list (remove task task-list)))))))
-#+END_SRC
-
 **** extended protocol (unimplemented)
 These can be implemented in terms of the minimal protocol above.
 
@@ -1967,6 +1909,64 @@ Return
         (save-buffer))
       (setq chronometrist--file-state chronometrist--file-state-old
             chronometrist-events      chronometrist-events-old))))
+#+END_SRC
+
+**** reset-task-list                                              :writer:
+#+BEGIN_SRC emacs-lisp
+(cl-defun chronometrist-reset-task-list (backend)
+  "Regenerate BACKEND's task list from its data.
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list)."
+  (unless chronometrist-task-list
+    (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
+#+END_SRC
+
+**** add-to-task-list                                             :writer:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-add-to-task-list (task backend)
+  "Add TASK to BACKEND's task list, if it is not already present.
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list)."
+  (with-slots (task-list) backend
+    (unless (and (not chronometrist-task-list)
+                 (cl-member task task-list :test #'equal))
+      (setf task-list
+            (sort (cons task task-list)
+                  #'string-lessp)))))
+#+END_SRC
+
+**** remove-from-task-list                                        :writer:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-remove-from-task-list (task backend)
+  "Remove TASK from BACKEND's task list if necessary.
+TASK is removed if it does not occur in BACKEND's hash table, or
+if it only occurs in the newest plist of the same.
+
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list).
+
+Return new value of BACKEND's task list, or nil if
+unchanged."
+  (with-slots (hash-table task-list) backend
+    (unless chronometrist-task-list
+      (let (;; number of plists in hash table
+            (ht-plist-count (cl-loop with count = 0
+                              for intervals being the hash-values of hash-table
+                              do (cl-loop for _interval in intervals
+                                   do (cl-incf count))
+                              finally return count))
+            ;; index of first occurrence of TASK in hash table, or nil if not found
+            (ht-task-first-result (cl-loop with count = 0
+                                    for intervals being the hash-values of hash-table
+                                    when (cl-loop for interval in intervals
+                                           do (cl-incf count)
+                                           when (equal task (plist-get interval :name))
+                                           return t)
+                                    return count)))
+        (when (or (not ht-task-first-result)
+                  (= ht-task-first-result ht-plist-count))
+          ;; The only interval for TASK is the last expression
+          (setf task-list (remove task task-list)))))))
 #+END_SRC
 
 **** on-change                                             :writer:method:

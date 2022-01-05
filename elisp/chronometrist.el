@@ -933,61 +933,6 @@ hash table values must be in chronological order.")
   "Return non-nil if memory layer of BACKEND contains no records, else nil.")
 ;; memory-layer-empty-p:1 ends here
 
-;; [[file:chronometrist.org::*reset-task-list][reset-task-list:1]]
-(cl-defun chronometrist-reset-task-list (backend)
-  "Regenerate BACKEND's task list from its data.
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list)."
-  (unless chronometrist-task-list
-    (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
-;; reset-task-list:1 ends here
-
-;; [[file:chronometrist.org::*add-to-task-list][add-to-task-list:1]]
-(defun chronometrist-add-to-task-list (task backend)
-  "Add TASK to BACKEND's task list, if it is not already present.
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list)."
-  (with-slots (task-list) backend
-    (unless (and (not chronometrist-task-list)
-                 (cl-member task task-list :test #'equal))
-      (setf task-list
-            (sort (cons task task-list)
-                  #'string-lessp)))))
-;; add-to-task-list:1 ends here
-
-;; [[file:chronometrist.org::*remove-from-task-list][remove-from-task-list:1]]
-(defun chronometrist-remove-from-task-list (task backend)
-  "Remove TASK from BACKEND's task list if necessary.
-TASK is removed if it does not occur in BACKEND's hash table, or
-if it only occurs in the newest plist of the same.
-
-Only takes effect if `chronometrist-task-list' is nil (i.e. the
-user has not defined their own task list).
-
-Return new value of BACKEND's task list, or nil if
-unchanged."
-  (with-slots (hash-table task-list) backend
-    (unless chronometrist-task-list
-      (let (;; number of plists in hash table
-            (ht-plist-count (cl-loop with count = 0
-                              for intervals being the hash-values of hash-table
-                              do (cl-loop for _interval in intervals
-                                   do (cl-incf count))
-                              finally return count))
-            ;; index of first occurrence of TASK in hash table, or nil if not found
-            (ht-task-first-result (cl-loop with count = 0
-                                    for intervals being the hash-values of hash-table
-                                    when (cl-loop for interval in intervals
-                                           do (cl-incf count)
-                                           when (equal task (plist-get interval :name))
-                                           return t)
-                                    return count)))
-        (when (or (not ht-task-first-result)
-                  (= ht-task-first-result ht-plist-count))
-          ;; The only interval for TASK is the last expression
-          (setf task-list (remove task task-list)))))))
-;; remove-from-task-list:1 ends here
-
 ;; [[file:chronometrist.org::*active-days][active-days:1]]
 (cl-defgeneric chronometrist-active-days (backend task &key start end)
   "From BACKEND, return number of days on which TASK had recorded time.")
@@ -1253,6 +1198,61 @@ Return
                           (forward-list)))))
            :modify))))
 ;; file-change-type:1 ends here
+
+;; [[file:chronometrist.org::*reset-task-list][reset-task-list:1]]
+(cl-defun chronometrist-reset-task-list (backend)
+  "Regenerate BACKEND's task list from its data.
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list)."
+  (unless chronometrist-task-list
+    (setf (chronometrist-backend-task-list backend) (chronometrist-list-tasks backend))))
+;; reset-task-list:1 ends here
+
+;; [[file:chronometrist.org::*add-to-task-list][add-to-task-list:1]]
+(defun chronometrist-add-to-task-list (task backend)
+  "Add TASK to BACKEND's task list, if it is not already present.
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list)."
+  (with-slots (task-list) backend
+    (unless (and (not chronometrist-task-list)
+                 (cl-member task task-list :test #'equal))
+      (setf task-list
+            (sort (cons task task-list)
+                  #'string-lessp)))))
+;; add-to-task-list:1 ends here
+
+;; [[file:chronometrist.org::*remove-from-task-list][remove-from-task-list:1]]
+(defun chronometrist-remove-from-task-list (task backend)
+  "Remove TASK from BACKEND's task list if necessary.
+TASK is removed if it does not occur in BACKEND's hash table, or
+if it only occurs in the newest plist of the same.
+
+Only takes effect if `chronometrist-task-list' is nil (i.e. the
+user has not defined their own task list).
+
+Return new value of BACKEND's task list, or nil if
+unchanged."
+  (with-slots (hash-table task-list) backend
+    (unless chronometrist-task-list
+      (let (;; number of plists in hash table
+            (ht-plist-count (cl-loop with count = 0
+                              for intervals being the hash-values of hash-table
+                              do (cl-loop for _interval in intervals
+                                   do (cl-incf count))
+                              finally return count))
+            ;; index of first occurrence of TASK in hash table, or nil if not found
+            (ht-task-first-result (cl-loop with count = 0
+                                    for intervals being the hash-values of hash-table
+                                    when (cl-loop for interval in intervals
+                                           do (cl-incf count)
+                                           when (equal task (plist-get interval :name))
+                                           return t)
+                                    return count)))
+        (when (or (not ht-task-first-result)
+                  (= ht-task-first-result ht-plist-count))
+          ;; The only interval for TASK is the last expression
+          (setf task-list (remove task task-list)))))))
+;; remove-from-task-list:1 ends here
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
 (cl-defmethod chronometrist-on-change ((backend chronometrist-elisp-sexp-backend) fs-event)
