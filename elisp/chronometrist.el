@@ -2489,9 +2489,9 @@ run `chronometrist-statistics'."
                      (setq cursor-type nil)
                      (hl-line-mode))
                    (switch-to-buffer buffer)
-                   (if (chronometrist-memory-layer-empty-p backend)
-                       (chronometrist-reset-backend backend)
-                     (chronometrist-refresh))
+                   (when (chronometrist-memory-layer-empty-p backend)
+                     (chronometrist-reset-backend backend))
+                   (chronometrist-refresh)
                    (if chronometrist--point
                        (goto-char chronometrist--point)
                      (chronometrist-goto-last-task))))
