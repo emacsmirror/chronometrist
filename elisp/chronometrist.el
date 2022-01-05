@@ -883,7 +883,7 @@ Any existing data in OUTPUT-FILE is overwritten.")
 ;; to-file:1 ends here
 
 ;; [[file:chronometrist.org::*on-add][on-add:1]]
-(cl-defgeneric chronometrist-on-add (new-data backend)
+(cl-defgeneric chronometrist-on-add (backend)
   "Function called when data is added to BACKEND.
 This may happen within Chronometrist (e.g. via
 `chronometrist-insert') or outside it (e.g. a user editing the
@@ -893,7 +893,7 @@ NEW-DATA is the data that was added.")
 ;; on-add:1 ends here
 
 ;; [[file:chronometrist.org::*on-modify][on-modify:1]]
-(cl-defgeneric chronometrist-on-modify (new-data old-data backend)
+(cl-defgeneric chronometrist-on-modify (backend)
   "Function called when data in BACKEND is modified (rather than added or removed).
 This may happen within Chronometrist (e.g. via
 `chronometrist-replace-last') or outside it (e.g. a user editing
@@ -904,7 +904,7 @@ respectively.")
 ;; on-modify:1 ends here
 
 ;; [[file:chronometrist.org::*on-remove][on-remove:1]]
-(cl-defgeneric chronometrist-on-remove (old-data backend)
+(cl-defgeneric chronometrist-on-remove (backend)
   "Function called when data is removed from BACKEND.
 This may happen within Chronometrist (e.g. via
 `chronometrist-remove-last') or outside it (e.g. a user editing
@@ -1292,16 +1292,14 @@ unchanged."
                (setf file-watch nil file-state nil))
              (chronometrist-reset-backend backend))
             (file-state
-             (let* ((old-sexp (chronometrist-events-last))
-                    (new-sexp (chronometrist-latest-record backend)))
-               (pcase change
-                 (:append ;; A new s-expression was added at the end of the file
-                  (chronometrist-on-add new-sexp backend))
-                 (:modify ;; The last s-expression in the file was changed
-                  (chronometrist-on-modify new-sexp old-sexp backend))
-                 (:remove ;; The last s-expression in the file was removed
-                  (chronometrist-on-remove old-sexp))
-                 ((pred null) nil)))))
+             (pcase change
+               ;; A new s-expression was added at the end of the file
+               (:append (chronometrist-on-add backend))
+               ;; The last s-expression in the file was changed
+               (:modify (chronometrist-on-modify backend))
+               ;; The last s-expression in the file was removed
+               (:remove (chronometrist-on-remove backend))
+               ((pred null) nil))))
       (setf file-state
             (list :last (chronometrist-file-hash :before-last nil)
                   :rest (chronometrist-file-hash nil :before-last t))))))
@@ -1429,36 +1427,37 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ;; to-list:1 ends here
 
 ;; [[file:chronometrist.org::*on-add][on-add:1]]
-(cl-defmethod chronometrist-on-add (new-plist (backend chronometrist-plist-backend))
+(cl-defmethod chronometrist-on-add ((backend chronometrist-plist-backend))
   "Function run when a new plist is added at the end of a
 `chronometrist-plist-backend' file."
   (with-slots (hash-table) backend
-    (-let [(&plist :name new-task) new-plist]
+    (-let [(new-plist &plist :name new-task) (chronometrist-latest-record backend)]
       (setf hash-table (chronometrist-events-update new-plist hash-table))
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-add:1 ends here
 
 ;; [[file:chronometrist.org::*on-modify][on-modify:1]]
-(cl-defmethod chronometrist-on-modify (new-plist old-plist (backend chronometrist-plist-backend))
+(cl-defmethod chronometrist-on-modify ((backend chronometrist-plist-backend))
   "Function run when the newest plist in a
 `chronometrist-plist-backend' file is modified."
   (with-slots (hash-table) backend
-    (-let (((&plist :name new-task) new-plist)
-           ((&plist :name old-task) old-plist))
+    (-let (((new-plist &plist :name new-task) (chronometrist-latest-record backend))
+           ((old-plist &plist :name old-task) (chronometrist-events-last backend)))
       (setf hash-table (chronometrist-events-update new-plist hash-table t))
       (chronometrist-remove-from-task-list old-task backend)
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-modify:1 ends here
 
 ;; [[file:chronometrist.org::*on-remove][on-remove:1]]
-(cl-defmethod chronometrist-on-remove (old-plist (backend chronometrist-plist-backend))
+(cl-defmethod chronometrist-on-remove ((backend chronometrist-plist-backend))
   "Function run when the newest plist in a
 `chronometrist-plist-backend' file is deleted."
   (with-slots (hash-table) backend
-    (let ((date (chronometrist-events-last-date hash-table)))
-      ;; `chronometrist-remove-from-task-list' checks the hash table to
-      ;; determine if `chronometrist-task-list' is to be updated. Thus, the
-      ;; task list must be updated before the hash table.
+    (-let (((&plist :name old-task) (chronometrist-events-last))
+           (date  (chronometrist-events-last-date hash-table)))
+      ;; `chronometrist-remove-from-task-list' checks the hash table to determine
+      ;; if `chronometrist-task-list' is to be updated. Thus, the hash table must
+      ;; not be updated until the task list is.
       (chronometrist-remove-from-task-list old-task backend)
       (--> (gethash date hash-table)
            (-drop-last 1 it)
@@ -1675,33 +1674,40 @@ Return value is either a list in the form
 ;; to-file:1 ends here
 
 ;; [[file:chronometrist.org::*on-add][on-add:1]]
-(cl-defmethod chronometrist-on-add (new-plist-group (backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-on-add ((backend chronometrist-plist-group-backend))
   "Function run when a new plist-group is added at the end of a
 `chronometrist-plist-group-backend' file."
   (with-slots (hash-table) backend
-    (-let [(date plist) new-plist-group]
+    (-let [(date plist) (chronometrist-latest-date-records backend)]
       (puthash date plist hash-table)
       (chronometrist-add-to-task-list (plist-get plist :name) backend))))
 ;; on-add:1 ends here
 
 ;; [[file:chronometrist.org::*on-modify][on-modify:1]]
-(cl-defmethod chronometrist-on-modify (new-plist-group old-plist-group (backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-on-modify ((backend chronometrist-plist-group-backend))
   "Function run when the newest plist-group in a
 `chronometrist-plist-group-backend' file is modified."
   (with-slots (hash-table) backend
-    (-let [(date . plists) new-plist-group]
+    (-let* (((date . plists) (chronometrist-latest-date-records backend))
+            (old-date        (chronometrist-events-last-date hash-table))
+            (old-plists      (gethash old-date hash-table)))
       (puthash date plists hash-table)
+      (cl-loop for plist in old-plists
+        do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
       (cl-loop for plist in plists
         do (chronometrist-add-to-task-list (plist-get plist :name) backend)))))
 ;; on-modify:1 ends here
 
 ;; [[file:chronometrist.org::*on-remove][on-remove:1]]
-(cl-defmethod chronometrist-on-remove (old-plist-group (backend chronometrist-plist-group-backend))
+(cl-defmethod chronometrist-on-remove ((backend chronometrist-plist-group-backend))
   "Function run when the newest plist-group in a
 `chronometrist-plist-group-backend' file is deleted."
   (with-slots (hash-table) backend
-    (-let [(date . plists) new-sexp]
-      (puthash date plists hash-table))))
+    (-let ((old-date        (chronometrist-events-last-date hash-table))
+           (old-plists      (gethash old-date hash-table)))
+      (cl-loop for plist in old-plists
+        do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
+      (puthash date nil hash-table))))
 ;; on-remove:1 ends here
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
