@@ -1577,13 +1577,13 @@ These can be implemented in terms of the minimal protocol above.
 
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-file-backend-mixin ()
-  ((path ;; :initform (error "Path is required")
+  ((path :initform nil
     :initarg :path
     :accessor chronometrist-backend-path
     :custom 'string
     :documentation
     "Path to backend file, without extension.")
-   (extension ;; :initform (error "Extension is required")
+   (extension :initform nil
     :initarg :extension
     :accessor chronometrist-backend-ext
     :custom 'string
@@ -1707,6 +1707,7 @@ the file and the end of the second-last s-expression."))
   emacs-lisp-mode
   "chronometrist-sexp")
 #+END_SRC
+
 **** create-file                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-create-file ((backend chronometrist-elisp-sexp-backend) &optional file)
@@ -1883,65 +1884,65 @@ Return
                           (forward-list)))))
            :modify))))
 #+END_SRC
+
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-file-change-type ()
-  (let* ((file          (chronometrist-backend-file chronometrist-plist-test-backend))
-         (test-contents (with-current-buffer (find-file-noselect file)
-                          (buffer-substring (point-min) (point-max))))
-         (chronometrist--file-state-old chronometrist--file-state)
-         (chronometrist--file-state     (list :last (chronometrist-file-hash :before-last nil)
-                                 :rest (chronometrist-file-hash nil :before-last t)))
-         (chronometrist-events-old      chronometrist-events))
-    (chronometrist-events-populate)
-    (unwind-protect
-        (progn
-          (should
-           (eq nil (chronometrist-file-change-type chronometrist--file-state)))
-          (should
-           (eq :append
-               (progn
-                 (chronometrist-insert chronometrist-plist-test-backend
-                          '(:name "Append Test"
-                                  :start "2021-02-01T13:06:46+0530"
-                                  :stop "2021-02-01T13:06:49+0530"))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
-          (should
-           (eq :modify
-               (progn
-                 (chronometrist-replace-last chronometrist-plist-test-backend
-                                '(:name "Modify Test"
-                                        :tags (some tags)
-                                        :start "2021-02-01T13:06:46+0530"
-                                        :stop "2021-02-01T13:06:49+0530"))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
-          (should
-           (eq :remove
-               (progn
-                 (chronometrist-sexp-in-file file
-                   (goto-char (point-max))
-                   (backward-list 1)
-                   (chronometrist-sexp-delete-list 1)
-                   (save-buffer))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file))))
-          (should
-           (eq t
-               (progn
-                 (chronometrist-sexp-in-file file
-                   (goto-char (point-min))
-                   (chronometrist-plist-pp '(:name "Other Change Test"
-                                      :start "2021-02-02T17:39:40+0530"
-                                      :stop "2021-02-02T17:39:44+0530")
-                              (current-buffer))
-                   (save-buffer))
-                 (chronometrist-tests--change-type-and-update chronometrist--file-state file)))))
-      (with-current-buffer
-          (find-file-noselect file)
-        (delete-region (point-min) (point-max))
-        (insert test-contents)
-        (save-buffer))
-      (setq chronometrist--file-state chronometrist--file-state-old
-            chronometrist-events      chronometrist-events-old))))
+  (with-slots (file hash-table file-state) chronometrist-plist-test-backend
+    (let* ((b chronometrist-plist-test-backend)
+           (test-contents (with-current-buffer (find-file-noselect file)
+                            (buffer-substring (point-min) (point-max)))))
+      (chronometrist-reset-backend b)
+      (setf file-state
+            (list :last (chronometrist-file-hash :before-last nil)
+                  :rest (chronometrist-file-hash nil :before-last t)))
+      (unwind-protect
+          (progn
+            (should
+             (eq nil (chronometrist-file-change-type file-state)))
+            (should
+             (eq :append
+                 (progn
+                   (chronometrist-insert chronometrist-plist-test-backend
+                             '(:name "Append Test"
+                                     :start "2021-02-01T13:06:46+0530"
+                                     :stop "2021-02-01T13:06:49+0530"))
+                   (chronometrist-tests--change-type-and-update file-state file))))
+            (should
+             (eq :modify
+                 (progn
+                   (chronometrist-replace-last chronometrist-plist-test-backend
+                                   '(:name "Modify Test"
+                                           :tags (some tags)
+                                           :start "2021-02-01T13:06:46+0530"
+                                           :stop "2021-02-01T13:06:49+0530"))
+                   (chronometrist-tests--change-type-and-update file-state file))))
+            (should
+             (eq :remove
+                 (progn
+                   (chronometrist-sexp-in-file file
+                     (goto-char (point-max))
+                     (backward-list 1)
+                     (chronometrist-sexp-delete-list 1)
+                     (save-buffer))
+                   (chronometrist-tests--change-type-and-update file-state file))))
+            (should
+             (eq t
+                 (progn
+                   (chronometrist-sexp-in-file file
+                     (goto-char (point-min))
+                     (chronometrist-plist-pp '(:name "Other Change Test"
+                                         :start "2021-02-02T17:39:40+0530"
+                                         :stop "2021-02-02T17:39:44+0530")
+                                 (current-buffer))
+                     (save-buffer))
+                   (chronometrist-tests--change-type-and-update file-state file)))))
+        (with-current-buffer
+            (find-file-noselect file)
+          (delete-region (point-min) (point-max))
+          (insert test-contents)
+          (save-buffer))
+        (chronometrist-reset-backend b)))))
 #+END_SRC
 
 **** reset-task-list                                              :writer:

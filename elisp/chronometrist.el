@@ -967,13 +967,13 @@ hash table values must be in chronological order.")
 
 ;; [[file:chronometrist.org::#file-backend-mixin][file-backend-mixin:1]]
 (defclass chronometrist-file-backend-mixin ()
-  ((path ;; :initform (error "Path is required")
+  ((path :initform nil
     :initarg :path
     :accessor chronometrist-backend-path
     :custom 'string
     :documentation
     "Path to backend file, without extension.")
-   (extension ;; :initform (error "Extension is required")
+   (extension :initform nil
     :initarg :extension
     :accessor chronometrist-backend-ext
     :custom 'string
