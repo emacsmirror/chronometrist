@@ -123,11 +123,11 @@ Currently, the file is probably being saved twice - once when we insert/update t
 
 See branch =reduce-saves=
 
-** Don't modify file until exit and/or Emacs idle
+** Don't save file until exit and/or Emacs idle
 :PROPERTIES:
 :CREATED:  2022-01-03T16:09:04+0530
 :END:
-A risky strategy - if there is unsaved data, it will be lost.
+A risky strategy - if there is unsaved data during an unclean exit, it will be lost.
 
 ** DONE Deferred (tag/key/value) history generation
 Defer (tag/key/value) history generation from file-change-time to prompt-time, and make it per-task instead of all tasks at once
