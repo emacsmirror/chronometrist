@@ -787,7 +787,9 @@ If `chronometrist-task-list' is non-nil, return its value; else,
 return a list of tasks from the active backend."
   (let ((backend (chronometrist-active-backend)))
     (with-slots (task-list) backend
-      (or chronometrist-task-list (setf task-list (chronometrist-list-tasks backend))))))
+      (or chronometrist-task-list
+          task-list
+          (setf task-list (chronometrist-list-tasks backend))))))
 ;; task-list:1 ends here
 
 ;; [[file:chronometrist.org::*list-tasks][list-tasks:1]]
