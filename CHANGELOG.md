@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
 5. New command `chronometrist-discard-active`, to discard the active interval.
 
+### Fixed
+1. File change detection code has been rewritten, hopefully fixing some uncommon `read` and `args out of range` errors.
+
 ## [0.9.0] - 2021-07-08
 ### Added
 1. New commands `chronometrist-restart-task`, `chronometrist-extend-task`
