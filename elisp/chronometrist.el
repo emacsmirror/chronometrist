@@ -990,22 +990,7 @@ hash table values must be in chronological order.")
    (file-watch :initform nil
                :initarg :file-watch
                :accessor chronometrist-backend-file-watch
-               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'.")
-   (file-state :initarg :file-state
-               :initform nil
-               :accessor chronometrist-backend-file-state
-               :documentation "List containing the state of `chronometrist-file'.
-`chronometrist-refresh-file' sets this to a plist in the form
-
-\(:last (LAST-START LAST-END) :rest (REST-START REST-END HASH))
-
-\(see `chronometrist-file-hash')
-
-LAST-START and LAST-END are integers representing the start and
-the end of the last s-expression.
-
-REST-START and REST-END are integers representing the start of
-the file and the end of the second-last s-expression."))
+               :documentation "Filesystem watch object, as returned by `file-notify-add-watch'."))
   :documentation "Mixin for backends storing data in a single file.")
 ;; file-backend-mixin:1 ends here
 
@@ -1035,10 +1020,18 @@ the file and the end of the second-last s-expression."))
 
 ;; [[file:chronometrist.org::*reset-backend][reset-backend:1]]
 (cl-defmethod chronometrist-reset-backend ((backend chronometrist-file-backend-mixin))
-  (with-slots (hash-table file-state) backend
+  (with-slots (hash-table file-watch
+               rest-start rest-end rest-hash
+               file-length last-hash) backend
     (chronometrist-reset-task-list backend)
-    (setf hash-table (chronometrist-to-hash-table backend)
-          file-state nil)
+    (file-notify-rm-watch file-watch)
+    (setf hash-table  (chronometrist-to-hash-table backend)
+          file-watch  nil
+          rest-start  nil
+          rest-end    nil
+          rest-hash   nil
+          file-length nil
+          last-hash   nil)
     (chronometrist-setup-file-watch)))
 ;; reset-backend:1 ends here
 
@@ -1071,7 +1064,27 @@ the file and the end of the second-last s-expression."))
 ;; on-file-path-change:1 ends here
 
 ;; [[file:chronometrist.org::*elisp-sexp-backend][elisp-sexp-backend:1]]
-(defclass chronometrist-elisp-sexp-backend (chronometrist-backend) ()
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend)
+  ((rest-start :initarg :rest-start
+               :initform nil
+               :accessor chronometrist-backend-rest-start
+               :documentation "Integer denoting start of first s-expression in file.")
+   (rest-end :initarg :rest-end
+             :initform nil
+             :accessor chronometrist-backend-rest-end
+             :documentation "Integer denoting end of second-last s-expression in file.")
+   (rest-hash :initarg :rest-hash
+              :initform nil
+              :accessor chronometrist-backend-rest-hash
+              :documentation "Hash of content between rest-start and rest-end.")
+   (file-length :initarg :file-length
+                :initform nil
+                :accessor chronometrist-backend-file-length
+                :documentation "Integer denoting length of file, as returned by `(point-max)'.")
+   (last-hash :initarg :last-hash
+              :initform nil
+              :accessor chronometrist-backend-last-hash
+              :documentation "Hash of content between rest-end and file-length."))
   :documentation "Base class for any text file backend which stores s-expressions readable by Emacs Lisp.")
 ;; elisp-sexp-backend:1 ends here
 
@@ -1285,24 +1298,24 @@ This may happen within Chronometrist (through the backend
 protocol) or outside it (e.g. a user editing the backend file).
 
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
-  (with-slots (hash-table file-watch file-state) backend
+  (with-slots (hash-table file-watch
+               rest-start rest-end rest-hash
+               file-length last-hash) backend
     (-let* (((_ action _ _) fs-event)
-            (change      (when file-state
-                           (chronometrist-file-change-type file-state)))
-            (reset-watch (or (eq action 'deleted)
-                             (eq action 'renamed))))
+            (file-state-bound-p (and rest-start rest-end rest-hash
+                                     file-length last-hash))
+            (change      (when file-state-bound-p
+                           (chronometrist-file-change-type backend)))
+            (reset-watch-p (or (eq action 'deleted)
+                               (eq action 'renamed))))
       ;; (message "chronometrist - file change type is %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
-      (cond ((or reset-watch
-                 (not file-state) ;; why?
+      (cond ((or reset-watch-p
+                 (not file-state-bound-p) ;; why?
                  (eq change t))
-             ;; Don't keep a watch for a nonexistent file.
-             (when reset-watch
-               (file-notify-rm-watch file-watch)
-               (setf file-watch nil file-state nil))
              (chronometrist-reset-backend backend))
-            (file-state
+            (file-state-bound-p
              (pcase change
                ;; A new s-expression was added at the end of the file
                (:append (chronometrist-on-add backend))
