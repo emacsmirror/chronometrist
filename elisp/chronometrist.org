@@ -1804,44 +1804,35 @@ expression first)."
            (read (current-buffer))))))
 #+END_SRC
 
+**** indices and hashes
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-rest-start (file)
+  (chronometrist-sexp-in-file file
+    (goto-char (point-min))
+    (forward-list)
+    (backward-list)
+    (point)))
+
+(defun chronometrist-rest-end (file)
+  (chronometrist-sexp-in-file file
+    (goto-char (point-max))
+    (backward-list 2)
+    (forward-list)
+    (point)))
+
+(defun chronometrist-file-length (file)
+  (chronometrist-sexp-in-file file (point-max)))
+#+END_SRC
+
 **** file-hash                                                    :reader:
 #+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
-  "Calculate hash of `chronometrist-file' between START and END.
-START can be
-a number or marker,
-:before-last - the position at the start of the last s-expression
-nil or any other value - the value of `point-min'.
-
-END can be
-a number or marker,
-:before-last - the position at the end of the second-last s-expression,
-nil or any other value - the position at the end of the last s-expression.
-
-Return (START END) if HASH is nil, else (START END HASH).
-
-Return a list in the form (A B HASH), where A and B are markers
-in `chronometrist-file' describing the region for which HASH was calculated."
+(cl-defun chronometrist-file-hash (start end &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
+  "Calculate hash of `chronometrist-file' between START and END."
   (chronometrist-sexp-in-file file
-    (let* ((start (cond ((number-or-marker-p start) start)
-                        ((eq :before-last start)
-                         (goto-char (point-max))
-                         (backward-list))
-                        (t (point-min))))
-           (end   (cond ((number-or-marker-p end) end)
-                        ((eq :before-last end)
-                         (goto-char (point-max))
-                         (backward-list 2)
-                         (forward-list))
-                        (t (goto-char (point-max))
-                           (backward-list)
-                           (forward-list)))))
-      (if hash
-          (--> (buffer-substring-no-properties start end)
-               (secure-hash 'sha1 it)
-               (list start end it))
-        (list start end)))))
+    (secure-hash 'sha1
+                 (buffer-substring-no-properties start end))))
 #+END_SRC
+
 ***** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest file-hash ()
@@ -1856,71 +1847,64 @@ in `chronometrist-file' describing the region for which HASH was calculated."
     (should (= 1256 last-start))
     (should (= 1426 last-end))))
 #+END_SRC
-**** read-from                                                    :reader:
-#+BEGIN_SRC emacs-lisp
-(cl-defun chronometrist-read-from (position &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
-  (chronometrist-sexp-in-file file
-    (goto-char (if (number-or-marker-p position)
-                   position
-                 (funcall position)))
-    (ignore-errors (read (current-buffer)))))
-#+END_SRC
+**** file-change-type                                             :reader:
++ rest-start - start of first sexp
++ rest-end - end of second last sexp
++ file-length - end of file
 
-**** TODO file-change-type                                        :reader:
-1. [ ] add newline after last expression and save => nil
-2. [ ] remove newline after last expession and save => nil
++ rest-hash - hash of content between rest-start and rest-end
++ last-hash - hash of content between rest-end and file-length
 
-The initial idea was to use two pairs of hashes, one for the content between the start of the file up to the last expression, and the other for the last expression itself. However, in the latter case, this can cause issues -
-+ the expression may shrink, and if we try to compute the hash of the previously-known region again, we will get an args-out-of-range error.
-+ false negatives for whitespace/indentation differences.
-Thus, we use =read= for the last expression.
++ ht-last-sexp - last sexp in memory
++ file-sexp-after-rest - sexp after rest-end
++ file-last-sexp - last sexp in file
 
-Possible states
-: <rest-start> <rest-end> <last-start> <last-end>
-1. :append - rest same, last same, new expr after last-end
-2. :modify - rest same, last not same, no expr after last-end
-3. :remove - rest same, last not same, no expr after last-start
-4. nil     - rest same, last same, no expr after last-end
-5. t       - rest changed
+| situation    | rest-hash | last-hash | file-sexp-after-rest | file-last-sexp                          | file-length                  |
+|--------------+-----------+-----------+----------------------+-----------------------------------------+------------------------------|
+| no change    | same      | same      | same as ht-last-sexp | same as ht-last-sexp and file-last-sexp | same                         |
+| append       | same      | same      | -                    | (new s-expression)                      | always greater               |
+| modify       | same      | changed   | changed              | changed                                 | may be smaller               |
+| remove       | same      | changed   | nil                  | same as second last sexp                | always smaller               |
+| other change | changed   | -         |                      | -                                       | may be smaller than rest-end |
+
+We avoid comparing s-expressions in the file with the contents of the hash table, since the last s-expression might be represented differently in the hash tables of different elisp-sexp backends. Additionally, in =:modify= as well as =nil= situations, there is no s-expression after old-file-length.
 
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-file-change-type (state)
-  "Determine the type of change made to `chronometrist-file'.
-STATE must be a plist. (see `chronometrist--file-state')
-
-Return
-:append  if a new s-expression was added to the end,
-:modify  if the last s-expression was modified,
-:remove  if the last s-expression was removed,
-    nil  if the contents didn't change, and
-      t  for any other change."
-  (-let*
-      (((last-start last-end)           (plist-get state :last))
-       ((rest-start rest-end rest-hash) (plist-get state :rest))
-       (last-expr-file  (chronometrist-read-from last-start))
-       (last-expr-ht    (chronometrist-events-last))
-       (file            (chronometrist-backend-file (chronometrist-active-backend)))
-       (last-same-p     (equal last-expr-ht last-expr-file))
-       (file-new-length (chronometrist-sexp-in-file file (point-max)))
-       (rest-same-p     (unless (< file-new-length rest-end)
-                          (--> (chronometrist-file-hash rest-start rest-end t)
-                            (cl-third it)
-                            (equal rest-hash it)))))
-    ;; (message "chronometrist - last-start\nlast-expr-file - %S\nlast-expr-ht - %S"
-    ;;          last-expr-file
-    ;;          last-expr-ht)
-    ;; (message "chronometrist - last-same-p - %S, rest-same-p - %S"
-    ;;          last-same-p rest-same-p)
-    (cond ((not rest-same-p) t)
-          (last-same-p
-           (when (chronometrist-read-from last-end) :append))
-          ((not (chronometrist-read-from last-start))
-           :remove)
-          ((not (chronometrist-read-from
-                 (lambda ()
-                   (progn (goto-char last-start)
-                          (forward-list)))))
-           :modify))))
+(defun chronometrist-file-change-type (backend)
+  "Determine the type of change made to BACKEND's file.
+    Return
+    :append  if a new s-expression was added to the end,
+    :modify  if the last s-expression was modified,
+    :remove  if the last s-expression was removed,
+        nil  if the contents didn't change, and
+          t  for any other change."
+  (with-slots
+      (file file-watch
+            ;; The slots contain the old state of the file.
+            hash-table
+            rest-start rest-end rest-hash
+            file-length last-hash) backend
+    (let* ((new-length    (chronometrist-file-length file))
+           (new-rest-hash (chronometrist-file-hash rest-start rest-end file))
+           (new-last-hash (chronometrist-file-hash rest-end new-length file)))
+      (cond ((and (= file-length new-length)
+                  (equal rest-hash new-rest-hash)
+                  (equal last-hash new-last-hash))
+             nil)
+            ((or (< new-length rest-end) ;; File has shrunk so much that we cannot compare rest-hash.
+                 (not (equal rest-hash new-rest-hash)))
+             t)
+            ;; From here on, it is implicit that the change has happened at the end of the file.
+            ((and (< file-length new-length) ;; File has grown.
+                  (equal last-hash new-last-hash))
+             :append)
+            ((and (< new-length file-length) ;; File has shrunk.
+                  (not (chronometrist-sexp-in-file file
+                         (goto-char rest-end)
+                         (ignore-errors
+                           (read (current-buffer)))))) ;; There is no sexp after rest-end.
+             :remove)
+            (t :modify)))))
 #+END_SRC
 
 ***** tests
@@ -2049,9 +2033,9 @@ This may happen within Chronometrist (through the backend
 protocol) or outside it (e.g. a user editing the backend file).
 
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
-  (with-slots (hash-table file-watch
-               rest-start rest-end rest-hash
-               file-length last-hash) backend
+  (with-slots (file hash-table file-watch
+                    rest-start rest-end rest-hash
+                    file-length last-hash) backend
     (-let* (((_ action _ _) fs-event)
             (file-state-bound-p (and rest-start rest-end rest-hash
                                      file-length last-hash))
@@ -2075,9 +2059,11 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                ;; The last s-expression in the file was removed
                (:remove (chronometrist-on-remove backend))
                ((pred null) nil))))
-      (setf file-state
-            (list :last (chronometrist-file-hash :before-last nil)
-                  :rest (chronometrist-file-hash nil :before-last t))))))
+      (setf rest-start  (chronometrist-rest-start file)
+            rest-end    (chronometrist-rest-end file)
+            file-length (chronometrist-file-length file)
+            last-hash   (chronometrist-file-hash rest-end file-length file)
+            rest-hash   (chronometrist-file-hash rest-start rest-end file)))))
 #+END_SRC
 
 *** plist backend
@@ -2812,6 +2798,7 @@ See `timeclock-log-data' for a description."
           (goto-char (point-at-bol))))
       nil)))
 #+END_SRC
+
 *** timelog-file-to-sexp-file                                      :writer:
 #+BEGIN_SRC emacs-lisp
 (defvar timeclock-file)

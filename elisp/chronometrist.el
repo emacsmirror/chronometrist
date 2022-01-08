@@ -1149,91 +1149,69 @@ expression first)."
            (read (current-buffer))))))
 ;; backend-empty-p:1 ends here
 
-;; [[file:chronometrist.org::*file-hash][file-hash:1]]
-(cl-defun chronometrist-file-hash (&optional start end hash (file (chronometrist-backend-file (chronometrist-active-backend))))
-  "Calculate hash of `chronometrist-file' between START and END.
-START can be
-a number or marker,
-:before-last - the position at the start of the last s-expression
-nil or any other value - the value of `point-min'.
-
-END can be
-a number or marker,
-:before-last - the position at the end of the second-last s-expression,
-nil or any other value - the position at the end of the last s-expression.
-
-Return (START END) if HASH is nil, else (START END HASH).
-
-Return a list in the form (A B HASH), where A and B are markers
-in `chronometrist-file' describing the region for which HASH was calculated."
+;; [[file:chronometrist.org::*indices and hashes][indices and hashes:1]]
+(defun chronometrist-rest-start (file)
   (chronometrist-sexp-in-file file
-    (let* ((start (cond ((number-or-marker-p start) start)
-                        ((eq :before-last start)
-                         (goto-char (point-max))
-                         (backward-list))
-                        (t (point-min))))
-           (end   (cond ((number-or-marker-p end) end)
-                        ((eq :before-last end)
-                         (goto-char (point-max))
-                         (backward-list 2)
-                         (forward-list))
-                        (t (goto-char (point-max))
-                           (backward-list)
-                           (forward-list)))))
-      (if hash
-          (--> (buffer-substring-no-properties start end)
-               (secure-hash 'sha1 it)
-               (list start end it))
-        (list start end)))))
+    (goto-char (point-min))
+    (forward-list)
+    (backward-list)
+    (point)))
+
+(defun chronometrist-rest-end (file)
+  (chronometrist-sexp-in-file file
+    (goto-char (point-max))
+    (backward-list 2)
+    (forward-list)
+    (point)))
+
+(defun chronometrist-file-length (file)
+  (chronometrist-sexp-in-file file (point-max)))
+;; indices and hashes:1 ends here
+
+;; [[file:chronometrist.org::*file-hash][file-hash:1]]
+(cl-defun chronometrist-file-hash (start end &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
+  "Calculate hash of `chronometrist-file' between START and END."
+  (chronometrist-sexp-in-file file
+    (secure-hash 'sha1
+                 (buffer-substring-no-properties start end))))
 ;; file-hash:1 ends here
 
-;; [[file:chronometrist.org::*read-from][read-from:1]]
-(cl-defun chronometrist-read-from (position &optional (file (chronometrist-backend-file (chronometrist-active-backend))))
-  (chronometrist-sexp-in-file file
-    (goto-char (if (number-or-marker-p position)
-                   position
-                 (funcall position)))
-    (ignore-errors (read (current-buffer)))))
-;; read-from:1 ends here
-
 ;; [[file:chronometrist.org::*file-change-type][file-change-type:1]]
-(defun chronometrist-file-change-type (state)
-  "Determine the type of change made to `chronometrist-file'.
-STATE must be a plist. (see `chronometrist--file-state')
-
-Return
-:append  if a new s-expression was added to the end,
-:modify  if the last s-expression was modified,
-:remove  if the last s-expression was removed,
-    nil  if the contents didn't change, and
-      t  for any other change."
-  (-let*
-      (((last-start last-end)           (plist-get state :last))
-       ((rest-start rest-end rest-hash) (plist-get state :rest))
-       (last-expr-file  (chronometrist-read-from last-start))
-       (last-expr-ht    (chronometrist-events-last))
-       (file            (chronometrist-backend-file (chronometrist-active-backend)))
-       (last-same-p     (equal last-expr-ht last-expr-file))
-       (file-new-length (chronometrist-sexp-in-file file (point-max)))
-       (rest-same-p     (unless (< file-new-length rest-end)
-                          (--> (chronometrist-file-hash rest-start rest-end t)
-                            (cl-third it)
-                            (equal rest-hash it)))))
-    ;; (message "chronometrist - last-start\nlast-expr-file - %S\nlast-expr-ht - %S"
-    ;;          last-expr-file
-    ;;          last-expr-ht)
-    ;; (message "chronometrist - last-same-p - %S, rest-same-p - %S"
-    ;;          last-same-p rest-same-p)
-    (cond ((not rest-same-p) t)
-          (last-same-p
-           (when (chronometrist-read-from last-end) :append))
-          ((not (chronometrist-read-from last-start))
-           :remove)
-          ((not (chronometrist-read-from
-                 (lambda ()
-                   (progn (goto-char last-start)
-                          (forward-list)))))
-           :modify))))
+(defun chronometrist-file-change-type (backend)
+  "Determine the type of change made to BACKEND's file.
+    Return
+    :append  if a new s-expression was added to the end,
+    :modify  if the last s-expression was modified,
+    :remove  if the last s-expression was removed,
+        nil  if the contents didn't change, and
+          t  for any other change."
+  (with-slots
+      (file file-watch
+            ;; The slots contain the old state of the file.
+            hash-table
+            rest-start rest-end rest-hash
+            file-length last-hash) backend
+    (let* ((new-length    (chronometrist-file-length file))
+           (new-rest-hash (chronometrist-file-hash rest-start rest-end file))
+           (new-last-hash (chronometrist-file-hash rest-end new-length file)))
+      (cond ((and (= file-length new-length)
+                  (equal rest-hash new-rest-hash)
+                  (equal last-hash new-last-hash))
+             nil)
+            ((or (< new-length rest-end) ;; File has shrunk so much that we cannot compare rest-hash.
+                 (not (equal rest-hash new-rest-hash)))
+             t)
+            ;; From here on, it is implicit that the change has happened at the end of the file.
+            ((and (< file-length new-length) ;; File has grown.
+                  (equal last-hash new-last-hash))
+             :append)
+            ((and (< new-length file-length) ;; File has shrunk.
+                  (not (chronometrist-sexp-in-file file
+                         (goto-char rest-end)
+                         (ignore-errors
+                           (read (current-buffer)))))) ;; There is no sexp after rest-end.
+             :remove)
+            (t :modify)))))
 ;; file-change-type:1 ends here
 
 ;; [[file:chronometrist.org::*reset-task-list][reset-task-list:1]]
@@ -1298,9 +1276,9 @@ This may happen within Chronometrist (through the backend
 protocol) or outside it (e.g. a user editing the backend file).
 
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
-  (with-slots (hash-table file-watch
-               rest-start rest-end rest-hash
-               file-length last-hash) backend
+  (with-slots (file hash-table file-watch
+                    rest-start rest-end rest-hash
+                    file-length last-hash) backend
     (-let* (((_ action _ _) fs-event)
             (file-state-bound-p (and rest-start rest-end rest-hash
                                      file-length last-hash))
@@ -1324,9 +1302,11 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                ;; The last s-expression in the file was removed
                (:remove (chronometrist-on-remove backend))
                ((pred null) nil))))
-      (setf file-state
-            (list :last (chronometrist-file-hash :before-last nil)
-                  :rest (chronometrist-file-hash nil :before-last t))))))
+      (setf rest-start  (chronometrist-rest-start file)
+            rest-end    (chronometrist-rest-end file)
+            file-length (chronometrist-file-length file)
+            last-hash   (chronometrist-file-hash rest-end file-length file)
+            rest-hash   (chronometrist-file-hash rest-start rest-end file)))))
 ;; on-change:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
