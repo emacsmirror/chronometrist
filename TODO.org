@@ -746,7 +746,7 @@ Midnight-spanning intervals are split in the hash table when the file is read, b
 * Duplication - accessing the latest-record                            :code:
 Many functions use the latest record. A =(chronometrist-with-latest-record var &rest body)= might help...
 
-* STARTED Plist-group backend [68%]                    :feature:optimization:
+* STARTED Plist-group backend [71%]                    :feature:optimization:
 See branch =grouped-plist-format=
 1. [X] Migrate backend code to use CLOS
 2. [-] Implement plist-group backend methods
@@ -765,8 +765,8 @@ See branch =grouped-plist-format=
 14. [ ] (maybe) handle existing (in-file) split tasks. Currently, if an interval is split, commands such as =chronometrist-key-values-unified-prompt= operate on the second split interval, but not the first. Instead, plist-group methods for =chronometrist-replace-last= and =chronometrist-remove-last= could check if the last interval is split, and operate on both of them. (=chronometrist-insert= already splits plists when inserting.)
     * Don't modify =chronometrist-latest-record=; code using it generally only wants the latter half of a split plist.
     * See branch =plist-group-handle-split-plists=
-15. [ ] use file-change-detection optimization
-    * [ ] fix bugs in change-type detection
+15. [X] use file-change-detection optimization
+    * [X] fix bugs in change-type detection
 16. [ ] fix bug - extra newlines in file
 
 Optional
@@ -872,3 +872,9 @@ Records not used for time tracking, but to store data associated with a date or 
 3. Type =M-x chronometrist=; =file-notify-descriptors= likely contains two descriptors for the same file and the same function (=chronometrist-file-refresh=)
 
 =chronometrist-register-backend= removes the old backend object and replaces it with a new one.
+
+* migration UX
+:PROPERTIES:
+:CREATED:  2022-01-08T23:32:37+0530
+:END:
+1. default suggested input backend should be the active backend
