@@ -823,14 +823,12 @@ Signal errors for any unmet preconditions.")
   "Return non-nil if BACKEND contains no records, else nil.")
 ;; backend-empty-p:1 ends here
 
-;; [[file:chronometrist.org::*timer][timer:1]]
-(cl-defgeneric chronometrist-timer (backend)
-  "Refresh Chronometrist and related buffers.
-Buffers will be refreshed only if they are visible and the user
-is clocked in to a task. Additionally, do not refresh buffers if
-if BACKEND is a file-based backend and the file is modified but
-not saved.")
-;; timer:1 ends here
+;; [[file:chronometrist.org::*backend-modified-p][backend-modified-p:1]]
+(cl-defgeneric chronometrist-backend-modified-p (backend)
+  "Return non-nil if BACKEND is being modified.
+For instance, a file-based backend could be undergoing editing by
+a user.")
+;; backend-modified-p:1 ends here
 
 ;; [[file:chronometrist.org::*create-file][create-file:1]]
 (cl-defgeneric chronometrist-create-file (backend &optional file)
@@ -1057,21 +1055,13 @@ the file and the end of the second-last s-expression."))
     (zerop (hash-table-count hash-table))))
 ;; memory-layer-empty-p:1 ends here
 
-;; [[file:chronometrist.org::*timer][timer:1]]
-(defvar chronometrist-buffer-name)
-(cl-defmethod chronometrist-timer ((backend chronometrist-file-backend-mixin))
+;; [[file:chronometrist.org::*backend-modified-p][backend-modified-p:1]]
+(cl-defmethod chronometrist-backend-modified-p ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (let ((file-buffer (get-buffer-create (find-file-noselect file))))
-      ;; No need to update the buffer if there is no active task, or
-      ;; if the file is being edited by the user. (The file may be in
-      ;; an invalid state, and reading it then may result in a read
-      ;; error.) Check for buffer modification first, since
-      ;; `chronometrist-current-task' may access the file (causing an error).
-      (when (and (not (buffer-modified-p file-buffer)) (chronometrist-current-task))
-        (when (get-buffer-window chronometrist-buffer-name)
-          (chronometrist-refresh))
-        (run-hooks 'chronometrist-timer-hook)))))
-;; timer:1 ends here
+    (buffer-modified-p
+     (get-buffer-create
+      (find-file-noselect file)))))
+;; backend-modified-p:1 ends here
 
 ;; [[file:chronometrist.org::*on-file-path-change][on-file-path-change:1]]
 (cl-defmethod chronometrist-on-file-path-change ((backend chronometrist-file-backend-mixin) _old-path new-path)
@@ -1935,8 +1925,7 @@ This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
 ;; [[file:chronometrist.org::*start-timer][start-timer:1]]
 (defun chronometrist-start-timer ()
   (setq chronometrist--timer-object
-        (run-at-time t chronometrist-update-interval
-                     (lambda () (chronometrist-timer (chronometrist-active-backend))))))
+        (run-at-time t chronometrist-update-interval #'chronometrist-timer)))
 ;; start-timer:1 ends here
 
 ;; [[file:chronometrist.org::*stop-timer][stop-timer:1]]
@@ -1980,6 +1969,25 @@ ARG should be the new update interval, in seconds."
         chronometrist--timer-object nil)
   (chronometrist-maybe-start-timer))
 ;; change-update-interval:1 ends here
+
+;; [[file:chronometrist.org::*timer][timer:1]]
+(defvar chronometrist-buffer-name)
+(defun chronometrist-timer ()
+  "Refresh Chronometrist and related buffers.
+Buffers will be refreshed only if they are visible, the user is
+clocked in to a task, and the active backend is not being
+modified."
+  ;; No need to update the buffer if there is no active task, or if
+  ;; the file is being edited by the user. (The file may be in an
+  ;; invalid state, and reading it then may result in a read error.)
+  ;; Check for buffer modification first, since `chronometrist-current-task' may
+  ;; access the file (causing an error).
+  (when (and (not (chronometrist-backend-modified-p (chronometrist-active-backend)))
+             (chronometrist-current-task))
+    (when (get-buffer-window chronometrist-buffer-name)
+      (chronometrist-refresh))
+    (run-hooks 'chronometrist-timer-hook)))
+;; timer:1 ends here
 
 ;; [[file:chronometrist.org::*buffer-name][buffer-name:1]]
 (defcustom chronometrist-buffer-name "*Chronometrist*"

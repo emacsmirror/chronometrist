@@ -266,7 +266,7 @@ The protocol as of now, with remarks -
 2. =view-backend (backend)=
 3. =edit-backend (backend)= - these two would make sense if there was only one way to view/edit a backend. But if we want [[file:TODO.org::#viewing-editing-frontends][viewing/editing frontends]], there would be many.
 4. =backend-empty-p (backend)=
-5. =timer (backend)= - could be made monomorphic, as the only backend-dependent part is to detect is whether a backend is currently being edited. =backend-modified-p=?
+5. =backend-modified-p (backend)=
 6. =create-file (backend &optional file)=
 7. =latest-date-records (backend)=
 8. =insert (backend plist)=
@@ -1432,14 +1432,12 @@ Signal errors for any unmet preconditions.")
   "Return non-nil if BACKEND contains no records, else nil.")
 #+END_SRC
 
-**** timer                                              :generic:function:
+**** backend-modified-p                                 :generic:function:
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-timer (backend)
-  "Refresh Chronometrist and related buffers.
-Buffers will be refreshed only if they are visible and the user
-is clocked in to a task. Additionally, do not refresh buffers if
-if BACKEND is a file-based backend and the file is modified but
-not saved.")
+(cl-defgeneric chronometrist-backend-modified-p (backend)
+  "Return non-nil if BACKEND is being modified.
+For instance, a file-based backend could be undergoing editing by
+a user.")
 #+END_SRC
 
 **** file operations
@@ -1704,21 +1702,13 @@ the file and the end of the second-last s-expression."))
     (zerop (hash-table-count hash-table))))
 #+END_SRC
 
-**** timer                                                        :method:
+**** backend-modified-p                                    :reader:method:
 #+BEGIN_SRC emacs-lisp
-(defvar chronometrist-buffer-name)
-(cl-defmethod chronometrist-timer ((backend chronometrist-file-backend-mixin))
+(cl-defmethod chronometrist-backend-modified-p ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (let ((file-buffer (get-buffer-create (find-file-noselect file))))
-      ;; No need to update the buffer if there is no active task, or
-      ;; if the file is being edited by the user. (The file may be in
-      ;; an invalid state, and reading it then may result in a read
-      ;; error.) Check for buffer modification first, since
-      ;; `chronometrist-current-task' may access the file (causing an error).
-      (when (and (not (buffer-modified-p file-buffer)) (chronometrist-current-task))
-        (when (get-buffer-window chronometrist-buffer-name)
-          (chronometrist-refresh))
-        (run-hooks 'chronometrist-timer-hook)))))
+    (buffer-modified-p
+     (get-buffer-create
+      (find-file-noselect file)))))
 #+END_SRC
 
 **** on-file-path-change                                :generic:function:
@@ -2886,8 +2876,7 @@ This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-start-timer ()
   (setq chronometrist--timer-object
-        (run-at-time t chronometrist-update-interval
-                     (lambda () (chronometrist-timer (chronometrist-active-backend))))))
+        (run-at-time t chronometrist-update-interval #'chronometrist-timer)))
 #+END_SRC
 
 *** stop-timer                                                    :command:
@@ -2934,6 +2923,26 @@ ARG should be the new update interval, in seconds."
   (setq chronometrist-update-interval arg
         chronometrist--timer-object nil)
   (chronometrist-maybe-start-timer))
+#+END_SRC
+
+*** timer                                                        :function:
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-buffer-name)
+(defun chronometrist-timer ()
+  "Refresh Chronometrist and related buffers.
+Buffers will be refreshed only if they are visible, the user is
+clocked in to a task, and the active backend is not being
+modified."
+  ;; No need to update the buffer if there is no active task, or if
+  ;; the file is being edited by the user. (The file may be in an
+  ;; invalid state, and reading it then may result in a read error.)
+  ;; Check for buffer modification first, since `chronometrist-current-task' may
+  ;; access the file (causing an error).
+  (when (and (not (chronometrist-backend-modified-p (chronometrist-active-backend)))
+             (chronometrist-current-task))
+    (when (get-buffer-window chronometrist-buffer-name)
+      (chronometrist-refresh))
+    (run-hooks 'chronometrist-timer-hook)))
 #+END_SRC
 
 ** Frontends
