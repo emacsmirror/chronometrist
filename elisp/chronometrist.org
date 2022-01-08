@@ -257,6 +257,37 @@ Further details are stored in properties -
   =(hours minute seconds)=
   * Only returned by =chronometrist-seconds-to-hms=, called by =chronometrist-format-time=
 
+** Backend protocol
+:PROPERTIES:
+:CREATED:  2022-01-05T19:00:12+0530
+:END:
+The protocol as of now, with remarks -
+1. =backend-run-assertions (backend)=
+2. =view-backend (backend)=
+3. =edit-backend (backend)= - these two would make sense if there was only one way to view/edit a backend. But if we want [[file:TODO.org::#viewing-editing-frontends][viewing/editing frontends]], there would be many.
+4. =backend-empty-p (backend)=
+5. =timer (backend)= - could be made monomorphic, as the only backend-dependent part is to detect is whether a backend is currently being edited. =backend-modified-p=?
+6. =create-file (backend &optional file)=
+7. =latest-date-records (backend)=
+8. =insert (backend plist)=
+9. =remove-last (backend)=
+10. =latest-record (backend)=
+11. =task-records-for-date (backend task date-ts)=
+12. =replace-last (backend plist)=
+13. =to-file (input-hash-table output-backend output-file)=
+14. =on-add (backend)=
+15. =on-modify (backend)=
+16. =on-remove (backend)=
+17. =on-change (backend)=
+18. =verify (backend)=
+19. =on-file-path-change (backend old-path new-path)=
+20. =reset-backend (backend)= - probably rename to "initialize"
+21. =memory-layer-empty-p (backend)= - needs a more generic name; perhaps "initialized-p", to go with #20
+22. =to-hash-table (backend)=
+23. =to-list (backend)=
+
+There are many operations which are file-oriented, whereas I have tried to treat files as implementation details. =create-file=, for instance, is used by =to-file=; I could make creation of files implicit by moving it into =initialize-instance=, but that would mean creation of files in =to-file= would require creation of a backend object. That seems to me to be an abuse of implicit behaviour; and what would backends which are not file-backed do in =to-file=, then? There's probably a way to do it, but I had other things I preferred to tackle first.
+
 ** generic cl-loop interface for iterating over records
 Of all the ways to work with Chronometrist data, both as part of the program and as part of my occasional "queries", my favorite was to use =cl-loop=.
 
@@ -275,7 +306,7 @@ Most recently, gilberth of #lispcafe suggested an alternate approach - trying to
 
 In addition, with this approach, client code can use any kind of iteration constructs they fancy - not just =cl-loop= but also =dolist=, higher-order functions (including those from =dash= and =seq=), =loopy=, etc.
 
-The macro still exists in its non-generic form as =chronometrist-loop-sexp-file=, providing a common way to loop over s-expressions in a text file.
+The macro still exists in its non-generic form as =chronometrist-loop-sexp-file=, providing a common way to loop over s-expressions in a text file, used by =chronometrist-to-list= in both backends and =chronometrist-to-hash-table= in the plist group backend.
 
 * How-to guides for maintainers
 ** How to set up Emacs to contribute
@@ -431,7 +462,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
   (require 'subr-x))
 #+END_SRC
 
-** Common
+** Common definitions
 *** custom group                                             :custom:group:
 #+BEGIN_SRC emacs-lisp
 (defgroup chronometrist nil
