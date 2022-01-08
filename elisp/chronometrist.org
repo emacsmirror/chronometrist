@@ -2448,6 +2448,16 @@ Concerns specific to the plist group backend -
 <<hack-note-plist-group-insert>>
 We just want to insert a plist, but as a hack to avoid updating the pretty-printer to handle indentation of plists being inserted into an outer list, we =append= the plist to a plist group and insert/replace the plist group instead.
 
+Situations -
+1. new inactive day-crossing record
+   1. first record - split, insert into two new groups
+   2. not first record - split, insert into existing group + new group
+2. new active record, or new non-day-crossing inactive record
+   1. first record - insert into new plist group
+   2. not first record
+      1. latest recorded date = today - insert into existing group
+      2. insert into new group
+
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (cl-check-type plist chronometrist-plist)
@@ -2455,19 +2465,31 @@ We just want to insert a plist, but as a hack to avoid updating the pretty-print
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
     (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-      (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
-             (backend-latest-date (cl-first latest-plist-group))
-             (date-today          (chronometrist-date-iso))
-             (insert-new-group    (not (equal date-today backend-latest-date)))
-             (new-plist-group     (if insert-new-group
-                                      (list date-today plist)
-                                    (append latest-plist-group (list plist)))))
+      (-let* (((plist-1 plist-2)   (chronometrist-split-plist plist))
+              ;; Determine if we need to insert a new plist group
+              (latest-plist-group  (chronometrist-latest-date-records backend))
+              (backend-latest-date (cl-first latest-plist-group))
+              (date-today          (chronometrist-date-iso))
+              (insert-new-group    (not (equal date-today backend-latest-date)))
+              (start-date          (cl-first (split-string (plist-get plist :start) "T")))
+              (new-plist-group-1   (if latest-plist-group
+                                       (append latest-plist-group
+                                               (list (or plist-1 plist)))
+                                     (list start-date (or plist-1 plist))))
+              (new-plist-group-2   (when (or plist-2 insert-new-group)
+                                     (list date-today (or plist-2 plist)))))
         (goto-char (point-max))
-        (if insert-new-group
-            (default-indent-new-line)
-          (chronometrist-sexp-pre-read-check (current-buffer))
-          (chronometrist-sexp-delete-list))
-        (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
+        ;; Is this the first plist group in the file?
+        (if latest-plist-group
+            (progn
+              (chronometrist-sexp-pre-read-check (current-buffer))
+              (chronometrist-sexp-delete-list))
+          (while (forward-comment 1) nil))
+        (funcall chronometrist-sexp-pretty-print-function new-plist-group-1 (current-buffer))
+        (when new-plist-group-2
+          (dotimes (_ 2)
+            (default-indent-new-line))
+          (funcall chronometrist-sexp-pretty-print-function new-plist-group-2 (current-buffer)))
         (when save (save-buffer))
         t))))
 #+END_SRC

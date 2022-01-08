@@ -1546,19 +1546,31 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
     (chronometrist-sexp-in-file (chronometrist-backend-file backend)
-      (let* ((latest-plist-group  (chronometrist-latest-date-records backend))
-             (backend-latest-date (cl-first latest-plist-group))
-             (date-today          (chronometrist-date-iso))
-             (insert-new-group    (not (equal date-today backend-latest-date)))
-             (new-plist-group     (if insert-new-group
-                                      (list date-today plist)
-                                    (append latest-plist-group (list plist)))))
+      (-let* (((plist-1 plist-2)   (chronometrist-split-plist plist))
+              ;; Determine if we need to insert a new plist group
+              (latest-plist-group  (chronometrist-latest-date-records backend))
+              (backend-latest-date (cl-first latest-plist-group))
+              (date-today          (chronometrist-date-iso))
+              (insert-new-group    (not (equal date-today backend-latest-date)))
+              (start-date          (cl-first (split-string (plist-get plist :start) "T")))
+              (new-plist-group-1   (if latest-plist-group
+                                       (append latest-plist-group
+                                               (list (or plist-1 plist)))
+                                     (list start-date (or plist-1 plist))))
+              (new-plist-group-2   (when (or plist-2 insert-new-group)
+                                     (list date-today (or plist-2 plist)))))
         (goto-char (point-max))
-        (if insert-new-group
-            (default-indent-new-line)
-          (chronometrist-sexp-pre-read-check (current-buffer))
-          (chronometrist-sexp-delete-list))
-        (funcall chronometrist-sexp-pretty-print-function new-plist-group (current-buffer))
+        ;; Is this the first plist group in the file?
+        (if latest-plist-group
+            (progn
+              (chronometrist-sexp-pre-read-check (current-buffer))
+              (chronometrist-sexp-delete-list))
+          (while (forward-comment 1) nil))
+        (funcall chronometrist-sexp-pretty-print-function new-plist-group-1 (current-buffer))
+        (when new-plist-group-2
+          (dotimes (_ 2)
+            (default-indent-new-line))
+          (funcall chronometrist-sexp-pretty-print-function new-plist-group-2 (current-buffer)))
         (when save (save-buffer))
         t))))
 ;; insert:1 ends here
