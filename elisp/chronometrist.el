@@ -1062,10 +1062,12 @@ the file and the end of the second-last s-expression."))
 (cl-defmethod chronometrist-timer ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
     (let ((file-buffer (get-buffer-create (find-file-noselect file))))
-      ;; No need to update the buffer if there is no active task, or if
-      ;; the file is being edited by the user. (The file may be in an
-      ;; invalid state, and reading it then may result in a read error.)
-      (when (and (chronometrist-current-task) (not (buffer-modified-p file-buffer)))
+      ;; No need to update the buffer if there is no active task, or
+      ;; if the file is being edited by the user. (The file may be in
+      ;; an invalid state, and reading it then may result in a read
+      ;; error.) Check for buffer modification first, since
+      ;; `chronometrist-current-task' may access the file (causing an error).
+      (when (and (not (buffer-modified-p file-buffer)) (chronometrist-current-task))
         (when (get-buffer-window chronometrist-buffer-name)
           (chronometrist-refresh))
         (run-hooks 'chronometrist-timer-hook)))))
