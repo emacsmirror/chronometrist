@@ -2314,7 +2314,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
   "Function run when the newest plist in a
 `chronometrist-plist-backend' file is modified."
   (with-slots (hash-table) backend
-    (-let (((new-plist &plist :name new-task) (chronometrist-latest-record backend))
+    (-let (((new-plist &as &plist :name new-task) (chronometrist-latest-record backend))
            ((&plist :name old-task) (chronometrist-events-last backend)))
       (setf hash-table (chronometrist-events-update new-plist hash-table t))
       (chronometrist-remove-from-task-list old-task backend)
