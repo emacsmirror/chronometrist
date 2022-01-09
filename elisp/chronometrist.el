@@ -244,10 +244,15 @@ Return new position of point."
   :type 'string
   :group 'chronometrist)
 
-(defmacro chronometrist-debug (format-string &rest args)
-  `(display-warning '(chronometrist)
-                    (apply #'format (concat (format-time-string "[%T] ") ,format-string) (list ,@args))
-                    :debug ,chronometrist-debug-buffer))
+(defun chronometrist-debug (format-string &rest args)
+  "Log a debug message using `display-warning'.
+For FORMAT-STRING and ARGS are passed to `format'."
+  (display-warning '(chronometrist)
+                   (apply #'format
+                          (concat (format-time-string "[%T] ")
+                                  format-string)
+                          args)
+                   :debug chronometrist-debug-buffer))
 ;; debug logging:1 ends here
 
 ;; [[file:chronometrist.org::*reset][reset:1]]
