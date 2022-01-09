@@ -2327,12 +2327,15 @@ PREFIX is ignored."
     ["Extend time without running hooks" (chronometrist-extend-task t)
      :keys "\\[universal-argument] \\[chronometrist-extend-task]"]
     ["Discard active interval" chronometrist-discard-active]
+    "----"
     ["View details of today's data" chronometrist-details]
     ["View weekly report" chronometrist-report]
     ["View/edit log file" chronometrist-open-log]
     ["View/edit literate source" chronometrist-open-literate-source]
+    "----"
     ["Restart timer" chronometrist-force-restart-timer]
-    ["Reset state" chronometrist-reset]))
+    ["Reset state" chronometrist-reset]
+    ["Import/export data" chronometrist-migrate]))
 ;; chronometrist-menu:1 ends here
 
 ;; [[file:chronometrist.org::*chronometrist-mode][chronometrist-mode:1]]
