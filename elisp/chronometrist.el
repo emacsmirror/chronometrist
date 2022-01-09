@@ -1211,8 +1211,11 @@ expression first)."
             rest-start rest-end rest-hash
             file-length last-hash) backend
     (let* ((new-length    (chronometrist-file-length file))
-           (new-rest-hash (chronometrist-file-hash rest-start rest-end file))
-           (new-last-hash (chronometrist-file-hash rest-end new-length file)))
+           (new-rest-hash (when (and (>= new-length rest-start)
+                                     (>= new-length rest-end))
+                            (chronometrist-file-hash rest-start rest-end file)))
+           (new-last-hash (when (>= new-length rest-end)
+                            (chronometrist-file-hash rest-end new-length file))))
       (cond ((and (= file-length new-length)
                   (equal rest-hash new-rest-hash)
                   (equal last-hash new-last-hash))
