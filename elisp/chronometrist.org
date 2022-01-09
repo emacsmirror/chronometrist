@@ -4371,8 +4371,8 @@ TABLE must be a hash table as returned by
 ;; (chronometrist-details-intervals-for-range "2021-06-01" chronometrist-events)
 ;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
 ;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30") chronometrist-events)
-
 #+END_SRC
+
 **** input-to-value                                             :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-input-to-value (input)
@@ -4397,8 +4397,8 @@ TABLE must be a hash table as returned by
                      end)))
        (cons begin end)))
     (_ (error "Unsupported range %S" input))))
-
 #+END_SRC
+
 **** set-range                                            :command:writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-set-range ()
@@ -4427,8 +4427,8 @@ TABLE must be a hash table as returned by
     (with-current-buffer buffer-name
       (setq-local chronometrist-details-range new-value)
       (tabulated-list-revert))))
-
 #+END_SRC
+
 **** filter                                                     :variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-details-filter nil
@@ -4440,8 +4440,8 @@ A plist - display intervals containing all given keyword-values.
 A predicate of one argument (the interval plist) - display all
 intervals for which the predicate returns non-nil.")
 (make-variable-buffer-local 'chronometrist-details-filter)
-
 #+END_SRC
+
 **** filter-match-p                                             :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-filter-match-p (plist filter)
@@ -4459,8 +4459,8 @@ FILTER must be a filter specifier as described by
         ((functionp filter)
          (when (funcall filter plist) plist))
         (t (error "Invalid filter %S" filter))))
-
 #+END_SRC
+
 **** set-filter                                           :command:writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-set-filter ()
@@ -4478,8 +4478,8 @@ FILTER must be a filter specifier as described by
           ((consp sexp)     (setq-local chronometrist-details-filter sexp))
           (t (error "Unsupported filter %S" input)))
     (tabulated-list-revert)))
-
 #+END_SRC
+
 **** intervals                                                  :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-intervals (range filter backend)
@@ -4491,6 +4491,7 @@ be a hash table as returned by `chronometrist-to-hash-table'."
     when (chronometrist-details-filter-match-p plist filter)
     collect plist))
 #+END_SRC
+
 **** rows                                                       :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-rows ()
