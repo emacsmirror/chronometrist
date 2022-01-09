@@ -391,7 +391,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "27.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
-;; ;; Version: 0.9.0
+;; Version: 0.9.0
 
 ;; This is free and unencumbered software released into the public domain.
 ;;
@@ -678,6 +678,19 @@ Return new position of point."
   (find-file (concat chronometrist-install-directory (plist-get chronometrist-doc-paths :lp))))
 #+END_SRC
 
+*** debug logging
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-debug-buffer "*chronometrist-debug*"
+  "Name of buffer to log debug messages to."
+  :type 'string
+  :group 'chronometrist)
+
+(defmacro chronometrist-debug (format-string &rest args)
+  `(display-warning '(chronometrist)
+                    (apply #'format (concat (format-time-string "[%T] ") ,format-string) (list ,@args))
+                    :debug ,chronometrist-debug-buffer))
+#+END_SRC
+
 ** Data structures
 :PROPERTIES:
 :CUSTOM_ID: program-data-structures
@@ -778,6 +791,7 @@ If REPLACE is non-nil, replace the last interval with PLIST."
          (puthash date it hash-table))
     hash-table))
 #+END_SRC
+
 *** last-date                                                      :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-events-last-date (hash-table)
@@ -2043,7 +2057,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                            (chronometrist-file-change-type backend)))
             (reset-watch-p (or (eq action 'deleted)
                                (eq action 'renamed))))
-      ;; (message "chronometrist - file change type is %s" change)
+      (chronometrist-debug "File change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch-p
@@ -2234,6 +2248,7 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   (chronometrist-backend-run-assertions backend)
+  (chronometrist-debug "Insert plist %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -2248,6 +2263,7 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
   (chronometrist-backend-run-assertions backend)
+  (chronometrist-debug "Remove last plist")
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -2366,6 +2382,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ***** replace-last                                        :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
+  (chronometrist-debug "Replace last plist with %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))

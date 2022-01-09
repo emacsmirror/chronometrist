@@ -5,7 +5,7 @@
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "27.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
-;; ;; Version: 0.9.0
+;; Version: 0.9.0
 
 ;; This is free and unencumbered software released into the public domain.
 ;;
@@ -237,6 +237,18 @@ Return new position of point."
   (interactive)
   (find-file (concat chronometrist-install-directory (plist-get chronometrist-doc-paths :lp))))
 ;; open-literate-source:1 ends here
+
+;; [[file:chronometrist.org::*debug logging][debug logging:1]]
+(defcustom chronometrist-debug-buffer "*chronometrist-debug*"
+  "Name of buffer to log debug messages to."
+  :type 'string
+  :group 'chronometrist)
+
+(defmacro chronometrist-debug (format-string &rest args)
+  `(display-warning '(chronometrist)
+                    (apply #'format (concat (format-time-string "[%T] ") ,format-string) (list ,@args))
+                    :debug ,chronometrist-debug-buffer))
+;; debug logging:1 ends here
 
 ;; [[file:chronometrist.org::*reset][reset:1]]
 (defun chronometrist-reset ()
@@ -1286,7 +1298,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                            (chronometrist-file-change-type backend)))
             (reset-watch-p (or (eq action 'deleted)
                                (eq action 'renamed))))
-      ;; (message "chronometrist - file change type is %s" change)
+      (chronometrist-debug "File change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch-p
@@ -1371,6 +1383,7 @@ STREAM (which is the value of `current-buffer')."
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   (chronometrist-backend-run-assertions backend)
+  (chronometrist-debug "Insert plist %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -1384,6 +1397,7 @@ STREAM (which is the value of `current-buffer')."
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
   (chronometrist-backend-run-assertions backend)
+  (chronometrist-debug "Remove last plist")
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -1489,6 +1503,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
+  (chronometrist-debug "Replace last plist with %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
