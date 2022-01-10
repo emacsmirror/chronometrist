@@ -1214,8 +1214,11 @@ expression first)."
            (new-rest-hash (when (and (>= new-length rest-start)
                                      (>= new-length rest-end))
                             (chronometrist-file-hash rest-start rest-end file)))
-           (new-last-hash (when (>= new-length rest-end)
-                            (chronometrist-file-hash rest-end new-length file))))
+           (new-last-hash (when (and (>= new-length rest-end)
+                                     (>= new-length file-length))
+                            (chronometrist-file-hash rest-end file-length file))))
+      ;; (chronometrist-debug "File indices - old rest-start: %s rest-end: %s file-length: %s new-length: %s"
+      ;;          rest-start rest-end file-length new-length)
       (cond ((and (= file-length new-length)
                   (equal rest-hash new-rest-hash)
                   (equal last-hash new-last-hash))
@@ -1460,7 +1463,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
   "Function run when a new plist is added at the end of a
 `chronometrist-plist-backend' file."
   (with-slots (hash-table) backend
-    (-let [(new-plist &plist :name new-task) (chronometrist-latest-record backend)]
+    (-let [(new-plist &as &plist :name new-task) (chronometrist-latest-record backend)]
       (setf hash-table (chronometrist-events-update new-plist hash-table))
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-add:1 ends here
