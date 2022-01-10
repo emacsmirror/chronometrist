@@ -952,7 +952,10 @@ backend file).")
 
 ;; [[file:chronometrist.org::*verify][verify:1]]
 (cl-defgeneric chronometrist-verify (backend)
-  "Check BACKEND for errors in data.")
+  "Check BACKEND for errors in data.
+Return nil if no errors are found.
+
+If an error is found, return (LINE-NUMBER . COLUMN-NUMBER) for file-based backends.")
 ;; verify:1 ends here
 
 ;; [[file:chronometrist.org::*on-file-path-change][on-file-path-change:1]]
@@ -1765,6 +1768,27 @@ Return value is either a list in the form
         do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
       (puthash old-date nil hash-table))))
 ;; on-remove:1 ends here
+
+;; [[file:chronometrist.org::*verify][verify:1]]
+(cl-defmethod chronometrist-verify ((backend chronometrist-plist-group-backend))
+  (with-slots (file hash-table) backend
+    ;; incorrectly ordered groups check
+    (chronometrist-loop-sexp-file for group in file
+      with old-date-iso with old-date-unix
+      with new-date-iso with new-date-unix
+      with last-plist
+      ;; while (not (bobp))
+      do (setq new-date-iso  (cl-first group)
+               new-date-unix (parse-iso8601-time-string new-date-iso))
+      when (and old-date-unix
+                (time-less-p old-date-unix
+                             new-date-unix))
+      do (cl-return (format "%s appears before %s on line %s"
+                            new-date-iso old-date-iso (line-number-at-pos)))
+      else do (setq old-date-iso  new-date-iso
+                    old-date-unix new-date-unix)
+      finally return "Yay, no errors! (...that I could find 💀)")))
+;; verify:1 ends here
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))

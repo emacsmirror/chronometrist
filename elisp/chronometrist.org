@@ -1579,7 +1579,10 @@ backend file).")
 ***** verify                                           :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-verify (backend)
-  "Check BACKEND for errors in data.")
+  "Check BACKEND for errors in data.
+Return nil if no errors are found.
+
+If an error is found, return (LINE-NUMBER . COLUMN-NUMBER) for file-based backends.")
 #+END_SRC
 
 ***** on-file-path-change                              :generic:function:
@@ -2696,6 +2699,28 @@ Return value is either a list in the form
       (cl-loop for plist in old-plists
         do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
       (puthash old-date nil hash-table))))
+#+END_SRC
+
+**** verify                                                :reader:method:
+#+BEGIN_SRC emacs-lisp
+(cl-defmethod chronometrist-verify ((backend chronometrist-plist-group-backend))
+  (with-slots (file hash-table) backend
+    ;; incorrectly ordered groups check
+    (chronometrist-loop-sexp-file for group in file
+      with old-date-iso with old-date-unix
+      with new-date-iso with new-date-unix
+      with last-plist
+      ;; while (not (bobp))
+      do (setq new-date-iso  (cl-first group)
+               new-date-unix (parse-iso8601-time-string new-date-iso))
+      when (and old-date-unix
+                (time-less-p old-date-unix
+                             new-date-unix))
+      do (cl-return (format "%s appears before %s on line %s"
+                            new-date-iso old-date-iso (line-number-at-pos)))
+      else do (setq old-date-iso  new-date-iso
+                    old-date-unix new-date-unix)
+      finally return "Yay, no errors! (...that I could find 💀)")))
 #+END_SRC
 
 **** extended protocol

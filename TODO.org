@@ -835,13 +835,14 @@ Command to delete the interval currently being recorded. (bind to 'k')
 ** fix handling of tagged alist group values                           :bug:
 ** put each list element on its own line if length of list exceeds fill-column :feature:
 
-* verify command                                                    :feature:
+* verify command [20%]                                              :feature:
 With different checks, for different levels of speed/thoroughness -
-1. (plist group) Sequence of plist group dates
-2. Intersecting timestamps
-3. Sequence of records
-4. (plist group) Midnight spanning interval check (first and last intervals)
-5. (plist group) Check that plist timestamps have the correct date. Only applicable [[dates-in-timestamps][as long as they have a date.]]
+1. [X] (plist group) Sequence of plist group dates
+2. [ ] Check that every record (except the last) has a =:stop=
+3. [ ] Intersecting timestamps
+4. [ ] Sequence of records
+5. [ ] (plist group) Midnight spanning interval check (first and last intervals)
+6. [ ] (plist group) Check that plist timestamps have the correct date. Only applicable [[dates-in-timestamps][as long as they have a date.]]
 
 * format changes
 ** multiple intervals per record                                   :feature:
