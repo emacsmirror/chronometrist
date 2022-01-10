@@ -2272,8 +2272,11 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
 **** remove-last                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
-  (chronometrist-backend-run-assertions backend)
   (chronometrist-debug "Remove last plist")
+  (chronometrist-backend-run-assertions backend)
+  (when (chronometrist-backend-empty-p backend)
+  (error "chronometrist-remove-last has nothing to remove in %s"
+         (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a

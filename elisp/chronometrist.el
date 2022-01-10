@@ -1406,8 +1406,11 @@ STREAM (which is the value of `current-buffer')."
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
-  (chronometrist-backend-run-assertions backend)
   (chronometrist-debug "Remove last plist")
+  (chronometrist-backend-run-assertions backend)
+  (when (chronometrist-backend-empty-p backend)
+  (error "chronometrist-remove-last has nothing to remove in %s"
+         (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
