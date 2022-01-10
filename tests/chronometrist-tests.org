@@ -367,6 +367,13 @@ Tests to be added -
 The order of these tests is important - the last test for each case is one which moves into the next case.
 
 #+BEGIN_SRC emacs-lisp
+(defun chronometrist-backend-test-cleanup (backend)
+  (let ((file (chronometrist-backend-file backend)))
+    (chronometrist-reset-backend backend)
+    (when (and file (file-exists-p file))
+      (delete-file file)
+      (kill-buffer (get-file-buffer file)))))
+
 (ert-deftest chronometrist-backend-tests ()
   (let ((plist-1  (car chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
@@ -408,11 +415,7 @@ The order of these tests is important - the last test for each case is one which
             ;; * backend has two day-crossing records and both are inactive *
             )
         ;; cleanup - remove test backend file
-        (let ((file (chronometrist-backend-file b)))
-          (chronometrist-reset-internal b)
-          (when (and file (file-exists-p file))
-            (delete-file file)
-            (kill-buffer (get-file-buffer file))))))))
+        (chronometrist-backend-test-cleanup b)))))
 #+END_SRC
 
 *** count-records
