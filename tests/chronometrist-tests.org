@@ -358,7 +358,10 @@ BACKEND-VAR is bound to each backend in
     (let ((backend-name (symbol-name (eieio-object-class-name backend))))
       `(ert-deftest ,(intern (concat backend-name "-tests")) ()
          (let ((,backend-var ,backend))
-           ,@test-forms)))
+           (unwind-protect
+               (progn ,@test-forms)
+             ;; cleanup - remove test backend file
+             (chronometrist-backend-test-cleanup ,backend)))))
     into test-groups
     finally return (cons 'progn test-groups)))
 #+END_SRC
@@ -389,43 +392,41 @@ The order of these tests is important - the last test for each case is one which
   (let ((plist-1  (car chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
         (today-ts (chronometrist-date-ts)))
-    (unwind-protect
-        (progn
-          ;; * file does not exist *
-          (should-error (chronometrist-latest-date-records b))
-          (should-error (chronometrist-insert b plist-1))
-          (should-error (chronometrist-remove-last b))
-          (should-error (chronometrist-to-list b))
-          ;; extended protocol
-          (should-error (chronometrist-latest-record b))
-          (should-error (chronometrist-task-records-for-date b "Test" today-ts))
-          (should-error (chronometrist-replace-last b plist-2))
-          (should (chronometrist-create-file b))
+    ;; * file does not exist *
+    (should-error (chronometrist-latest-date-records b))
+    (should-error (chronometrist-insert b plist-1))
+    (should-error (chronometrist-remove-last b))
+    (should-error (chronometrist-to-list b))
+    ;; extended protocol
+    (should-error (chronometrist-latest-record b))
+    (should-error (chronometrist-task-records-for-date b "Test" today-ts))
+    (should-error (chronometrist-replace-last b plist-2))
+    ;; change situation
+    (should (chronometrist-create-file b))
 
-          ;; * file exists but has no records *
-          (should (not (chronometrist-create-file b)))
-          (should (not (chronometrist-latest-date-records b)))
-          (should-error (chronometrist-remove-last b))
-          (should (not (chronometrist-to-list b)))
-          ;; extended protocol
-          (should (not (chronometrist-latest-record b)))
-          (should (not (chronometrist-task-records-for-date b "Test" today-ts)))
-          (should-error (chronometrist-replace-last b plist-2))
-          (should (chronometrist-insert b plist-1))
+    ;; * file exists but has no records *
+    (should (not (chronometrist-create-file b)))
+    (should (not (chronometrist-latest-date-records b)))
+    (should-error (chronometrist-remove-last b))
+    (should (not (chronometrist-to-list b)))
+    ;; extended protocol
+    (should (not (chronometrist-latest-record b)))
+    (should (not (chronometrist-task-records-for-date b "Test" today-ts)))
+    (should-error (chronometrist-replace-last b plist-2))
+    ;; change situation
+    (should (chronometrist-insert b plist-1))
 
-          ;; * backend has a single active record *
+    ;; * backend has a single active record *
 
-          ;; * backend has a single inactive record *
-          ;; * backend has a single active day-crossing record *
-          ;; * backend has a single inactive day-crossing record *
+    ;; * backend has a single inactive record *
+    ;; * backend has a single active day-crossing record *
+    ;; * backend has a single inactive day-crossing record *
 
-          ;; * backend has two records and one is active *
-          ;; * backend has two records and both are inactive *
-          ;; * backend has two day-crossing records and one is active *
-          ;; * backend has two day-crossing records and both are inactive *
-          )
-      ;; cleanup - remove test backend file
-      (chronometrist-backend-test-cleanup b))))
+    ;; * backend has two records and one is active *
+    ;; * backend has two records and both are inactive *
+    ;; * backend has two day-crossing records and one is active *
+    ;; * backend has two day-crossing records and both are inactive *
+    ))
 #+END_SRC
 
 *** count-records
