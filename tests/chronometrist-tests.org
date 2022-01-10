@@ -347,21 +347,37 @@ Situations
 :PROPERTIES:
 :CUSTOM_ID: chronometrist-ert-deftest
 :END:
-#+BEGIN_SRC emacs-lisp :load no :tangle no
-(defmacro chronometrist-ert-deftest (backend-var &rest deftest-forms)
-  "Generate test groups for each backend in `chronometrist-test-backends'.
-Each backend object is bound to BACKEND-VAR. DEFTEST-FORMS are
-passed to `ert-deftest'."
+#+BEGIN_SRC emacs-lisp
+(defmacro chronometrist-ert-deftest (backend-var &rest test-forms)
+  "Generate test groups containing TEST-FORMS for each backend.
+BACKEND-VAR is bound to each backend in
+`chronometrist-test-backends'. FORMS are passed to
+`ert-deftest'."
   (declare (indent defun) (debug t))
   (cl-loop for backend in chronometrist-test-backends collect
     (let ((backend-name (symbol-name (eieio-object-class-name backend))))
       `(ert-deftest ,(intern (concat backend-name "-tests")) ()
          (let ((,backend-var ,backend))
-           ,@deftest-forms)))
+           ,@test-forms)))
     into test-groups
     finally return (cons 'progn test-groups)))
 #+END_SRC
 
+*** cleanup
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-backend-test-cleanup (backend) "Delete any files created by BACKEND during testing.")
+
+(cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
+  (with-slots (file) backend
+      (when (and file (file-exists-p file))
+        (delete-file file)
+        (kill-buffer (get-file-buffer file)))))
+
+(cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
+  (setf chronometrist-test-backends (chronometrist-make-test-backends)))
+#+END_SRC
+
+*** tests
 Tests to be added -
 1. to-hash-table
 2. to-file
@@ -369,57 +385,47 @@ Tests to be added -
 The order of these tests is important - the last test for each case is one which moves into the next case.
 
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-backend-test-cleanup (backend) "Delete any files created by BACKEND during testing.")
-(cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
-  (with-slots (file) backend
-      (when (and file (file-exists-p file))
-        (delete-file file)
-        (kill-buffer (get-file-buffer file)))))
-(cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
-  (setf chronometrist-test-backends (chronometrist-make-test-backends)))
-
-(ert-deftest chronometrist-backend-tests ()
+(chronometrist-ert-deftest b
   (let ((plist-1  (car chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
         (today-ts (chronometrist-date-ts)))
-    (cl-loop for b in chronometrist-test-backends do
-      (unwind-protect
-          (progn
-            ;; * file does not exist *
-            (should-error (chronometrist-latest-date-records b))
-            (should-error (chronometrist-insert b plist-1))
-            (should-error (chronometrist-remove-last b))
-            (should-error (chronometrist-to-list b))
-            ;; extended protocol
-            (should-error (chronometrist-latest-record b))
-            (should-error (chronometrist-task-records-for-date b "Test" today-ts))
-            (should-error (chronometrist-replace-last b plist-2))
-            (should (chronometrist-create-file b))
+    (unwind-protect
+        (progn
+          ;; * file does not exist *
+          (should-error (chronometrist-latest-date-records b))
+          (should-error (chronometrist-insert b plist-1))
+          (should-error (chronometrist-remove-last b))
+          (should-error (chronometrist-to-list b))
+          ;; extended protocol
+          (should-error (chronometrist-latest-record b))
+          (should-error (chronometrist-task-records-for-date b "Test" today-ts))
+          (should-error (chronometrist-replace-last b plist-2))
+          (should (chronometrist-create-file b))
 
-            ;; * file exists but has no records *
-            (should (not (chronometrist-create-file b)))
-            (should (not (chronometrist-latest-date-records b)))
-            (should-error (chronometrist-remove-last b))
-            (should (not (chronometrist-to-list b)))
-            ;; extended protocol
-            (should (not (chronometrist-latest-record b)))
-            (should (not (chronometrist-task-records-for-date b "Test" today-ts)))
-            (should-error (chronometrist-replace-last b plist-2))
-            (should (chronometrist-insert b plist-1))
+          ;; * file exists but has no records *
+          (should (not (chronometrist-create-file b)))
+          (should (not (chronometrist-latest-date-records b)))
+          (should-error (chronometrist-remove-last b))
+          (should (not (chronometrist-to-list b)))
+          ;; extended protocol
+          (should (not (chronometrist-latest-record b)))
+          (should (not (chronometrist-task-records-for-date b "Test" today-ts)))
+          (should-error (chronometrist-replace-last b plist-2))
+          (should (chronometrist-insert b plist-1))
 
-            ;; * backend has a single active record *
+          ;; * backend has a single active record *
 
-            ;; * backend has a single inactive record *
-            ;; * backend has a single active day-crossing record *
-            ;; * backend has a single inactive day-crossing record *
+          ;; * backend has a single inactive record *
+          ;; * backend has a single active day-crossing record *
+          ;; * backend has a single inactive day-crossing record *
 
-            ;; * backend has two records and one is active *
-            ;; * backend has two records and both are inactive *
-            ;; * backend has two day-crossing records and one is active *
-            ;; * backend has two day-crossing records and both are inactive *
-            )
-        ;; cleanup - remove test backend file
-        (chronometrist-backend-test-cleanup b)))))
+          ;; * backend has two records and one is active *
+          ;; * backend has two records and both are inactive *
+          ;; * backend has two day-crossing records and one is active *
+          ;; * backend has two day-crossing records and both are inactive *
+          )
+      ;; cleanup - remove test backend file
+      (chronometrist-backend-test-cleanup b))))
 #+END_SRC
 
 *** count-records
