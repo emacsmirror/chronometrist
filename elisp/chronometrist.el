@@ -1391,7 +1391,7 @@ STREAM (which is the value of `current-buffer')."
 ;; to-hash-table:1 ends here
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
-(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist &key (save t))
   (chronometrist-backend-run-assertions backend)
   (chronometrist-debug "Insert plist %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1401,7 +1401,8 @@ STREAM (which is the value of `current-buffer')."
     (unless (bobp) (insert "\n"))
     (unless (bolp) (insert "\n"))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
+    (when save (save-buffer))
+    t))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
