@@ -680,20 +680,31 @@ Return new position of point."
 
 *** debug logging
 #+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-debug-enable nil
+  "Whether to log debugging messages."
+  :type 'boolean
+  :group 'chronometrist)
+
 (defcustom chronometrist-debug-buffer "*chronometrist-debug*"
   "Name of buffer to log debug messages to."
   :type 'string
   :group 'chronometrist)
 
-(defun chronometrist-debug (format-string &rest args)
-  "Log a debug message using `display-warning'.
-For FORMAT-STRING and ARGS are passed to `format'."
-  (display-warning '(chronometrist)
-                   (apply #'format
-                          (concat (format-time-string "[%T] ")
-                                  format-string)
-                          args)
-                   :debug chronometrist-debug-buffer))
+(define-derived-mode chronometrist-debug-log-mode special-mode "debug-log")
+
+(defun chronometrist-debug-message (format-string &rest args)
+  "Log a debug message to `chronometrist-debug-buffer'.
+FORMAT-STRING and ARGS are passed to `format'."
+  (when chronometrist-debug-enable
+    (with-current-buffer (get-buffer-create chronometrist-debug-buffer)
+      (chronometrist-debug-log-mode)
+      (let ((inhibit-read-only t))
+        (insert
+         (apply #'format
+                (concat (format-time-string "[%T] ")
+                        format-string)
+                args)
+         "\n")))))
 #+END_SRC
 
 ** Data structures
@@ -710,7 +721,7 @@ The data from =chronometrist-events= is used by most (all?) interval-consuming f
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-debug "Command: reset")
+  (chronometrist-debug-message "Command: reset")
   (chronometrist-reset-backend (chronometrist-active-backend))
   (chronometrist-refresh))
 #+END_SRC
@@ -1351,7 +1362,7 @@ Value must be a keyword corresponding to a key in
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-switch-backend ()
   (interactive)
-  (chronometrist-debug "Command: switch-backend")
+  (chronometrist-debug-message "Command: switch-backend")
   (let* ((prompt (format "Switch to backend (current - %s): "
                          chronometrist-active-backend))
          (choice (chronometrist-read-backend-name prompt
@@ -1913,7 +1924,7 @@ We avoid comparing s-expressions in the file with the contents of the hash table
            (new-last-hash (when (and (>= new-length rest-end)
                                      (>= new-length file-length))
                             (chronometrist-file-hash rest-end file-length file))))
-      ;; (chronometrist-debug "File indices - old rest-start: %s rest-end: %s file-length: %s new-length: %s"
+      ;; (chronometrist-debug-message "File indices - old rest-start: %s rest-end: %s file-length: %s new-length: %s"
       ;;          rest-start rest-end file-length new-length)
       (cond ((and (= file-length new-length)
                   (equal rest-hash new-rest-hash)
@@ -2071,7 +2082,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                            (chronometrist-file-change-type backend)))
             (reset-watch-p (or (eq action 'deleted)
                                (eq action 'renamed))))
-      (chronometrist-debug "File change type %s" change)
+      (chronometrist-debug-message "File change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch-p
@@ -2262,7 +2273,7 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
   (chronometrist-backend-run-assertions backend)
-  (chronometrist-debug "Insert plist %s" plist)
+  (chronometrist-debug-message "Insert plist %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -2277,7 +2288,7 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
   (chronometrist-backend-run-assertions backend)
-  (chronometrist-debug "Remove last plist")
+  (chronometrist-debug-message "Remove last plist")
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -2293,7 +2304,7 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
   "Reindent the current buffer.
 This is meant to be run in `chronometrist-file' when using an s-expression backend."
   (interactive)
-  (chronometrist-debug "Command: reindent-buffer")
+  (chronometrist-debug-message "Command: reindent-buffer")
   (let (expr)
     (goto-char (point-min))
     (while (setq expr (ignore-errors (read (current-buffer))))
@@ -2397,7 +2408,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ***** replace-last                                        :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
-  (chronometrist-debug "Replace last plist with %s" plist)
+  (chronometrist-debug-message "Replace last plist with %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
@@ -3425,7 +3436,7 @@ If INHIBIT-HOOKS is non-nil, the hooks
 `chronometrist-before-out-functions', and
 `chronometrist-after-out-functions' will not be run."
   (interactive "P")
-  (chronometrist-debug "Command: toggle-task %s" (if inhibit-hooks "(without hooks)" ""))
+  (chronometrist-debug-message "Command: toggle-task %s" (if inhibit-hooks "(without hooks)" ""))
   (let* ((empty-file   (chronometrist-backend-empty-p (chronometrist-active-backend)))
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
@@ -3464,7 +3475,7 @@ there is no corresponding task, do nothing."
 (defun chronometrist-add-new-task ()
   "Add a new task."
   (interactive)
-  (chronometrist-debug "Command: add-new-task")
+  (chronometrist-debug-message "Command: add-new-task")
   (chronometrist-add-new-task-button nil))
 #+END_SRC
 
@@ -3478,7 +3489,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if no task is active."
   (interactive "P")
-  (chronometrist-debug "Command: restart-task")
+  (chronometrist-debug-message "Command: restart-task")
   (if (chronometrist-current-task)
       (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
              (plist  (plist-put latest :start (chronometrist-format-time-iso8601)))
@@ -3501,7 +3512,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if a task is active."
   (interactive "P")
-  (chronometrist-debug "Command: extend-task")
+  (chronometrist-debug-message "Command: extend-task")
   (if (chronometrist-current-task)
       (message "Cannot extend an active task - use this after clocking out.")
     (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
@@ -3519,7 +3530,7 @@ Has no effect if a task is active."
 (defun chronometrist-discard-active ()
   "Remove active interval from the active backend."
   (interactive)
-  (chronometrist-debug "Command: discard-active")
+  (chronometrist-debug-message "Command: discard-active")
   (let ((backend (chronometrist-active-backend)))
     (if (chronometrist-current-task backend)
         (chronometrist-remove-last backend)
