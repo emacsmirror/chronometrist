@@ -1735,7 +1735,7 @@ These can be implemented in terms of the minimal protocol above.
 
 **** elisp-sexp-backend                                            :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-elisp-sexp-backend (chronometrist-backend)
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend chronometrist-file-backend-mixin)
   ((rest-start :initarg :rest-start
                :initform nil
                :accessor chronometrist-backend-rest-start
@@ -2191,7 +2191,7 @@ Boilerplate for updating state between file operations in tests.
 #+END_SRC
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -2439,7 +2439,7 @@ Concerns specific to the plist group backend -
 
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)))

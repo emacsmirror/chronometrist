@@ -16,9 +16,11 @@
 (defvar chronometrist-test-backend
   (make-instance 'chronometrist-plist-group-backend :path chronometrist-test-file-path-stem))
 
-(defvar chronometrist-test-backends
+(defun chronometrist-make-test-backends ()
   (cl-loop for backend in '(chronometrist-plist-backend chronometrist-plist-group-backend)
     collect (make-instance backend :path chronometrist-test-file-path-stem)))
+
+(defvar chronometrist-test-backends (chronometrist-make-test-backends))
 #+END_SRC
 
 ** test-first-record
@@ -367,12 +369,14 @@ Tests to be added -
 The order of these tests is important - the last test for each case is one which moves into the next case.
 
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-backend-test-cleanup (backend)
-  (let ((file (chronometrist-backend-file backend)))
-    (chronometrist-reset-backend backend)
-    (when (and file (file-exists-p file))
-      (delete-file file)
-      (kill-buffer (get-file-buffer file)))))
+(cl-defgeneric chronometrist-backend-test-cleanup (backend) "Delete any files created by BACKEND during testing.")
+(cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
+  (with-slots (file) backend
+      (when (and file (file-exists-p file))
+        (delete-file file)
+        (kill-buffer (get-file-buffer file)))))
+(cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
+  (setf chronometrist-test-backends (chronometrist-make-test-backends)))
 
 (ert-deftest chronometrist-backend-tests ()
   (let ((plist-1  (car chronometrist-test-records))

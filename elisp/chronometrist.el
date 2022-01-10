@@ -1083,7 +1083,7 @@ hash table values must be in chronological order.")
 ;; on-file-path-change:1 ends here
 
 ;; [[file:chronometrist.org::*elisp-sexp-backend][elisp-sexp-backend:1]]
-(defclass chronometrist-elisp-sexp-backend (chronometrist-backend)
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend chronometrist-file-backend-mixin)
   ((rest-start :initarg :rest-start
                :initform nil
                :accessor chronometrist-backend-rest-start
@@ -1332,7 +1332,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 ;; on-change:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
-(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -1535,7 +1535,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ;; count-records:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
-(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)))
