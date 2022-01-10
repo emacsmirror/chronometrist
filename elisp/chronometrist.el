@@ -853,7 +853,7 @@ a user.")
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
 Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
+Return path of new file if successfully created, and nil if it already exists.")
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
@@ -1123,7 +1123,7 @@ hash table values must be in chronological order.")
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file))
-      t)))
+      file)))
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*in-file][in-file:1]]

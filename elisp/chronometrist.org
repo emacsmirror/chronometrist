@@ -1467,7 +1467,7 @@ a user.")
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
 Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
+Return path of new file if successfully created, and nil if it already exists.")
 #+END_SRC
 
 ***** latest-date-records                              :generic:function:
@@ -1777,7 +1777,7 @@ These can be implemented in terms of the minimal protocol above.
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file))
-      t)))
+      file)))
 #+END_SRC
 
 **** in-file                                                       :macro:
