@@ -2525,17 +2525,30 @@ Situations -
               (new-plist-group-2   (when (or plist-2 insert-new-group)
                                      (list date-today (or plist-2 plist)))))
         (goto-char (point-max))
-        ;; Is this the first plist group in the file?
-        (if latest-plist-group
-            (progn
-              (chronometrist-sexp-pre-read-check (current-buffer))
-              (chronometrist-sexp-delete-list))
+        (when (not latest-plist-group)
+          ;; first record
           (while (forward-comment 1) nil))
-        (funcall chronometrist-sexp-pretty-print-function new-plist-group-1 (current-buffer))
-        (when new-plist-group-2
-          (dotimes (_ 2)
-            (default-indent-new-line))
-          (funcall chronometrist-sexp-pretty-print-function new-plist-group-2 (current-buffer)))
+        (if (and plist-1 plist-2)
+            ;; inactive, day-crossing record
+            (progn
+              (when latest-plist-group
+                ;; not the first record
+                (chronometrist-sexp-pre-read-check (current-buffer))
+                (chronometrist-sexp-delete-list))
+              (funcall chronometrist-sexp-pretty-print-function new-plist-group-1 (current-buffer))
+              (dotimes (_ 2) (default-indent-new-line))
+              (funcall chronometrist-sexp-pretty-print-function new-plist-group-2 (current-buffer)))
+          ;; active, or non-day-crossing inactive record
+          ;; insert into new group
+          (if (or (not latest-plist-group) ;; first record
+                  insert-new-group)
+              (progn
+                (default-indent-new-line)
+                (funcall chronometrist-sexp-pretty-print-function new-plist-group-2 (current-buffer)))
+            ;; insert into existing group
+            (chronometrist-sexp-pre-read-check (current-buffer))
+            (chronometrist-sexp-delete-list)
+            (funcall chronometrist-sexp-pretty-print-function new-plist-group-1 (current-buffer))))
         (when save (save-buffer))
         t))))
 #+END_SRC
