@@ -1585,6 +1585,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (cl-check-type plist chronometrist-plist)
+  (chronometrist-debug-message "Insert %S" plist)
   (chronometrist-backend-run-assertions backend)
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
@@ -1789,7 +1790,6 @@ Return value is either a list in the form
     (chronometrist-loop-sexp-file for group in file
       with old-date-iso with old-date-unix
       with new-date-iso with new-date-unix
-      with last-plist
       ;; while (not (bobp))
       do (setq new-date-iso  (cl-first group)
                new-date-unix (parse-iso8601-time-string new-date-iso))
