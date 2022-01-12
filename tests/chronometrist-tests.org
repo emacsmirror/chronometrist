@@ -1,3 +1,4 @@
+#+PROPERTY: header-args :tangle yes :load yes :comments link
 #+BEGIN_SRC emacs-lisp :load no :tangle no
 (setq nameless-current-name "chronometrist")
 #+END_SRC
@@ -103,8 +104,12 @@
       (when (file-exists-p file)
         (delete-file file))
       (with-current-buffer (get-file-buffer file)
-        (set-buffer-modified-p nil)
-        (kill-buffer)))))
+        ;; (erase-buffer)
+        ;; Unsuccessful attempt to inhibit "Delete excess backup versions of <file>?" prompts
+        (defvar delete-old-versions)
+        (let ((delete-old-versions t))
+          (set-buffer-modified-p nil)
+          (kill-buffer))))))
 
 (cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
   (setf chronometrist-test-backends (chronometrist-make-test-backends)))
@@ -209,8 +214,9 @@ BACKEND-VAR is bound to each backend in
 ** data structures
 *** list-tasks
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-list-tasks ()
-  (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
+(chronometrist-ert-deftest chronometrist-list-tasks b
+  (chronometrist-create-file b)
+  (let ((task-list (chronometrist-list-tasks b)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
 #+END_SRC
@@ -387,16 +393,79 @@ Situations
 5. multiple records
 6. +[plist-group] latest plist is split+ (covered in #4)
 
-*** tests
 Tests to be added -
 1. to-hash-table
 2. to-file
 
 The order of these tests is important - the last test for each case is one which moves into the next case.
 
+*** create-file
 #+BEGIN_SRC emacs-lisp
+(chronometrist-ert-deftest create-file b
+  ;; * file does not exist *
+  (should (chronometrist-create-file b))
+  ;; * file exists but has no records *
+  (should (not (chronometrist-create-file b))))
+#+END_SRC
+
+*** latest-date-records
+#+BEGIN_SRC emacs-lisp
+(chronometrist-ert-deftest latest-date-records b
+  (let ((plist-1  (cl-first chronometrist-test-records))
+        (plist-2  (cl-second chronometrist-test-records))
+        (today-ts (chronometrist-date-ts)))
+    ;; * file does not exist *
+    (should-error (chronometrist-latest-date-records b))
+    (should (chronometrist-create-file b))
+    ;; (message "latest-date-records: %S" (chronometrist-latest-date-records b))
+    ;; * file exists but has no records *
+    (should (not (chronometrist-latest-date-records b)))
+    (should (chronometrist-insert b plist-1))
+    ;; * backend has a single active record *
+
+    ;; * backend has a single inactive record *
+    ;; * backend has a single active day-crossing record *
+    ;; * backend has a single inactive day-crossing record *
+
+    ;; * backend has two records and one is active *
+    ;; * backend has two records and both are inactive *
+    ;; * backend has two day-crossing records and one is active *
+    ;; * backend has two day-crossing records and both are inactive *
+    ))
+#+END_SRC
+
+*** insert
+#+BEGIN_SRC emacs-lisp
+(chronometrist-ert-deftest insert b
+  (let ((active-record (list :name "Test" :start (chronometrist-format-time-iso8601)))
+        (plist-1  (cl-first chronometrist-test-records))
+        (plist-2  (cl-second chronometrist-test-records))
+        (today-ts (chronometrist-date-ts)))
+    ;; * file does not exist *
+    (should-error (chronometrist-insert b plist-1))
+    (should (chronometrist-create-file b))
+    ;; * file exists but has no records *
+    (should (chronometrist-insert b active-record))
+    (should (equal (progn (chronometrist-reset-backend b) (chronometrist-latest-date-records b))
+                   (list (chronometrist-date-iso) active-record)))
+
+    ;; * backend has a single active record *
+
+    ;; * backend has a single inactive record *
+    ;; * backend has a single active day-crossing record *
+    ;; * backend has a single inactive day-crossing record *
+
+    ;; * backend has two records and one is active *
+    ;; * backend has two records and both are inactive *
+    ;; * backend has two day-crossing records and one is active *
+    ;; * backend has two day-crossing records and both are inactive *
+    ))
+#+END_SRC
+
+*** old
+#+BEGIN_SRC emacs-lisp :load no
 (chronometrist-ert-deftest b
-  (let ((plist-1  (car chronometrist-test-records))
+  (let ((plist-1  (cl-first chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
         (today-ts (chronometrist-date-ts)))
     ;; * file does not exist *
@@ -437,13 +506,13 @@ The order of these tests is important - the last test for each case is one which
 #+END_SRC
 
 *** count-records
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :load no
 (ert-deftest chronometrist-count-records ()
   (should (= (chronometrist-count-records chronometrist-test-backend) 12)))
 #+END_SRC
 
 *** latest-record
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :load no
 (ert-deftest chronometrist-latest-record ()
   (should (equal (chronometrist-latest-record chronometrist-test-backend)
                  chronometrist-test-latest-record)))
