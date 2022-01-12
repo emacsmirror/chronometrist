@@ -188,7 +188,11 @@ TS must be a ts struct (see `ts.el')."
 ;; plist-p:1 ends here
 
 ;; [[file:chronometrist.org::*plist type][plist type:1]]
-(cl-deftype chronometrist-plist () '(satisfies chronometrist-plist-p))
+(cl-deftype chronometrist-plist ()
+  '(satisfies chronometrist-plist-p)
+  '(satisfies (lambda (plist)
+                (and (plist-get plist :name)
+                     (plist-get plist :start)))))
 ;; plist type:1 ends here
 
 ;; [[file:chronometrist.org::*delete-list][delete-list:1]]
@@ -877,6 +881,10 @@ Return nil if BACKEND contains no records.")
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.
 Return non-nil if record is inserted successfully.")
+
+(cl-defmethod chronometrist-insert :before ((backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Cannot insert %S - not a valid plist." plist)))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]

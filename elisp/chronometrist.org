@@ -608,6 +608,7 @@ TS must be a ts struct (see `ts.el')."
   "Return user key-values from PLIST."
   (chronometrist-plist-remove plist :name :tags :start :stop))
 #+END_SRC
+
 *** plist-p                                                      :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-p (list)
@@ -622,7 +623,11 @@ TS must be a ts struct (see `ts.el')."
 
 *** plist type                                                       :type:
 #+BEGIN_SRC emacs-lisp
-(cl-deftype chronometrist-plist () '(satisfies chronometrist-plist-p))
+(cl-deftype chronometrist-plist ()
+  '(satisfies chronometrist-plist-p)
+  '(satisfies (lambda (plist)
+                (and (plist-get plist :name)
+                     (plist-get plist :start)))))
 #+END_SRC
 
 *** delete-list                                                    :writer:
@@ -1494,6 +1499,10 @@ Return nil if BACKEND contains no records.")
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.
 Return non-nil if record is inserted successfully.")
+
+(cl-defmethod chronometrist-insert :before ((backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Cannot insert %S - not a valid plist." plist)))
 #+END_SRC
 
 ***** remove-last                                      :generic:function:
