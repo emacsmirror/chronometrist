@@ -92,6 +92,48 @@
      :stop  "2020-05-10T17:10:48+0530")))
 #+END_SRC
 
+** cleanup
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-backend-test-cleanup (backend) "Delete any files created by BACKEND during testing.")
+
+(cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
+  (with-slots (file) backend
+    (when (and file (file-exists-p file))
+      (delete-file file)
+      (kill-buffer (get-file-buffer file)))))
+
+(cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
+  (setf chronometrist-test-backends (chronometrist-make-test-backends)))
+#+END_SRC
+
+** ert-deftest                                                       :macro:
+:PROPERTIES:
+:CUSTOM_ID: chronometrist-ert-deftest
+:END:
+#+BEGIN_SRC emacs-lisp
+(defmacro chronometrist-ert-deftest (name backend-var &rest test-forms)
+  "Generate test groups containing TEST-FORMS for each backend.
+BACKEND-VAR is bound to each backend in
+`chronometrist-test-backends'. TEST-FORMS are passed to
+`ert-deftest'."
+  (declare (indent defun) (debug t))
+  (cl-loop for backend in chronometrist-test-backends collect
+    (let* ((backend-name (string-remove-suffix
+                          "-backend"
+                          (string-remove-prefix "chronometrist"
+                                                (symbol-name
+                                                 (eieio-object-class-name backend)))))
+           (test-name    (concat "chronometrist-" (symbol-name name) backend-name)))
+      `(ert-deftest ,(intern test-name) ()
+         (let ((,backend-var ,backend))
+           (unwind-protect
+               (progn ,@test-forms)
+             ;; cleanup - remove test backend file
+             (chronometrist-backend-test-cleanup ,backend)))))
+    into test-groups
+    finally return (cons 'progn test-groups)))
+#+END_SRC
+
 * Tests
 ** common
 *** current-task
@@ -340,48 +382,6 @@ Situations
    * inactive, day-crossing
 5. multiple records
 6. +[plist-group] latest plist is split+ (covered in #4)
-
-*** ert-deftest                                                     :macro:
-:PROPERTIES:
-:CUSTOM_ID: chronometrist-ert-deftest
-:END:
-#+BEGIN_SRC emacs-lisp
-(defmacro chronometrist-ert-deftest (name backend-var &rest test-forms)
-  "Generate test groups containing TEST-FORMS for each backend.
-BACKEND-VAR is bound to each backend in
-`chronometrist-test-backends'. TEST-FORMS are passed to
-`ert-deftest'."
-  (declare (indent defun) (debug t))
-  (cl-loop for backend in chronometrist-test-backends collect
-    (let* ((backend-name (string-remove-suffix
-                          "-backend"
-                          (string-remove-prefix "chronometrist"
-                                                (symbol-name
-                                                 (eieio-object-class-name backend)))))
-           (test-name    (concat (symbol-name name) backend-name)))
-      `(ert-deftest ,(intern test-name) ()
-         (let ((,backend-var ,backend))
-           (unwind-protect
-               (progn ,@test-forms)
-             ;; cleanup - remove test backend file
-             (chronometrist-backend-test-cleanup ,backend)))))
-    into test-groups
-    finally return (cons 'progn test-groups)))
-#+END_SRC
-
-*** cleanup
-#+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-backend-test-cleanup (backend) "Delete any files created by BACKEND during testing.")
-
-(cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
-  (with-slots (file) backend
-      (when (and file (file-exists-p file))
-        (delete-file file)
-        (kill-buffer (get-file-buffer file)))))
-
-(cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
-  (setf chronometrist-test-backends (chronometrist-make-test-backends)))
-#+END_SRC
 
 *** tests
 Tests to be added -
