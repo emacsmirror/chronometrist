@@ -691,7 +691,7 @@ list of tasks, one day, durations and graphs
 list of tasks, one week, durations only
 *** statistics
 list of tasks, one week/month/year [fn:1]
-*** details (intervals for a day) [25%]
+*** details (intervals for a day) [16%]
 list of intervals, one day [fn:1]
 + [-] commands [50%]
   1. [X] set [task/key-value] filter [fn:2]
@@ -705,6 +705,8 @@ list of intervals, one day [fn:1]
   * not possible with =completing-read-multiple=, which removes blank strings; the simplest solution was to allow "begin"/"end" as inputs.
 + [ ] when range is bigger than a day, you also want to see the date of each interval
 
+Bugs
+1. [ ] day-crossing events have the wrong duration and time. e.g. ~1   Exercise  walking  30 minutes   from 23:37 to 00:07~
 ** New frontends I want
 *** task-key-values
 list of unique key-values for a task, one day [fn:1], durations and graphs
@@ -833,13 +835,14 @@ Command to delete the interval currently being recorded. (bind to 'k')
 ** fix handling of tagged alist group values                           :bug:
 ** put each list element on its own line if length of list exceeds fill-column :feature:
 
-* verify command                                                    :feature:
+* verify command [20%]                                              :feature:
 With different checks, for different levels of speed/thoroughness -
-1. (plist group) Sequence of plist group dates
-2. Intersecting timestamps
-3. Sequence of records
-4. (plist group) Midnight spanning interval check (first and last intervals)
-5. (plist group) Check that plist timestamps have the correct date. Only applicable [[dates-in-timestamps][as long as they have a date.]]
+1. [X] (plist group) Sequence of plist group dates
+2. [ ] Check that every record (except the last) has a =:stop=
+3. [ ] Intersecting timestamps
+4. [ ] Sequence of records
+5. [ ] (plist group) Midnight spanning interval check (first and last intervals)
+6. [ ] (plist group) Check that plist timestamps have the correct date. Only applicable [[dates-in-timestamps][as long as they have a date.]]
 
 * format changes
 ** multiple intervals per record                                   :feature:
@@ -873,8 +876,9 @@ Records not used for time tracking, but to store data associated with a date or 
 
 =chronometrist-register-backend= removes the old backend object and replaces it with a new one.
 
-* migration UX
+* backend migration [0%]
 :PROPERTIES:
 :CREATED:  2022-01-08T23:32:37+0530
 :END:
-1. default suggested input backend should be the active backend
+1. [ ] default suggested input backend should be the active backend
+2. [ ] conserve file local variables prop line

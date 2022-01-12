@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. Unified migration interface with command `chronometrist-migrate`.
 4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
 5. New command `chronometrist-discard-active`, to discard the active interval.
-6. Debug logging messages - to view them, set `warning-minimum-level` and `warning-minimum-log-level` to `:debug`.
+6. Debug logging messages - to view them, set `chronometrist-debug-enable`.
 
 ### Fixed
 1. File change detection code has been rewritten, hopefully fixing some uncommon `read` and `args out of range` errors.
