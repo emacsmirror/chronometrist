@@ -348,15 +348,20 @@ Situations
 :CUSTOM_ID: chronometrist-ert-deftest
 :END:
 #+BEGIN_SRC emacs-lisp
-(defmacro chronometrist-ert-deftest (backend-var &rest test-forms)
+(defmacro chronometrist-ert-deftest (name backend-var &rest test-forms)
   "Generate test groups containing TEST-FORMS for each backend.
 BACKEND-VAR is bound to each backend in
-`chronometrist-test-backends'. FORMS are passed to
+`chronometrist-test-backends'. TEST-FORMS are passed to
 `ert-deftest'."
   (declare (indent defun) (debug t))
   (cl-loop for backend in chronometrist-test-backends collect
-    (let ((backend-name (symbol-name (eieio-object-class-name backend))))
-      `(ert-deftest ,(intern (concat backend-name "-tests")) ()
+    (let* ((backend-name (string-remove-suffix
+                          "-backend"
+                          (string-remove-prefix "chronometrist"
+                                                (symbol-name
+                                                 (eieio-object-class-name backend)))))
+           (test-name    (concat (symbol-name name) backend-name)))
+      `(ert-deftest ,(intern test-name) ()
          (let ((,backend-var ,backend))
            (unwind-protect
                (progn ,@test-forms)
