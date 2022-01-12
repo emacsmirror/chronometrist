@@ -1075,7 +1075,8 @@ hash table values must be in chronological order.")
                rest-start rest-end rest-hash
                file-length last-hash) backend
     (chronometrist-reset-task-list backend)
-    (file-notify-rm-watch file-watch)
+    (when file-watch
+      (file-notify-rm-watch file-watch))
     (setf hash-table  (chronometrist-to-hash-table backend)
           file-watch  nil
           rest-start  nil
