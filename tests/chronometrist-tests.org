@@ -94,13 +94,17 @@
 
 ** cleanup
 #+BEGIN_SRC emacs-lisp
-(cl-defgeneric chronometrist-backend-test-cleanup (backend) "Delete any files created by BACKEND during testing.")
+(cl-defgeneric chronometrist-backend-test-cleanup (backend)
+  "Delete any files created by BACKEND during testing.")
 
 (cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
   (with-slots (file) backend
-    (when (and file (file-exists-p file))
-      (delete-file file)
-      (kill-buffer (get-file-buffer file)))))
+    (when file
+      (when (file-exists-p file)
+        (delete-file file))
+      (with-current-buffer (get-file-buffer file)
+        (set-buffer-modified-p nil)
+        (kill-buffer)))))
 
 (cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
   (setf chronometrist-test-backends (chronometrist-make-test-backends)))
