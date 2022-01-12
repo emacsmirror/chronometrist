@@ -882,9 +882,9 @@ Return nil if BACKEND contains no records.")
   "Insert PLIST as new record in BACKEND.
 Return non-nil if record is inserted successfully.")
 
-(cl-defmethod chronometrist-insert :before ((backend t) plist &key &allow-other-keys)
+(cl-defmethod chronometrist-insert :before ((_backend t) plist &key &allow-other-keys)
   (unless (cl-typep plist 'chronometrist-plist)
-    (error "Cannot insert %S - not a valid plist." plist)))
+    (error "Not a valid plist: %S" plist)))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
@@ -906,11 +906,21 @@ Return value may be active, i.e. it may or may not have a :stop key-value.")
 DATE-TS must be a `ts.el' struct.
 
 Return nil if BACKEND contains no records.")
+
+(cl-defmethod chronometrist-task-records-for-date :before ((_backend t) task date-ts &key &allow-other-keys)
+  (unless (cl-typep task 'string)
+    (error "task %S is not a string" task))
+  (unless (cl-typep date-ts 'ts)
+    (error "date-ts %S is not a `ts' struct" date-ts)))
 ;; task-records-for-date:1 ends here
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defgeneric chronometrist-replace-last (backend plist)
   "Replace last record in BACKEND with PLIST.")
+
+(cl-defmethod chronometrist-replace-last :before ((_backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Not a valid plist: %S" plist)))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*to-file][to-file:1]]
