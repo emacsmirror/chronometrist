@@ -96,15 +96,13 @@
 ** common
 *** current-task
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-current-task ()
-  (chronometrist-insert chronometrist-test-backend '(:name "Test"))
-  (should (equal (chronometrist-current-task chronometrist-test-backend) "Test"))
-  (chronometrist-sexp-in-file (chronometrist-backend-file chronometrist-test-backend)
-    (goto-char (point-max))
-    (backward-list)
-    (chronometrist-sexp-delete-list)
-    (save-buffer))
-  (should (not (chronometrist-current-task chronometrist-test-backend))))
+(chronometrist-ert-deftest current-task b
+  (chronometrist-create-file b)
+  (should (not (chronometrist-current-task b)))
+  (chronometrist-insert b (list :name "Test" :start (chronometrist-format-time-iso8601)))
+  (should (equal "Test" (chronometrist-current-task b)))
+  (chronometrist-remove-last b)
+  (should (not (chronometrist-current-task b))))
 #+END_SRC
 
 *** plist-p
