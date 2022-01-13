@@ -1,10 +1,10 @@
-;;; chronometrist-sql.el --- SQL backends for Chronometrist -*- lexical-binding: t; -*-
+;;; chronometrist-sqlite.el --- SQLite backend for Chronometrist -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
-;; Package-Requires: ((emacs "24.3") (chronometrist "0.9.0") (spark "0.1"))
+;; Package-Requires: ((emacs "24.3") (chronometrist "0.9.0") (emacsql-sqlite "1.0.0"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.
@@ -22,7 +22,7 @@
 
 ;;; Code:
 (require 'chronometrist)
-(require 'emacsql-sqlite3)
+(require 'emacsql-sqlite)
 
 (defclass chronometrist-sqlite-backend (chronometrist-backend chronometrist-file-backend-mixin)
   ((extension :initform "sqlite3"
