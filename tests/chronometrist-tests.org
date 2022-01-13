@@ -225,6 +225,7 @@ BACKEND-VAR is bound to each backend in
 #+END_SRC
 
 ** time functions
+*** format-duration-long                                             :pure:
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-format-duration-long ()
   (should (equal (chronometrist-format-duration-long 5) ""))
@@ -468,67 +469,7 @@ The order of these tests is important - the last test for each case is one which
     ))
 #+END_SRC
 
-*** old
-#+BEGIN_SRC emacs-lisp :load no
-(chronometrist-ert-deftest b
-  (let ((plist-1  (cl-first chronometrist-test-records))
-        (plist-2  (cl-second chronometrist-test-records))
-        (today-ts (chronometrist-date-ts)))
-    ;; * file does not exist *
-    (should-error (chronometrist-latest-date-records b))
-    (should-error (chronometrist-insert b plist-1))
-    (should-error (chronometrist-remove-last b))
-    (should-error (chronometrist-to-list b))
-    ;; extended protocol
-    (should-error (chronometrist-latest-record b))
-    (should-error (chronometrist-task-records-for-date b "Test" today-ts))
-    (should-error (chronometrist-replace-last b plist-2))
-    ;; change situation
-    (should (chronometrist-create-file b))
-
-    ;; * file exists but has no records *
-    (should (not (chronometrist-create-file b)))
-    (should (not (chronometrist-latest-date-records b)))
-    (should-error (chronometrist-remove-last b))
-    (should (not (chronometrist-to-list b)))
-    ;; extended protocol
-    (should (not (chronometrist-latest-record b)))
-    (should (not (chronometrist-task-records-for-date b "Test" today-ts)))
-    (should-error (chronometrist-replace-last b plist-2))
-    ;; change situation
-    (should (chronometrist-insert b plist-1))
-
-    ;; * backend has a single active record *
-
-    ;; * backend has a single inactive record *
-    ;; * backend has a single active day-crossing record *
-    ;; * backend has a single inactive day-crossing record *
-
-    ;; * backend has two records and one is active *
-    ;; * backend has two records and both are inactive *
-    ;; * backend has two day-crossing records and one is active *
-    ;; * backend has two day-crossing records and both are inactive *
-    ))
-#+END_SRC
-
-*** count-records
-#+BEGIN_SRC emacs-lisp :load no
-(ert-deftest chronometrist-count-records ()
-  (should (= (chronometrist-count-records chronometrist-test-backend) 12)))
-#+END_SRC
-
-*** latest-record
-#+BEGIN_SRC emacs-lisp :load no
-(ert-deftest chronometrist-latest-record ()
-  (should (equal (chronometrist-latest-record chronometrist-test-backend)
-                 chronometrist-test-latest-record)))
-#+END_SRC
-
-*** task-records-for-date
-#+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-task-records-for-date ()
-  (should (equal (chronometrist-task-records-for-date chronometrist-test-backend
-                                         "Programming"
-                                         (chronometrist-iso-to-ts "2020-05-10"))
-                 (list chronometrist-test-latest-record))))
-#+END_SRC
+* Local Variables
+# Local Variables:
+# delete-old-versions: t
+# End:
