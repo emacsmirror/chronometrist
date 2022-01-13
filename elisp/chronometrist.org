@@ -702,6 +702,7 @@ Return new position of point."
 FORMAT-STRING and ARGS are passed to `format'."
   (when chronometrist-debug-enable
     (with-current-buffer (get-buffer-create chronometrist-debug-buffer)
+      (goto-char (point-max))
       (chronometrist-debug-log-mode)
       (let ((inhibit-read-only t))
         (insert
