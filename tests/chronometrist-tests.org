@@ -99,7 +99,7 @@
   "Delete any files created by BACKEND during testing.")
 
 (cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
-  (with-slots (file) backend
+  (with-slots (file hash-table) backend
     (when file
       (when (file-exists-p file)
         (delete-file file))
@@ -109,7 +109,8 @@
         (defvar delete-old-versions)
         (let ((delete-old-versions t))
           (set-buffer-modified-p nil)
-          (kill-buffer))))))
+          (kill-buffer))))
+    (setf hash-table (clrhash hash-table))))
 
 (cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
   (setf chronometrist-test-backends (chronometrist-make-test-backends)))
