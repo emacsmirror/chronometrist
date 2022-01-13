@@ -215,7 +215,8 @@ BACKEND-VAR is bound to each backend in
 ** data structures
 *** list-tasks
 #+BEGIN_SRC emacs-lisp
-(chronometrist-ert-deftest chronometrist-list-tasks b
+(chronometrist-ert-deftest list-tasks b
+  ;; (message "list-tasks test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
   (chronometrist-create-file b)
   (let ((task-list (chronometrist-list-tasks b)))
     (should (listp task-list))
