@@ -147,6 +147,9 @@ BACKEND-VAR is bound to each backend in
 * Tests
 ** common
 *** current-task
+:PROPERTIES:
+:CUSTOM_ID: tests-common-current-task
+:END:
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest current-task b
   ;; (message "current-task test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
@@ -159,6 +162,9 @@ BACKEND-VAR is bound to each backend in
 #+END_SRC
 
 *** plist-p
+:PROPERTIES:
+:CUSTOM_ID: tests-common-plist-p
+:END:
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-plist-p ()
   (should (eq t   (chronometrist-plist-p '(:a 1 :b 2))))
@@ -168,6 +174,9 @@ BACKEND-VAR is bound to each backend in
 #+END_SRC
 
 *** plists-split-p
+:PROPERTIES:
+:CUSTOM_ID: tests-common-plists-split-p
+:END:
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-plists-split-p ()
   (should
@@ -404,6 +413,9 @@ Tests to be added -
 The order of these tests is important - the last test for each case is one which moves into the next case.
 
 *** create-file
+:PROPERTIES:
+:CUSTOM_ID: tests-backend-create-file
+:END:
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest create-file b
   ;; (message "create-file test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))

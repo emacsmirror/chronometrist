@@ -610,6 +610,8 @@ TS must be a ts struct (see `ts.el')."
 #+END_SRC
 
 *** plist-p                                                      :function:
+[[file:../tests/chronometrist-tests.org::#tests-common-plist-p][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-p (list)
   "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
@@ -652,6 +654,8 @@ Return new position of point."
 #+END_SRC
 
 *** current-task                                            :reader:method:
+[[file:../tests/chronometrist-tests.org::#tests-common-current-task][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-current-task (&optional (backend (chronometrist-active-backend)))
   "Return the name of the active task as a string, or nil if not clocked in."
@@ -1481,6 +1485,8 @@ a user.")
 
 **** file operations
 ***** create-file                                      :generic:function:
+[[file:../tests/chronometrist-tests.org::#tests-backend-create-file][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
@@ -2580,6 +2586,8 @@ Situations -
 #+END_SRC
 
 **** plists-split-p                                             :function:
+[[file:../tests/chronometrist-tests.org::#tests-common-plists-split-p][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plists-split-p (old-plist new-plist)
   "Return t if OLD-PLIST and NEW-PLIST are split plists.
