@@ -19,8 +19,7 @@ tangle:
         --eval="(require 'ob-tangle)" \
         --eval='(org-babel-tangle-file "chronometrist.org")' \
         --eval='(org-babel-tangle-file "chronometrist-key-values.org")' \
-        --eval='(org-babel-tangle-file "chronometrist-spark.org")' \
-        --eval='(org-babel-tangle-file "chronometrist-sqlite.org")' ; \
+        --eval='(org-babel-tangle-file "chronometrist-spark.org")' ; \
         cd .. ; \
 
 compile: tangle
@@ -29,8 +28,7 @@ compile: tangle
         --eval="(progn (package-initialize) (require 'dash) (require 'ts))" \
         --eval='(byte-compile-file "chronometrist.el")' \
         --eval='(byte-compile-file "chronometrist-key-values.el")' \
-        --eval='(byte-compile-file "chronometrist-spark.el")' \
-        --eval='(byte-compile-file "chronometrist-sqlite.el")' ; \
+        --eval='(byte-compile-file "chronometrist-spark.el")' ; \
         cd ..
 
 lint-check-declare: tangle
@@ -38,8 +36,7 @@ lint-check-declare: tangle
 	emacs -q -Q --batch \
         --eval='(check-declare-file "chronometrist.el")' \
         --eval='(check-declare-file "chronometrist-key-values.el")' \
-        --eval='(check-declare-file "chronometrist-spark.el")' \
-        --eval='(check-declare-file "chronometrist-sqlite.el")' ; \
+        --eval='(check-declare-file "chronometrist-spark.el")' ; \
         cd ..
 
 lint-checkdoc: tangle
@@ -47,8 +44,7 @@ lint-checkdoc: tangle
 	emacs -q -Q --batch \
         --eval='(checkdoc-file "chronometrist.el")' \
         --eval='(checkdoc-file "chronometrist-key-values.el")' \
-        --eval='(checkdoc-file "chronometrist-spark.el")' \
-        --eval='(checkdoc-file "chronometrist-sqlite.el")' ; \
+        --eval='(checkdoc-file "chronometrist-spark.el")' ; \
         cd ..
 
 lint-package-lint: setup tangle
@@ -58,8 +54,7 @@ lint-package-lint: setup tangle
         --eval="(require 'package-lint)" \
         -f 'package-lint-batch-and-exit' chronometrist.el \
         -f 'package-lint-batch-and-exit' chronometrist-key-values.el \
-        -f 'package-lint-batch-and-exit' chronometrist-spark.el \
-        -f 'package-lint-batch-and-exit' chronometrist-sqlite.el ; \
+        -f 'package-lint-batch-and-exit' chronometrist-spark.el ; \
         cd ..
 
 lint-relint: setup tangle
@@ -67,8 +62,7 @@ lint-relint: setup tangle
 	emacs -q -Q --batch \
         --eval='(relint-file "chronometrist.el")' \
         --eval='(relint-file "chronometrist-key-values.el")' \
-        --eval='(relint-file "chronometrist-spark.el")' \
-        --eval='(relint-file "chronometrist-sqlite.el")' ; \
+        --eval='(relint-file "chronometrist-spark.el")' ; \
         cd ..
 
 lint: lint-check-declare lint-checkdoc lint-package-lint lint-relint
@@ -77,8 +71,7 @@ clean-tangle:
 	-cd elisp/ && \
 	rm elisp/chronometrist.el \
             elisp/chronometrist-key-values.el \
-            elisp/chronometrist-spark.el \
-            elisp/chronometrist-sqlite.el ; \
+            elisp/chronometrist-spark.el ; \
         cd ..
 
 clean-elc:
