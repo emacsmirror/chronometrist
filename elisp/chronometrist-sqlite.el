@@ -25,21 +25,26 @@
 (require 'emacsql-sqlite)
 
 (defclass chronometrist-sqlite-backend (chronometrist-backend chronometrist-file-backend-mixin)
-  ((extension :initform "sqlite3"
+  ((extension :initform "sqlite"
               :accessor chronometrist-backend-ext
               :custom 'string)))
 
+(chronometrist-register-backend
+ :sqlite "Store records in SQLite database."
+ (make-instance 'chronometrist-sqlite-backend :path chronometrist-file))
+
 (cl-defmethod chronometrist-to-file (input-hash-table (output-backend chronometrist-sqlite-backend) output-file)
-  (cl-loop with db = (emacsql-sqlite3 (concat file "." (oref backend :ext)))
-    with count = 0
-    for events being the hash-values of hash-table do
-    (cl-loop for event in events do
-      (chronometrist-insert event db)
-      (incf count)
-      (when (zerop (% count 5))
-        (message "chronometrist-migrate - %s events converted" count)))
-    finally return count do
-    (message "chronometrist-migrate - finished converting %s events." count)))
+  (with-slots (file) output-backend
+    (cl-loop with db = (emacsql-sqlite file)
+      with count = 0
+      for records being the hash-values of input-hash-table do
+      (cl-loop for record in records do
+        (chronometrist-insert record db)
+        (cl-incf count)
+        (when (zerop (% count 5))
+          (message "chronometrist-migrate - %s records converted" count)))
+      finally return count do
+      (message "chronometrist-migrate - finished converting %s events." count))))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
   (let* ((keywords (seq-filter #'keywordp event))
@@ -81,9 +86,24 @@
 
 (cl-defmethod chronometrist-create-file ((backend chronometrist-sqlite-backend))
   "Create file for BACKEND if it does not already exist.
-Return the emacsql-sqlite3 connection object."
-  (aprog1 (emacsql-sqlite3 (concat chronometrist-file "." (oref backend :ext)))
-    (emacsql it [:create-table events ([name tags start stop])])))
+Return the emacsql-sqlite connection object."
+  (with-slots (file) backend
+    (when-let ((db (emacsql-sqlite file)))
+      (cl-loop for query in
+        '([:create-table tasks ([(task-id integer :primary-key)
+                                 (task text :unique :not-null)])]
+          [:create-table tags ([(tag-id integer :primary-key)
+                                (tag text :unique :not-null)])]
+          [:create-table records ([(record-id integer :primary-key)
+                                   (task-id integer :not-null)
+                                   (start-time integer :not-null)
+                                   (stop-time integer)]
+                                  (:foreign-key [task-id] :references tasks [task_id]))]
+          [:create-table record-tags ([(record-id integer)
+                                       (tag-id integer)]
+                                      (:foreign-key [record-id] :references records [record-id])
+                                      (:foreign-key [tag-id] :references tags [tag-id]))])
+        do (emacsql db query)))))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-sqlite-backend) plist)
   (emacsql db [:delete-from events :where ]))
