@@ -149,6 +149,7 @@ BACKEND-VAR is bound to each backend in
 *** current-task
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest current-task b
+  ;; (message "current-task test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
   (chronometrist-create-file b)
   (should (not (chronometrist-current-task b)))
   (chronometrist-insert b (list :name "Test" :start (chronometrist-format-time-iso8601)))
@@ -404,6 +405,7 @@ The order of these tests is important - the last test for each case is one which
 *** create-file
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest create-file b
+  ;; (message "create-file test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
   ;; * file does not exist *
   (should (chronometrist-create-file b))
   ;; * file exists but has no records *
@@ -413,6 +415,7 @@ The order of these tests is important - the last test for each case is one which
 *** latest-date-records
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest latest-date-records b
+  ;; (message "latest-date-records test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
   (let ((plist-1  (cl-first chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
         (today-ts (chronometrist-date-ts)))
@@ -439,6 +442,7 @@ The order of these tests is important - the last test for each case is one which
 *** insert
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest insert b
+  ;; (message "insert test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
   (let ((active-record (list :name "Test" :start (chronometrist-format-time-iso8601)))
         (plist-1  (cl-first chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
