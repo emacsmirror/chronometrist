@@ -917,7 +917,8 @@ Return nil if BACKEND contains no records.")
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
+  "Replace last record in BACKEND with PLIST.
+Return non-nil if successful.")
 
 (cl-defmethod chronometrist-replace-last :before ((_backend t) plist &key &allow-other-keys)
   (unless (cl-typep plist 'chronometrist-plist)
@@ -1559,7 +1560,8 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
+    (save-buffer)
+    t))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
@@ -1852,7 +1854,8 @@ Return value is either a list in the form
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (chronometrist-remove-last backend :save nil)
     (chronometrist-insert backend plist :save nil)
-    (save-buffer)))
+    (save-buffer)
+    t))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*remove-prefix][remove-prefix:1]]

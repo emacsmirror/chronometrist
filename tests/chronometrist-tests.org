@@ -456,20 +456,21 @@ The order of these tests is important - the last test for each case is one which
 #+BEGIN_SRC emacs-lisp
 (chronometrist-ert-deftest insert b
   ;; (message "insert test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
-  (let ((active-record (list :name "Test" :start (chronometrist-format-time-iso8601)))
-        (plist-1  (cl-first chronometrist-test-records))
-        (plist-2  (cl-second chronometrist-test-records))
-        (today-ts (chronometrist-date-ts)))
+  (let* ((plist1 (list :name "Test" :start (chronometrist-format-time-iso8601)))
+         (plist2 (append plist1 (list :stop (chronometrist-format-time-iso8601)))))
     ;; * file does not exist *
-    (should-error (chronometrist-insert b plist-1))
+    (should-error (chronometrist-insert b plist1))
     (should (chronometrist-create-file b))
     ;; * file exists but has no records *
-    (should (chronometrist-insert b active-record))
-    (should (equal (progn (chronometrist-reset-backend b) (chronometrist-latest-date-records b))
-                   (list (chronometrist-date-iso) active-record)))
-
+    (should (chronometrist-insert b plist1))
+    (should (equal (progn (chronometrist-reset-backend b)
+                          (chronometrist-latest-date-records b))
+                   (list (chronometrist-date-iso) plist1)))
     ;; * backend has a single active record *
-
+    (should (chronometrist-replace-last b plist2))
+    (should (equal (progn (chronometrist-reset-backend b)
+                          (chronometrist-latest-date-records b))
+                   (list (chronometrist-date-iso) plist2)))
     ;; * backend has a single inactive record *
     ;; * backend has a single active day-crossing record *
     ;; * backend has a single inactive day-crossing record *
