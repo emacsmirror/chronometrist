@@ -1,5 +1,6 @@
 #+TITLE: Chronometrist - an extensible time tracker for Emacs
-#+SUBTITLE: User Manual
+#+SUBTITLE: Friendly and powerful personal time tracker and analyzer for Emacs
+#+DESCRIPTION: User Manual
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
 #+BEGIN_EXPORT html
