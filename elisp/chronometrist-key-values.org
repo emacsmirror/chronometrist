@@ -731,7 +731,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
        (chronometrist-plist-update
         latest
         (read (completing-read (format "Key-values for %s: " task)
-                               key-values))))))
+                               key-values nil nil nil 'chronometrist-key-values-unified-prompt-history))))))
   t)
 
 #+END_SRC
@@ -743,7 +743,5 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 
 * Local variables                                                  :NOEXPORT:
 # Local Variables:
-# nameless-aliases: (("cb" . "chronometrist-backend") ("c" . "chronometrist"))
-# nameless-current-name: "chronometrist"
 # eval: (when (package-installed-p 'literate-elisp) (require 'literate-elisp) (literate-elisp-load (buffer-file-name)))
 # End:
