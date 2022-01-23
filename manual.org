@@ -292,7 +292,7 @@ Adapted from this [[https://stackoverflow.com/questions/6916529/how-can-i-make-e
 :END:
 Chronometrist is a literate program, made using Org - the canonical source is the =chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file).
 
-The Org file can also be loaded directly using the   [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file, within the context of the concerned documentation. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
+The Org file can also be loaded directly using the [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file, within the context of the concerned documentation. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
 
 =chronometrist.org= is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
