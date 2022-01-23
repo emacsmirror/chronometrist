@@ -1,4 +1,4 @@
-;;; chronometrist-spark.el --- Show sparklines in Chronometrist -*- lexical-binding: t; -*-
+;;; chronometrist-spark.el --- Show sparklines in Chronometrist buffers -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>

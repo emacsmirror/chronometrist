@@ -1,4 +1,4 @@
-;;; chronometrist.el --- Friendly and powerful time tracker and analyzer -*- lexical-binding: t; -*-
+;;; chronometrist.el --- Friendly and powerful personal time tracker and analyzer -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
@@ -18,7 +18,7 @@
 
 ;;; Commentary:
 ;;
-;; Friendly and powerful time tracker and analyzer.
+;; Friendly and powerful personal time tracker and analyzer.
 
 ;; Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
 
