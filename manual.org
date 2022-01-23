@@ -285,6 +285,25 @@ Adapted from this [[https://stackoverflow.com/questions/6916529/how-can-i-make-e
 
 [fn:1] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
 
+** How to configure Vertico for use with Chronometrist
+:PROPERTIES:
+:CUSTOM_ID: howto-vertico
+:END:
+By default, Vertico uses its own sorting function - for some commands (such as =chronometrist-key-values-unified-prompt=) this results in /worse/ suggestions, since Chronometrist sorts suggestions in most-recent-first order.
+
+You can either disable Vertico's sorting entirely -
+#+BEGIN_SRC emacs-lisp
+(setq vertico-sort-function nil)
+#+END_SRC
+
+Or use =vertico-multiform= to disable sorting for only a specific command -
+#+BEGIN_SRC emacs-lisp
+(use-package vertico-multiform
+  :config
+  (setq vertico-multiform-commands
+        '((chronometrist-key-values-unified-prompt (vertico-sort-function . nil)))))
+#+END_SRC
+
 * Explanation
 ** Literate Program
 :PROPERTIES:
@@ -362,6 +381,8 @@ blandest for helping me with the name
 
 fiete and wu-lee for testing and bug reports
 
+* Local variables                                                  :NOEXPORT:
 # Local Variables:
 # eval: (progn (require 'ox-md) (add-hook 'after-save-hook (lambda () (org-export-to-file 'md "manual.md")) nil t))
+# my-org-src-default-lang: "emacs-lisp"
 # End:
