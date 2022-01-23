@@ -60,6 +60,7 @@ lint-package-lint: setup tangle
 lint-relint: setup tangle
 	cd elisp/ && \
 	emacs -q -Q --batch \
+	--eval="(package-initialize)" \
 	--eval="(require 'relint)" \
         --eval='(relint-file "chronometrist.el")' \
         --eval='(relint-file "chronometrist-key-values.el")' \
