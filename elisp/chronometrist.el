@@ -53,7 +53,7 @@
 ;; For information on usage and customization, see https://tildegit.org/contrapunctus/chronometrist or the included manual.org
 
 ;;; Code:
-;; This file was automatically generated from chronometrist.org
+;; This file was automatically generated from chronometrist.org.
 (require 'dash)
 (require 'ts)
 

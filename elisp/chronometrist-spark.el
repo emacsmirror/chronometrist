@@ -21,6 +21,7 @@
 ;; This package adds a column to Chronometrist displaying sparklines for each task.
 
 ;;; Code:
+;; This file was automatically generated from chronometrist-spark.org.
 (require 'chronometrist)
 (require 'spark)
 

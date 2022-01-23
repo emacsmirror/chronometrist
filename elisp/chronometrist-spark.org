@@ -31,12 +31,15 @@
 ;;
 ;; This package adds a column to Chronometrist displaying sparklines for each task.
 #+END_SRC
+
 * Dependencies
 #+BEGIN_SRC emacs-lisp
 ;;; Code:
+;; This file was automatically generated from chronometrist-spark.org.
 (require 'chronometrist)
 (require 'spark)
 #+END_SRC
+
 * Code
 ** custom group                              :custom:group:
 #+BEGIN_SRC emacs-lisp
