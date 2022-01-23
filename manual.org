@@ -289,7 +289,7 @@ Adapted from this [[https://stackoverflow.com/questions/6916529/how-can-i-make-e
 :PROPERTIES:
 :CUSTOM_ID: howto-vertico
 :END:
-By default, Vertico uses its own sorting function - for some commands (such as =chronometrist-key-values-unified-prompt=) this results in /worse/ suggestions, since Chronometrist sorts suggestions in most-recent-first order.
+By default, [[https://github.com/minad/vertico][Vertico]] uses its own sorting function - for some commands (such as =chronometrist-key-values-unified-prompt=) this results in /worse/ suggestions, since Chronometrist sorts suggestions in most-recent-first order.
 
 You can either disable Vertico's sorting entirely -
 #+BEGIN_SRC emacs-lisp
