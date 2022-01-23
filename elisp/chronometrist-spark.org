@@ -170,3 +170,8 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
 (provide 'chronometrist-spark)
 ;;; chronometrist-spark.el ends here
 #+END_SRC
+
+* Local variables                                                  :NOEXPORT:
+# Local Variables:
+# eval: (when (package-installed-p 'literate-elisp) (require 'literate-elisp) (literate-elisp-load (buffer-file-name)))
+# End:
