@@ -13,7 +13,7 @@
     1.  [chronometrist](#usage-chronometrist)
     2.  [chronometrist-report](#usage-chronometrist-report)
     3.  [chronometrist-statistics](#usage-chronometrist-statistics)
-    4.  [chronometrist-details](#orgd0baf02)
+    4.  [chronometrist-details](#org1059a0d)
     5.  [common commands](#usage-common-commands)
     6.  [Time goals/targets](#time-goals)
 6.  [How-to](#how-to)
@@ -21,14 +21,14 @@
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#org4fb8a60)
+    5.  [How to skip running hooks/attaching tags and key values](#org2c96dad)
     6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
     7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
     9.  [How to back up your Chronometrist data](#how-to-backup)
-7.  [Explanation](#org8c92b56)
+7.  [Explanation](#orgf9f85e4)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org48f1512)
+8.  [User's reference](#orgf56838c)
 9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
@@ -157,7 +157,7 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="orgd0baf02"></a>
+<a id="org1059a0d"></a>
 
 ## chronometrist-details
 
@@ -232,7 +232,7 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="org4fb8a60"></a>
+<a id="org2c96dad"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -283,13 +283,13 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
 ## How to display the current time interval in the activity indicator
 
     (defun my-activity-indicator ()
-      (thread-last (plist-put (chronometrist-last)
-                              :stop (chronometrist-format-time-iso8601))
-        list
-        chronometrist-events-to-durations
-        (-reduce #'+)
-        truncate
-        chronometrist-format-time))
+      (--> (chronometrist-latest-record (chronometrist-active-backend))
+           (plist-put it :stop (chronometrist-format-time-iso8601))
+           (list it)
+           (chronometrist-events-to-durations it)
+           (-reduce #'+ it)
+           (truncate it)
+           (chronometrist-format-duration it)))
 
     (setq chronometrist-activity-indicator #'my-activity-indicator)
 
@@ -312,7 +312,7 @@ I suggest backing up Chronometrist data on each save using the [async-backup](ht
 Adapted from this [StackOverflow answer](https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save).
 
 
-<a id="org8c92b56"></a>
+<a id="orgf9f85e4"></a>
 
 # Explanation
 
@@ -328,7 +328,7 @@ The Org file can also be loaded directly using the   [literate-elisp](https://gi
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org48f1512"></a>
+<a id="orgf56838c"></a>
 
 # User's reference
 

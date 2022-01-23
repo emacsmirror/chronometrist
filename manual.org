@@ -255,13 +255,13 @@ Return nil (and run `magit-status') if the user answers no."
 
 #+BEGIN_SRC emacs-lisp
 (defun my-activity-indicator ()
-  (thread-last (plist-put (chronometrist-last)
-                          :stop (chronometrist-format-time-iso8601))
-    list
-    chronometrist-events-to-durations
-    (-reduce #'+)
-    truncate
-    chronometrist-format-time))
+  (--> (chronometrist-latest-record (chronometrist-active-backend))
+       (plist-put it :stop (chronometrist-format-time-iso8601))
+       (list it)
+       (chronometrist-events-to-durations it)
+       (-reduce #'+ it)
+       (truncate it)
+       (chronometrist-format-duration it)))
 
 (setq chronometrist-activity-indicator #'my-activity-indicator)
 #+END_SRC
