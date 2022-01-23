@@ -22,14 +22,13 @@ Largely modelled after the Android application, [[https://github.com/netmackan/A
 3. Support for both mouse and keyboard
 4. Human errors in tracking are easily fixed by editing a plain text file
 5. Hooks to let you perform arbitrary actions when starting/stopping tasks
-6. Fancy graphs with chronometrist-sparkline extension
+6. Fancy graphs with the =chronometrist-spark= extension
 
 * Limitations
 :PROPERTIES:
 :CUSTOM_ID: limitations
 :END:
-1. No support (yet) for adding a task without clocking into it.
-2. No support for concurrent tasks.
+1. No support for concurrent tasks.
 
 * Comparisons
 :PROPERTIES:
@@ -55,7 +54,6 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 + Chronometrist doesn't have a mode line indicator at the moment. (planned)
 + Chronometrist doesn't have Org's sophisticated querying facilities. (an SQLite backend is planned)
 + Org does so many things that keybindings seem to necessarily get longer. Chronometrist has far fewer commands than Org, so most of the keybindings are single keys, without modifiers.
-+ Chronometrist's UI makes keybindings discoverable - they are displayed in the buffers themselves.
 + Chronometrist's UI is cleaner, since the storage is separate from the display. It doesn't show tasks as trees like Org, but it uses tags and key-values to achieve that. Additionally, navigating a flat list takes fewer user operations than navigating a tree.
 + Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
 
@@ -353,7 +351,7 @@ I'd rather make a request - please do everything you can to help that dream come
 
 Chronometrist is released under your choice of [[https://unlicense.org/][Unlicense]] or the [[http://www.wtfpl.net/][WTFPL]].
 
-(See files [[file:UNLICENSE]] and [[file:WTFPL]]).
+(See files [[file:UNLICENSE][UNLICENSE]] and [[file:WTFPL][WTFPL]]).
 
 * Thanks
 :PROPERTIES:
@@ -362,8 +360,12 @@ Chronometrist is released under your choice of [[https://unlicense.org/][Unlicen
 
 wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
 
-jwiegley for timeclock.el, which we used as a backend in earlier versions
+jwiegley for =timeclock.el=, which we used as a backend in earlier versions
 
 blandest for helping me with the name
 
 fiete and wu-lee for testing and bug reports
+
+# Local Variables:
+# eval: (progn (require 'ox-md) (add-hook 'after-save-hook (lambda () (org-export-to-file 'md "manual.md")) nil t))
+# End:
