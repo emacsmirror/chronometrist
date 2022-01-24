@@ -296,13 +296,15 @@ You can either disable Vertico's sorting entirely -
 (setq vertico-sort-function nil)
 #+END_SRC
 
-Or use =vertico-multiform= to disable sorting for only a specific command -
+Or use =vertico-multiform= to disable sorting for only specific commands -
 #+BEGIN_SRC emacs-lisp
 (use-package vertico-multiform
   :init (vertico-multiform-mode)
   :config
   (setq vertico-multiform-commands
-        '((chronometrist-key-values-unified-prompt (vertico-sort-function . nil)))))
+        '((chronometrist-toggle-task          (vertico-sort-function . nil))
+          (chronometrist-toggle-task-no-hooks (vertico-sort-function . nil))
+          (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
 #+END_SRC
 
 * Explanation
