@@ -1,3 +1,4 @@
+#+PROPERTY: header-args :tangle yes :load yes :comments link
 #+BEGIN_SRC emacs-lisp :load no :tangle no
 (setq nameless-current-name "chronometrist")
 #+END_SRC
@@ -16,9 +17,11 @@
 (defvar chronometrist-test-backend
   (make-instance 'chronometrist-plist-group-backend :path chronometrist-test-file-path-stem))
 
-(defvar chronometrist-test-backends
+(defun chronometrist-make-test-backends ()
   (cl-loop for backend in '(chronometrist-plist-backend chronometrist-plist-group-backend)
     collect (make-instance backend :path chronometrist-test-file-path-stem)))
+
+(defvar chronometrist-test-backends (chronometrist-make-test-backends))
 #+END_SRC
 
 ** test-first-record
@@ -90,22 +93,78 @@
      :stop  "2020-05-10T17:10:48+0530")))
 #+END_SRC
 
+** cleanup
+#+BEGIN_SRC emacs-lisp
+(cl-defgeneric chronometrist-backend-test-cleanup (backend)
+  "Delete any files created by BACKEND during testing.")
+
+(cl-defmethod chronometrist-backend-test-cleanup ((backend chronometrist-elisp-sexp-backend))
+  (with-slots (file hash-table) backend
+    (when file
+      (when (file-exists-p file)
+        (delete-file file))
+      (with-current-buffer (get-file-buffer file)
+        ;; (erase-buffer)
+        ;; Unsuccessful attempt to inhibit "Delete excess backup versions of <file>?" prompts
+        (defvar delete-old-versions)
+        (let ((delete-old-versions t))
+          (set-buffer-modified-p nil)
+          (kill-buffer))))
+    (setf hash-table (clrhash hash-table))))
+
+(cl-defmethod chronometrist-backend-test-cleanup :after ((backend t))
+  (setf chronometrist-test-backends (chronometrist-make-test-backends)))
+#+END_SRC
+
+** ert-deftest                                                       :macro:
+:PROPERTIES:
+:CUSTOM_ID: chronometrist-ert-deftest
+:END:
+#+BEGIN_SRC emacs-lisp
+(defmacro chronometrist-ert-deftest (name backend-var &rest test-forms)
+  "Generate test groups containing TEST-FORMS for each backend.
+BACKEND-VAR is bound to each backend in
+`chronometrist-test-backends'. TEST-FORMS are passed to
+`ert-deftest'."
+  (declare (indent defun) (debug t))
+  (cl-loop for backend in chronometrist-test-backends collect
+    (let* ((backend-name (string-remove-suffix
+                          "-backend"
+                          (string-remove-prefix "chronometrist"
+                                                (symbol-name
+                                                 (eieio-object-class-name backend)))))
+           (test-name    (concat "chronometrist-" (symbol-name name) backend-name)))
+      `(ert-deftest ,(intern test-name) ()
+         (let ((,backend-var ,backend))
+           (unwind-protect
+               (progn ,@test-forms)
+             ;; cleanup - remove test backend file
+             (chronometrist-backend-test-cleanup ,backend)))))
+    into test-groups
+    finally return (cons 'progn test-groups)))
+#+END_SRC
+
 * Tests
 ** common
 *** current-task
+:PROPERTIES:
+:CUSTOM_ID: tests-common-current-task
+:END:
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-current-task ()
-  (chronometrist-insert chronometrist-test-backend '(:name "Test"))
-  (should (equal (chronometrist-current-task chronometrist-test-backend) "Test"))
-  (chronometrist-sexp-in-file (chronometrist-backend-file chronometrist-test-backend)
-    (goto-char (point-max))
-    (backward-list)
-    (chronometrist-sexp-delete-list)
-    (save-buffer))
-  (should (not (chronometrist-current-task chronometrist-test-backend))))
+(chronometrist-ert-deftest current-task b
+  ;; (message "current-task test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
+  (chronometrist-create-file b)
+  (should (not (chronometrist-current-task b)))
+  (chronometrist-insert b (list :name "Test" :start (chronometrist-format-time-iso8601)))
+  (should (equal "Test" (chronometrist-current-task b)))
+  (chronometrist-remove-last b)
+  (should (not (chronometrist-current-task b))))
 #+END_SRC
 
 *** plist-p
+:PROPERTIES:
+:CUSTOM_ID: tests-common-plist-p
+:END:
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-plist-p ()
   (should (eq t   (chronometrist-plist-p '(:a 1 :b 2))))
@@ -115,6 +174,9 @@
 #+END_SRC
 
 *** plists-split-p
+:PROPERTIES:
+:CUSTOM_ID: tests-common-plists-split-p
+:END:
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-plists-split-p ()
   (should
@@ -163,13 +225,16 @@
 ** data structures
 *** list-tasks
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-list-tasks ()
-  (let ((task-list (chronometrist-list-tasks chronometrist-test-backend)))
+(chronometrist-ert-deftest list-tasks b
+  ;; (message "list-tasks test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
+  (chronometrist-create-file b)
+  (let ((task-list (chronometrist-list-tasks b)))
     (should (listp task-list))
     (should (seq-every-p #'stringp task-list))))
 #+END_SRC
 
 ** time functions
+*** format-duration-long                                             :pure:
 #+BEGIN_SRC emacs-lisp
 (ert-deftest chronometrist-format-duration-long ()
   (should (equal (chronometrist-format-duration-long 5) ""))
@@ -341,98 +406,83 @@ Situations
 5. multiple records
 6. +[plist-group] latest plist is split+ (covered in #4)
 
-*** ert-deftest                                                     :macro:
-:PROPERTIES:
-:CUSTOM_ID: chronometrist-ert-deftest
-:END:
-#+BEGIN_SRC emacs-lisp :load no :tangle no
-(defmacro chronometrist-ert-deftest (backend-var &rest deftest-forms)
-  "Generate test groups for each backend in `chronometrist-test-backends'.
-Each backend object is bound to BACKEND-VAR. DEFTEST-FORMS are
-passed to `ert-deftest'."
-  (declare (indent defun) (debug t))
-  (cl-loop for backend in chronometrist-test-backends collect
-    (let ((backend-name (symbol-name (eieio-object-class-name backend))))
-      `(ert-deftest ,(intern (concat backend-name "-tests")) ()
-         (let ((,backend-var ,backend))
-           ,@deftest-forms)))
-    into test-groups
-    finally return (cons 'progn test-groups)))
-#+END_SRC
-
 Tests to be added -
 1. to-hash-table
 2. to-file
 
 The order of these tests is important - the last test for each case is one which moves into the next case.
 
+*** create-file
+:PROPERTIES:
+:CUSTOM_ID: tests-backend-create-file
+:END:
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-backend-tests ()
-  (let ((plist-1  (car chronometrist-test-records))
+(chronometrist-ert-deftest create-file b
+  ;; (message "create-file test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
+  ;; * file does not exist *
+  (should (chronometrist-create-file b))
+  ;; * file exists but has no records *
+  (should (not (chronometrist-create-file b))))
+#+END_SRC
+
+*** latest-date-records
+#+BEGIN_SRC emacs-lisp
+(chronometrist-ert-deftest latest-date-records b
+  ;; (message "latest-date-records test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
+  (let ((plist-1  (cl-first chronometrist-test-records))
         (plist-2  (cl-second chronometrist-test-records))
         (today-ts (chronometrist-date-ts)))
-    (cl-loop for b in chronometrist-test-backends do
-      (unwind-protect
-          (progn
-            ;; * file does not exist *
-            (should-error (chronometrist-latest-date-records b))
-            (should-error (chronometrist-insert b plist-1))
-            (should-error (chronometrist-remove-last b))
-            (should-error (chronometrist-to-list b))
-            ;; extended protocol
-            (should-error (chronometrist-latest-record b))
-            (should-error (chronometrist-task-records-for-date b "Test" today-ts))
-            (should-error (chronometrist-replace-last b plist-2))
-            (should (chronometrist-create-file b))
+    ;; * file does not exist *
+    (should-error (chronometrist-latest-date-records b))
+    (should (chronometrist-create-file b))
+    ;; (message "latest-date-records: %S" (chronometrist-latest-date-records b))
+    ;; * file exists but has no records *
+    (should (not (chronometrist-latest-date-records b)))
+    (should (chronometrist-insert b plist-1))
+    ;; * backend has a single active record *
 
-            ;; * file exists but has no records *
-            (should (not (chronometrist-create-file b)))
-            (should (not (chronometrist-latest-date-records b)))
-            (should-error (chronometrist-remove-last b))
-            (should (not (chronometrist-to-list b)))
-            ;; extended protocol
-            (should (not (chronometrist-latest-record b)))
-            (should (not (chronometrist-task-records-for-date b "Test" today-ts)))
-            (should-error (chronometrist-replace-last b plist-2))
-            (should (chronometrist-insert b plist-1))
+    ;; * backend has a single inactive record *
+    ;; * backend has a single active day-crossing record *
+    ;; * backend has a single inactive day-crossing record *
 
-            ;; * backend has a single active record *
-
-            ;; * backend has a single inactive record *
-            ;; * backend has a single active day-crossing record *
-            ;; * backend has a single inactive day-crossing record *
-
-            ;; * backend has two records and one is active *
-            ;; * backend has two records and both are inactive *
-            ;; * backend has two day-crossing records and one is active *
-            ;; * backend has two day-crossing records and both are inactive *
-            )
-        ;; cleanup - remove test backend file
-        (let ((file (chronometrist-backend-file b)))
-          (chronometrist-reset-internal b)
-          (when (and file (file-exists-p file))
-            (delete-file file)
-            (kill-buffer (get-file-buffer file))))))))
+    ;; * backend has two records and one is active *
+    ;; * backend has two records and both are inactive *
+    ;; * backend has two day-crossing records and one is active *
+    ;; * backend has two day-crossing records and both are inactive *
+    ))
 #+END_SRC
 
-*** count-records
+*** insert
 #+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-count-records ()
-  (should (= (chronometrist-count-records chronometrist-test-backend) 12)))
+(chronometrist-ert-deftest insert b
+  ;; (message "insert test - hash-table-count %s" (hash-table-count (chronometrist-backend-hash-table b)))
+  (let* ((plist1 (list :name "Test" :start (chronometrist-format-time-iso8601)))
+         (plist2 (append plist1 (list :stop (chronometrist-format-time-iso8601)))))
+    ;; * file does not exist *
+    (should-error (chronometrist-insert b plist1))
+    (should (chronometrist-create-file b))
+    ;; * file exists but has no records *
+    (should (chronometrist-insert b plist1))
+    (should (equal (progn (chronometrist-reset-backend b)
+                          (chronometrist-latest-date-records b))
+                   (list (chronometrist-date-iso) plist1)))
+    ;; * backend has a single active record *
+    (should (chronometrist-replace-last b plist2))
+    (should (equal (progn (chronometrist-reset-backend b)
+                          (chronometrist-latest-date-records b))
+                   (list (chronometrist-date-iso) plist2)))
+    ;; * backend has a single inactive record *
+    ;; * backend has a single active day-crossing record *
+    ;; * backend has a single inactive day-crossing record *
+
+    ;; * backend has two records and one is active *
+    ;; * backend has two records and both are inactive *
+    ;; * backend has two day-crossing records and one is active *
+    ;; * backend has two day-crossing records and both are inactive *
+    ))
 #+END_SRC
 
-*** latest-record
-#+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-latest-record ()
-  (should (equal (chronometrist-latest-record chronometrist-test-backend)
-                 chronometrist-test-latest-record)))
-#+END_SRC
-
-*** task-records-for-date
-#+BEGIN_SRC emacs-lisp
-(ert-deftest chronometrist-task-records-for-date ()
-  (should (equal (chronometrist-task-records-for-date chronometrist-test-backend
-                                         "Programming"
-                                         (chronometrist-iso-to-ts "2020-05-10"))
-                 (list chronometrist-test-latest-record))))
-#+END_SRC
+* Local Variables
+# Local Variables:
+# delete-old-versions: t
+# End:

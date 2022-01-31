@@ -65,6 +65,8 @@ lint-package-lint: setup tangle
 lint-relint: setup tangle
 	cd elisp/ && \
 	emacs -q -Q --batch \
+	--eval="(package-initialize)" \
+	--eval="(require 'relint)" \
         --eval='(relint-file "chronometrist.el")' \
         --eval='(relint-file "chronometrist-key-values.el")' \
         --eval='(relint-file "chronometrist-spark.el")' \
@@ -74,16 +76,12 @@ lint-relint: setup tangle
 lint: lint-check-declare lint-checkdoc lint-package-lint lint-relint
 
 clean-tangle:
-	-cd elisp/ && \
 	rm elisp/chronometrist.el \
             elisp/chronometrist-key-values.el \
             elisp/chronometrist-spark.el \
-            elisp/chronometrist-sqlite.el ; \
-        cd ..
+            elisp/chronometrist-sqlite.el ;
 
 clean-elc:
-	-cd elisp/ && \
-	rm elisp/*.elc ; \
-        cd ..
+	rm elisp/*.elc
 
 clean: clean-elc

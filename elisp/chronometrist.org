@@ -1,5 +1,6 @@
-#+TITLE: Chronometrist - an extensible time tracker for Emacs
-#+SUBTITLE: Developer manual and program source
+#+TITLE: Chronometrist
+#+SUBTITLE: Friendly and powerful personal time tracker and analyzer for Emacs
+#+DESCRIPTION: Developer manual and program source
 #+AUTHOR: contrapunctus
 #+TODO: TODO TEST WIP EXTEND CLEANUP FIXME HACK REVIEW |
 #+PROPERTY: header-args :tangle yes :load yes :comments link
@@ -67,15 +68,15 @@ Thus, I have considered various optimization strategies, and so far implemented 
 
 *** Prevent excess creation of file watchers
 One of the earliest 'optimizations' of great importance turned out to simply be a bug - turns out, if you run an identical call to [[elisp:(describe-function 'file-notify-add-watch)][=file-notify-add-watch=]] twice, you create /two/ file watchers and your callback will be called /twice./ We were creating a file watcher /each time the =chronometrist= command was run./ 🤦 This was causing humongous slowdowns each time the file changed. 😅
-+ It was fixed in v0.2.2 by making the watch creation conditional, using [[* fs-watch][=chronometrist--fs-watch=]] to store the watch object.
++ It was fixed in v0.2.2 by making the watch creation conditional, using =chronometrist--fs-watch= to store the watch object.
 
 *** Preserve hash table state for some commands
 NOTE - this has been replaced with a more general optimization - see next section.
 
-The next one was released in v0.5. Till then, any time the [[* chronometrist-file][=chronometrist-file=]] was modified, we'd clear the [[* chronometrist-events][=chronometrist-events=]] hash table and read data into it again. The reading itself is nearly-instant, even with ~2 years' worth of data [fn:2] (it uses Emacs' [[elisp:(describe-function 'read)][=read=]], after all), but the splitting of [[#explanation-midnight-spanning-intervals][midnight-spanning events]] is the real performance killer.
+The next one was released in v0.5. Till then, any time the [[* chronometrist-file][=chronometrist-file=]] was modified, we'd clear the =chronometrist-events= hash table and read data into it again. The reading itself is nearly-instant, even with ~2 years' worth of data [fn:2] (it uses Emacs' [[elisp:(describe-function 'read)][=read=]], after all), but the splitting of [[#explanation-midnight-spanning-intervals][midnight-spanning events]] is the real performance killer.
 
 After the optimization...
-1. Two backend functions ([[* new][=chronometrist-sexp-new=]] and [[* replace-last][=chronometrist-sexp-replace-last=]]) were modified to set a flag (=chronometrist--inhibit-read-p=) before saving the file.
+1. Two backend functions (=chronometrist-sexp-new= and =chronometrist-sexp-replace-last=) were modified to set a flag (=chronometrist--inhibit-read-p=) before saving the file.
 2. If this flag is non-nil, [[* refresh-file][=chronometrist-refresh-file=]] skips the expensive calls to =chronometrist-events-populate=, =chronometrist-tasks-from-table=, and =chronometrist-tags-history-populate=, and resets the flag.
 3. Instead, the aforementioned backend functions modify the relevant variables - =chronometrist-events=, =chronometrist-task-list=, and =chronometrist-tags-history= - via...
    * =chronometrist-events-add= / =chronometrist-events-replace-last=
@@ -384,7 +385,7 @@ Once, for sake of neatness, I made the value of =Package-Requires:= multiline -
 But I discovered that if I do that, =package-lint= says - =error: Couldn't parse "Package-Requires" header: End of file during parsing=.
 
 #+BEGIN_SRC emacs-lisp :comments no
-;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
+;;; chronometrist.el --- Friendly and powerful personal time tracker and analyzer -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
@@ -408,7 +409,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 #+BEGIN_SRC emacs-lisp :comments no
 ;;; Commentary:
 ;;
-;; A time tracker in Emacs with a nice interface
+;; Friendly and powerful personal time tracker and analyzer.
 
 ;; Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
 
@@ -446,7 +447,7 @@ But I discovered that if I do that, =package-lint= says - =error: Couldn't parse
 ** Dependencies
 #+BEGIN_SRC emacs-lisp :comments no
 ;;; Code:
-;; This file was automatically generated from chronometrist.org
+;; This file was automatically generated from chronometrist.org.
 (require 'dash)
 (require 'ts)
 
@@ -512,7 +513,7 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
          (apply #'concat))))
 #+END_SRC
 *** day-start-time                                        :custom:variable:
-[[* events-maybe-split][=chronometrist-events-maybe-split=]] refers to this, but I'm not sure this has the desired effect at the moment—haven't even tried using it.
+=chronometrist-events-maybe-split= refers to this, but I'm not sure this has the desired effect at the moment—haven't even tried using it.
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-day-start-time "00:00:00"
   "The time at which a day is considered to start, in \"HH:MM:SS\".
@@ -608,7 +609,10 @@ TS must be a ts struct (see `ts.el')."
   "Return user key-values from PLIST."
   (chronometrist-plist-remove plist :name :tags :start :stop))
 #+END_SRC
+
 *** plist-p                                                      :function:
+[[file:../tests/chronometrist-tests.org::#tests-common-plist-p][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-p (list)
   "Return non-nil if LIST is a property list, i.e. (:KEYWORD VALUE ...)"
@@ -622,7 +626,11 @@ TS must be a ts struct (see `ts.el')."
 
 *** plist type                                                       :type:
 #+BEGIN_SRC emacs-lisp
-(cl-deftype chronometrist-plist () '(satisfies chronometrist-plist-p))
+(cl-deftype chronometrist-plist ()
+  '(satisfies chronometrist-plist-p)
+  '(satisfies (lambda (plist)
+                (and (plist-get plist :name)
+                     (plist-get plist :start)))))
 #+END_SRC
 
 *** delete-list                                                    :writer:
@@ -647,6 +655,8 @@ Return new position of point."
 #+END_SRC
 
 *** current-task                                            :reader:method:
+[[file:../tests/chronometrist-tests.org::#tests-common-current-task][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-current-task (&optional (backend (chronometrist-active-backend)))
   "Return the name of the active task as a string, or nil if not clocked in."
@@ -697,6 +707,7 @@ Return new position of point."
 FORMAT-STRING and ARGS are passed to `format'."
   (when chronometrist-debug-enable
     (with-current-buffer (get-buffer-create chronometrist-debug-buffer)
+      (goto-char (point-max))
       (chronometrist-debug-log-mode)
       (let ((inhibit-read-only t))
         (insert
@@ -721,7 +732,7 @@ The data from =chronometrist-events= is used by most (all?) interval-consuming f
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-debug-message "Command: reset")
+  (chronometrist-debug-message "[Command] reset")
   (chronometrist-reset-backend (chronometrist-active-backend))
   (chronometrist-refresh))
 #+END_SRC
@@ -1362,7 +1373,7 @@ Value must be a keyword corresponding to a key in
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-switch-backend ()
   (interactive)
-  (chronometrist-debug-message "Command: switch-backend")
+  (chronometrist-debug-message "[Command] switch-backend")
   (let* ((prompt (format "Switch to backend (current - %s): "
                          chronometrist-active-backend))
          (choice (chronometrist-read-backend-name prompt
@@ -1475,11 +1486,13 @@ a user.")
 
 **** file operations
 ***** create-file                                      :generic:function:
+[[file:../tests/chronometrist-tests.org::#tests-backend-create-file][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
 Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
+Return path of new file if successfully created, and nil if it already exists.")
 #+END_SRC
 
 ***** latest-date-records                              :generic:function:
@@ -1494,6 +1507,10 @@ Return nil if BACKEND contains no records.")
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.
 Return non-nil if record is inserted successfully.")
+
+(cl-defmethod chronometrist-insert :before ((_backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Not a valid plist: %S" plist)))
 #+END_SRC
 
 ***** remove-last                                      :generic:function:
@@ -1518,12 +1535,23 @@ Return value may be active, i.e. it may or may not have a :stop key-value.")
 DATE-TS must be a `ts.el' struct.
 
 Return nil if BACKEND contains no records.")
+
+(cl-defmethod chronometrist-task-records-for-date :before ((_backend t) task date-ts &key &allow-other-keys)
+  (unless (cl-typep task 'string)
+    (error "task %S is not a string" task))
+  (unless (cl-typep date-ts 'ts)
+    (error "date-ts %S is not a `ts' struct" date-ts)))
 #+END_SRC
 
 ***** replace-last                                     :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
+  "Replace last record in BACKEND with PLIST.
+Return non-nil if successful.")
+
+(cl-defmethod chronometrist-replace-last :before ((_backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Not a valid plist: %S" plist)))
 #+END_SRC
 
 ***** to-file                                          :generic:function:
@@ -1705,7 +1733,8 @@ These can be implemented in terms of the minimal protocol above.
                rest-start rest-end rest-hash
                file-length last-hash) backend
     (chronometrist-reset-task-list backend)
-    (file-notify-rm-watch file-watch)
+    (when file-watch
+      (file-notify-rm-watch file-watch))
     (setf hash-table  (chronometrist-to-hash-table backend)
           file-watch  nil
           rest-start  nil
@@ -1750,7 +1779,7 @@ These can be implemented in terms of the minimal protocol above.
 
 **** elisp-sexp-backend                                            :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-elisp-sexp-backend (chronometrist-backend)
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend chronometrist-file-backend-mixin)
   ((rest-start :initarg :rest-start
                :initform nil
                :accessor chronometrist-backend-rest-start
@@ -1792,7 +1821,7 @@ These can be implemented in terms of the minimal protocol above.
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file))
-      t)))
+      file)))
 #+END_SRC
 
 **** in-file                                                       :macro:
@@ -2085,7 +2114,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                            (chronometrist-file-change-type backend)))
             (reset-watch-p (or (eq action 'deleted)
                                (eq action 'renamed))))
-      (chronometrist-debug-message "File change type %s" change)
+      (chronometrist-debug-message "[Method] on-change: file change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch-p
@@ -2209,7 +2238,7 @@ Boilerplate for updating state between file operations in tests.
 #+END_SRC
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -2274,9 +2303,9 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
 
 **** insert                                                :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist &key (save t))
   (chronometrist-backend-run-assertions backend)
-  (chronometrist-debug-message "Insert plist %s" plist)
+  (chronometrist-debug-message "[Method] insert: %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -2284,14 +2313,18 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
     (unless (bobp) (insert "\n"))
     (unless (bolp) (insert "\n"))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
+    (when save (save-buffer))
+    t))
 #+END_SRC
 
 **** remove-last                                           :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
+  (chronometrist-debug-message "[Method] remove-last")
   (chronometrist-backend-run-assertions backend)
-  (chronometrist-debug-message "Remove last plist")
+  (when (chronometrist-backend-empty-p backend)
+  (error "chronometrist-remove-last has nothing to remove in %s"
+         (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -2307,7 +2340,7 @@ In this backend, it's easier to implement this in terms of [[#program-backend-pl
   "Reindent the current buffer.
 This is meant to be run in `chronometrist-file' when using an s-expression backend."
   (interactive)
-  (chronometrist-debug-message "Command: reindent-buffer")
+  (chronometrist-debug-message "[Command] reindent-buffer")
   (let (expr)
     (goto-char (point-min))
     (while (setq expr (ignore-errors (read (current-buffer))))
@@ -2411,11 +2444,12 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ***** replace-last                                        :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
-  (chronometrist-debug-message "Replace last plist with %s" plist)
+  (chronometrist-debug-message "[Method] replace-last with %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
+    (save-buffer)
+    t))
 #+END_SRC
 
 ***** count-records                                       :reader:method:
@@ -2454,7 +2488,7 @@ Concerns specific to the plist group backend -
 
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
-(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -2507,7 +2541,7 @@ Situations -
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (cl-check-type plist chronometrist-plist)
-  (chronometrist-debug-message "Insert %S" plist)
+  (chronometrist-debug-message "[Method] insert: %S" plist)
   (chronometrist-backend-run-assertions backend)
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
@@ -2555,6 +2589,8 @@ Situations -
 #+END_SRC
 
 **** plists-split-p                                             :function:
+[[file:../tests/chronometrist-tests.org::#tests-common-plists-split-p][tests]]
+
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plists-split-p (old-plist new-plist)
   "Return t if OLD-PLIST and NEW-PLIST are split plists.
@@ -2766,7 +2802,7 @@ Return value is either a list in the form
 ***** replace-last                                        :writer:method:
 =chronometrist-replace-last= is what is used for clocking out, so we split midnight-spanning intervals in this operation.
 
-We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] method, removing and inserting the plist group instead of just the specific plist, to avoid having to update the pretty printer.
+We apply the same hack as in the [[hack-note-plist-group-insert][insert]] method, removing and inserting the plist group instead of just the specific plist, to avoid having to update the pretty printer.
 
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-group-backend) plist)
@@ -2776,7 +2812,8 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (chronometrist-remove-last backend :save nil)
     (chronometrist-insert backend plist :save nil)
-    (save-buffer)))
+    (save-buffer)
+    t))
 #+END_SRC
 
 ***** count-records                              :reader:method:NOEXPORT:
@@ -3474,7 +3511,7 @@ If INHIBIT-HOOKS is non-nil, the hooks
 `chronometrist-before-out-functions', and
 `chronometrist-after-out-functions' will not be run."
   (interactive "P")
-  (chronometrist-debug-message "Command: toggle-task %s" (if inhibit-hooks "(without hooks)" ""))
+  (chronometrist-debug-message "[Command] toggle-task %s" (if inhibit-hooks "(without hooks)" ""))
   (let* ((empty-file   (chronometrist-backend-empty-p (chronometrist-active-backend)))
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
@@ -3513,7 +3550,7 @@ there is no corresponding task, do nothing."
 (defun chronometrist-add-new-task ()
   "Add a new task."
   (interactive)
-  (chronometrist-debug-message "Command: add-new-task")
+  (chronometrist-debug-message "[Command] add-new-task")
   (chronometrist-add-new-task-button nil))
 #+END_SRC
 
@@ -3527,7 +3564,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if no task is active."
   (interactive "P")
-  (chronometrist-debug-message "Command: restart-task")
+  (chronometrist-debug-message "[Command] restart-task")
   (if (chronometrist-current-task)
       (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
              (plist  (plist-put latest :start (chronometrist-format-time-iso8601)))
@@ -3550,7 +3587,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if a task is active."
   (interactive "P")
-  (chronometrist-debug-message "Command: extend-task")
+  (chronometrist-debug-message "[Command] extend-task")
   (if (chronometrist-current-task)
       (message "Cannot extend an active task - use this after clocking out.")
     (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
@@ -3568,7 +3605,7 @@ Has no effect if a task is active."
 (defun chronometrist-discard-active ()
   "Remove active interval from the active backend."
   (interactive)
-  (chronometrist-debug-message "Command: discard-active")
+  (chronometrist-debug-message "[Command] discard-active")
   (let ((backend (chronometrist-active-backend)))
     (if (chronometrist-current-task backend)
         (chronometrist-remove-last backend)
@@ -4587,9 +4624,13 @@ Return value is a list as specified by `tabulated-list-entries'."
 ;;; chronometrist.el ends here
 #+END_SRC
 
-** Local variables                                                :NOEXPORT:
+* Local variables                                                  :NOEXPORT:
 Evaluate this to be able to insert the package prefix via =nameless-insert-name=, at the cost of having all =nameless-aliases= break (= less readable code).
 
 #+BEGIN_SRC emacs-lisp :load no :tangle no
 (setq nameless-current-name "chronometrist")
 #+END_SRC
+
+# Local Variables:
+# eval: (when (package-installed-p 'literate-elisp) (require 'literate-elisp) (literate-elisp-load (buffer-file-name)))
+# End:

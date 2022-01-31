@@ -1,4 +1,4 @@
-;;; chronometrist.el --- A time tracker with a nice interface -*- lexical-binding: t; -*-
+;;; chronometrist.el --- Friendly and powerful personal time tracker and analyzer -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
@@ -18,7 +18,7 @@
 
 ;;; Commentary:
 ;;
-;; A time tracker in Emacs with a nice interface
+;; Friendly and powerful personal time tracker and analyzer.
 
 ;; Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
 
@@ -53,7 +53,7 @@
 ;; For information on usage and customization, see https://tildegit.org/contrapunctus/chronometrist or the included manual.org
 
 ;;; Code:
-;; This file was automatically generated from chronometrist.org
+;; This file was automatically generated from chronometrist.org.
 (require 'dash)
 (require 'ts)
 
@@ -188,7 +188,11 @@ TS must be a ts struct (see `ts.el')."
 ;; plist-p:1 ends here
 
 ;; [[file:chronometrist.org::*plist type][plist type:1]]
-(cl-deftype chronometrist-plist () '(satisfies chronometrist-plist-p))
+(cl-deftype chronometrist-plist ()
+  '(satisfies chronometrist-plist-p)
+  '(satisfies (lambda (plist)
+                (and (plist-get plist :name)
+                     (plist-get plist :start)))))
 ;; plist type:1 ends here
 
 ;; [[file:chronometrist.org::*delete-list][delete-list:1]]
@@ -256,6 +260,7 @@ Return new position of point."
 FORMAT-STRING and ARGS are passed to `format'."
   (when chronometrist-debug-enable
     (with-current-buffer (get-buffer-create chronometrist-debug-buffer)
+      (goto-char (point-max))
       (chronometrist-debug-log-mode)
       (let ((inhibit-read-only t))
         (insert
@@ -270,7 +275,7 @@ FORMAT-STRING and ARGS are passed to `format'."
 (defun chronometrist-reset ()
   "Reset Chronometrist's internal state."
   (interactive)
-  (chronometrist-debug-message "Command: reset")
+  (chronometrist-debug-message "[Command] reset")
   (chronometrist-reset-backend (chronometrist-active-backend))
   (chronometrist-refresh))
 ;; reset:1 ends here
@@ -758,7 +763,7 @@ Value must be a keyword corresponding to a key in
 ;; [[file:chronometrist.org::*switch-backend][switch-backend:1]]
 (defun chronometrist-switch-backend ()
   (interactive)
-  (chronometrist-debug-message "Command: switch-backend")
+  (chronometrist-debug-message "[Command] switch-backend")
   (let* ((prompt (format "Switch to backend (current - %s): "
                          chronometrist-active-backend))
          (choice (chronometrist-read-backend-name prompt
@@ -864,7 +869,7 @@ a user.")
 (cl-defgeneric chronometrist-create-file (backend &optional file)
   "Create file associated with BACKEND.
 Use FILE as a path, if provided.
-Return non-nil if FILE is successfully created, and nil if it already exists.")
+Return path of new file if successfully created, and nil if it already exists.")
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*latest-date-records][latest-date-records:1]]
@@ -877,6 +882,10 @@ Return nil if BACKEND contains no records.")
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.
 Return non-nil if record is inserted successfully.")
+
+(cl-defmethod chronometrist-insert :before ((_backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Not a valid plist: %S" plist)))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
@@ -898,11 +907,22 @@ Return value may be active, i.e. it may or may not have a :stop key-value.")
 DATE-TS must be a `ts.el' struct.
 
 Return nil if BACKEND contains no records.")
+
+(cl-defmethod chronometrist-task-records-for-date :before ((_backend t) task date-ts &key &allow-other-keys)
+  (unless (cl-typep task 'string)
+    (error "task %S is not a string" task))
+  (unless (cl-typep date-ts 'ts)
+    (error "date-ts %S is not a `ts' struct" date-ts)))
 ;; task-records-for-date:1 ends here
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defgeneric chronometrist-replace-last (backend plist)
-  "Replace last record in BACKEND with PLIST.")
+  "Replace last record in BACKEND with PLIST.
+Return non-nil if successful.")
+
+(cl-defmethod chronometrist-replace-last :before ((_backend t) plist &key &allow-other-keys)
+  (unless (cl-typep plist 'chronometrist-plist)
+    (error "Not a valid plist: %S" plist)))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*to-file][to-file:1]]
@@ -1057,7 +1077,8 @@ hash table values must be in chronological order.")
                rest-start rest-end rest-hash
                file-length last-hash) backend
     (chronometrist-reset-task-list backend)
-    (file-notify-rm-watch file-watch)
+    (when file-watch
+      (file-notify-rm-watch file-watch))
     (setf hash-table  (chronometrist-to-hash-table backend)
           file-watch  nil
           rest-start  nil
@@ -1097,7 +1118,7 @@ hash table values must be in chronological order.")
 ;; on-file-path-change:1 ends here
 
 ;; [[file:chronometrist.org::*elisp-sexp-backend][elisp-sexp-backend:1]]
-(defclass chronometrist-elisp-sexp-backend (chronometrist-backend)
+(defclass chronometrist-elisp-sexp-backend (chronometrist-backend chronometrist-file-backend-mixin)
   ((rest-start :initarg :rest-start
                :initform nil
                :accessor chronometrist-backend-rest-start
@@ -1137,7 +1158,7 @@ hash table values must be in chronological order.")
         (goto-char (point-min))
         (insert ";;; -*- mode: chronometrist-sexp; -*-\n\n")
         (write-file file))
-      t)))
+      file)))
 ;; create-file:1 ends here
 
 ;; [[file:chronometrist.org::*in-file][in-file:1]]
@@ -1325,7 +1346,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
                            (chronometrist-file-change-type backend)))
             (reset-watch-p (or (eq action 'deleted)
                                (eq action 'renamed))))
-      (chronometrist-debug-message "File change type %s" change)
+      (chronometrist-debug-message "[Method] on-change: file change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
       (cond ((or reset-watch-p
@@ -1349,7 +1370,7 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
 ;; on-change:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
-(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plist"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -1408,9 +1429,9 @@ STREAM (which is the value of `current-buffer')."
 ;; to-hash-table:1 ends here
 
 ;; [[file:chronometrist.org::*insert][insert:1]]
-(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist)
+(cl-defmethod chronometrist-insert ((backend chronometrist-plist-backend) plist &key (save t))
   (chronometrist-backend-run-assertions backend)
-  (chronometrist-debug-message "Insert plist %s" plist)
+  (chronometrist-debug-message "[Method] insert: %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; If we're adding the first s-exp in the file, don't add a
@@ -1418,13 +1439,17 @@ STREAM (which is the value of `current-buffer')."
     (unless (bobp) (insert "\n"))
     (unless (bolp) (insert "\n"))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
+    (when save (save-buffer))
+    t))
 ;; insert:1 ends here
 
 ;; [[file:chronometrist.org::*remove-last][remove-last:1]]
 (cl-defmethod chronometrist-remove-last ((backend chronometrist-plist-backend))
+  (chronometrist-debug-message "[Method] remove-last")
   (chronometrist-backend-run-assertions backend)
-  (chronometrist-debug-message "Remove last plist")
+  (when (chronometrist-backend-empty-p backend)
+  (error "chronometrist-remove-last has nothing to remove in %s"
+         (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (point-max))
     ;; this condition should never really occur, since we insert a
@@ -1439,7 +1464,7 @@ STREAM (which is the value of `current-buffer')."
   "Reindent the current buffer.
 This is meant to be run in `chronometrist-file' when using an s-expression backend."
   (interactive)
-  (chronometrist-debug-message "Command: reindent-buffer")
+  (chronometrist-debug-message "[Command] reindent-buffer")
   (let (expr)
     (goto-char (point-min))
     (while (setq expr (ignore-errors (read (current-buffer))))
@@ -1531,11 +1556,12 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 
 ;; [[file:chronometrist.org::*replace-last][replace-last:1]]
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-plist-backend) plist)
-  (chronometrist-debug-message "Replace last plist with %s" plist)
+  (chronometrist-debug-message "[Method] replace-last with %s" plist)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (goto-char (chronometrist-remove-last backend))
     (funcall chronometrist-sexp-pretty-print-function plist (current-buffer))
-    (save-buffer)))
+    (save-buffer)
+    t))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*count-records][count-records:1]]
@@ -1549,7 +1575,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ;; count-records:1 ends here
 
 ;; [[file:chronometrist.org::*backend][backend:1]]
-(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
+(defclass chronometrist-plist-group-backend (chronometrist-elisp-sexp-backend)
   ((extension :initform "plg"
               :accessor chronometrist-backend-ext
               :custom 'string)))
@@ -1585,7 +1611,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defmethod chronometrist-insert ((backend chronometrist-plist-group-backend) plist &key (save t))
   (cl-check-type plist chronometrist-plist)
-  (chronometrist-debug-message "Insert %S" plist)
+  (chronometrist-debug-message "[Method] insert: %S" plist)
   (chronometrist-backend-run-assertions backend)
   (if (not plist)
       (error "%s" "`chronometrist-insert' was called with an empty plist")
@@ -1828,7 +1854,8 @@ Return value is either a list in the form
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (chronometrist-remove-last backend :save nil)
     (chronometrist-insert backend plist :save nil)
-    (save-buffer)))
+    (save-buffer)
+    t))
 ;; replace-last:1 ends here
 
 ;; [[file:chronometrist.org::*remove-prefix][remove-prefix:1]]
@@ -2458,7 +2485,7 @@ If INHIBIT-HOOKS is non-nil, the hooks
 `chronometrist-before-out-functions', and
 `chronometrist-after-out-functions' will not be run."
   (interactive "P")
-  (chronometrist-debug-message "Command: toggle-task %s" (if inhibit-hooks "(without hooks)" ""))
+  (chronometrist-debug-message "[Command] toggle-task %s" (if inhibit-hooks "(without hooks)" ""))
   (let* ((empty-file   (chronometrist-backend-empty-p (chronometrist-active-backend)))
          (nth          (when prefix (chronometrist-goto-nth-task prefix)))
          (at-point     (chronometrist-task-at-point))
@@ -2495,7 +2522,7 @@ there is no corresponding task, do nothing."
 (defun chronometrist-add-new-task ()
   "Add a new task."
   (interactive)
-  (chronometrist-debug-message "Command: add-new-task")
+  (chronometrist-debug-message "[Command] add-new-task")
   (chronometrist-add-new-task-button nil))
 ;; add-new-task:1 ends here
 
@@ -2508,7 +2535,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if no task is active."
   (interactive "P")
-  (chronometrist-debug-message "Command: restart-task")
+  (chronometrist-debug-message "[Command] restart-task")
   (if (chronometrist-current-task)
       (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
              (plist  (plist-put latest :start (chronometrist-format-time-iso8601)))
@@ -2530,7 +2557,7 @@ INHIBIT-HOOKS is non-nil or prefix argument is supplied.
 
 Has no effect if a task is active."
   (interactive "P")
-  (chronometrist-debug-message "Command: extend-task")
+  (chronometrist-debug-message "[Command] extend-task")
   (if (chronometrist-current-task)
       (message "Cannot extend an active task - use this after clocking out.")
     (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
@@ -2547,7 +2574,7 @@ Has no effect if a task is active."
 (defun chronometrist-discard-active ()
   "Remove active interval from the active backend."
   (interactive)
-  (chronometrist-debug-message "Command: discard-active")
+  (chronometrist-debug-message "[Command] discard-active")
   (let ((backend (chronometrist-active-backend)))
     (if (chronometrist-current-task backend)
         (chronometrist-remove-last backend)

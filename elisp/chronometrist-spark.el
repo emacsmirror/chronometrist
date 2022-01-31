@@ -1,10 +1,10 @@
-;;; chronometrist-spark.el --- Show sparklines in Chronometrist -*- lexical-binding: t; -*-
+;;; chronometrist-spark.el --- Show sparklines in Chronometrist buffers -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
-;; Package-Requires: ((emacs "24.3") (chronometrist "0.7.0") (spark "0.1"))
+;; Package-Requires: ((emacs "25.1") (chronometrist "0.7.0") (spark "0.1"))
 ;; Version: 0.1.0
 
 ;; This is free and unencumbered software released into the public domain.
@@ -21,6 +21,7 @@
 ;; This package adds a column to Chronometrist displaying sparklines for each task.
 
 ;;; Code:
+;; This file was automatically generated from chronometrist-spark.org.
 (require 'chronometrist)
 (require 'spark)
 
