@@ -878,7 +878,15 @@ Straightforward enough for the plist group backend -
  <plist>+)
 #+END_SRC
 
-=to-list= could omit them, since it has no concept of dates. =to-hash-table= could have them at the start of the lists of plists, i.e. hash values would be =(cdr <plist group>)=.
+Alternatively, this would be easier to work with - easier to select the key-values or the plists, as required -
+#+BEGIN_SRC elisp
+("<date>"
+ (key-values
+  [<keyword> <value>]+)
+ <plist>+)
+#+END_SRC
+
+=to-list= could omit the date key-values, since it has no concept of dates. =to-hash-table= could have them at the start of the lists of plists, i.e. hash values would still be =(cdr <plist group>)=.
 
 The plist backend could theoretically be extended to support it, but I'd rather deprecate that format (since it suffers from performance issues) and not deal with it again.
 
