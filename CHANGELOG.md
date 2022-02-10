@@ -19,7 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 6. Debug logging messages - to view them, set `chronometrist-debug-enable`.
 
 ### Fixed
-1. File change detection code has been rewritten, hopefully fixing some uncommon `read` and `args out of range` errors.
+1. Code to detect the type of change made to the file has been rewritten, hopefully fixing some uncommon `read` errors and `args out of range` errors.
+
+### Deprecated
+1. The plist backend is deprecated and may be removed in a future release. The `plist-group` backend is more performant and extensible - please use `chronometrist-migrate` to convert your data to the `plist-group` backend.
 
 ## [0.9.0] - 2021-07-08
 ### Added
