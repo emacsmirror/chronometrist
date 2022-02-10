@@ -13,7 +13,7 @@
     1.  [chronometrist](#usage-chronometrist)
     2.  [chronometrist-report](#usage-chronometrist-report)
     3.  [chronometrist-statistics](#usage-chronometrist-statistics)
-    4.  [chronometrist-details](#org533cd01)
+    4.  [chronometrist-details](#org690c2df)
     5.  [common commands](#usage-common-commands)
     6.  [Time goals/targets](#time-goals)
 6.  [How-to](#how-to)
@@ -21,17 +21,19 @@
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#org0e10cef)
+    5.  [How to skip running hooks/attaching tags and key values](#org63b85c6)
     6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
     7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
     9.  [How to back up your Chronometrist data](#how-to-backup)
-7.  [Explanation](#orgd02a44a)
+    10. [How to configure Vertico for use with Chronometrist](#howto-vertico)
+7.  [Explanation](#org4f83f29)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org215fb52)
+8.  [User's reference](#org07932c3)
 9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
+12. [Local variables](#org6ca2f77):NOEXPORT:
 
 <a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
 
@@ -51,15 +53,14 @@ Largely modelled after the Android application, [A Time Tracker](https://github.
 3.  Support for both mouse and keyboard
 4.  Human errors in tracking are easily fixed by editing a plain text file
 5.  Hooks to let you perform arbitrary actions when starting/stopping tasks
-6.  Fancy graphs with chronometrist-sparkline extension
+6.  Fancy graphs with the `chronometrist-spark` extension
 
 
 <a id="limitations"></a>
 
 # Limitations
 
-1.  No support (yet) for adding a task without clocking into it.
-2.  No support for concurrent tasks.
+1.  No support for concurrent tasks.
 
 
 <a id="comparisons"></a>
@@ -88,7 +89,6 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 -   Chronometrist doesn't have a mode line indicator at the moment. (planned)
 -   Chronometrist doesn't have Org's sophisticated querying facilities. (an SQLite backend is planned)
 -   Org does so many things that keybindings seem to necessarily get longer. Chronometrist has far fewer commands than Org, so most of the keybindings are single keys, without modifiers.
--   Chronometrist's UI makes keybindings discoverable - they are displayed in the buffers themselves.
 -   Chronometrist's UI is cleaner, since the storage is separate from the display. It doesn't show tasks as trees like Org, but it uses tags and key-values to achieve that. Additionally, navigating a flat list takes fewer user operations than navigating a tree.
 -   Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
 
@@ -103,7 +103,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 ## from MELPA
 
 1.  Set up MELPA - <https://melpa.org/#/getting-started>
-    
+
     (Chronometrist uses Semantic Versioning and the developer is accident-prone, so using MELPA Stable is suggested 😏)
 2.  `M-x package-install RET chronometrist RET`
 
@@ -112,7 +112,7 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 
 ## from Git
 
-You can get `chronometrist` from <https://tildegit.org/contrapunctus/chronometrist>
+You can get `chronometrist` from <https://tildegit.org/contrapunctus/chronometrist> or <https://codeberg.org/contrapunctus/chronometrist>
 
 `chronometrist` requires
 
@@ -159,7 +159,7 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="org533cd01"></a>
+<a id="org690c2df"></a>
 
 ## chronometrist-details
 
@@ -202,7 +202,7 @@ Evaluate or add to your init.el the following -
 ## How to load the program using literate-elisp
 
     (add-to-list 'load-path "<directory containing chronometrist.org>")
-    
+
     (require 'literate-elisp) ;; or autoload, use-package, ...
     (literate-elisp-load "chronometrist.org")
 
@@ -211,13 +211,13 @@ Evaluate or add to your init.el the following -
 
 ## How to attach tags to time intervals
 
-1.  Add `chronometrist-tags-add` to one or more of these hooks <sup><a id="fnr.1" class="footref" href="#fn.1">1</a></sup> -
-    
+1.  Add `chronometrist-tags-add` to one or more of these hooks <sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup> -
+
         (add-to-list 'chronometrist-after-in-functions 'chronometrist-tags-add)
         (add-to-list 'chronometrist-before-out-functions 'chronometrist-tags-add)
         (add-to-list 'chronometrist-after-out-functions 'chronometrist-tags-add)
 2.  clock in/clock out to trigger the hook.
-    
+
     The prompt suggests past combinations you used for the current task, which you can browse with `M-p=/=M-n`. You can leave it blank by pressing `RET`.
 
 
@@ -225,16 +225,16 @@ Evaluate or add to your init.el the following -
 
 ## How to attach key-values to time intervals
 
-1.  Add `chronometrist-kv-add` to one or more of these hooks <sup><a id="fnr.2" class="footref" href="#fn.2">2</a></sup> -
+1.  Add `chronometrist-kv-add` to one or more of these hooks <sup><a id="fnr.2" class="footref" href="#fn.2" role="doc-backlink">2</a></sup> -
 
-    (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
-    (add-to-list 'chronometrist-before-out-functions 'chronometrist-kv-add)
-    (add-to-list 'chronometrist-after-out-functions 'chronometrist-kv-add)
+        (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
+        (add-to-list 'chronometrist-before-out-functions 'chronometrist-kv-add)
+        (add-to-list 'chronometrist-after-out-functions 'chronometrist-kv-add)
 
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="org0e10cef"></a>
+<a id="org63b85c6"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -253,7 +253,7 @@ An idea from the author's own init -
          (find-file-other-window "~/repertoire.org"))
         ;; ...
         ))
-    
+
     (add-hook 'chronometrist-before-in-functions 'my-start-project)
 
 
@@ -264,19 +264,19 @@ An idea from the author's own init -
 Another one, prompting the user if they have uncommitted changes in a git repository (assuming they use [Magit](https://magit.vc/)) -
 
     (autoload 'magit-anything-modified-p "magit")
-    
+
     (defun my-commit-prompt ()
       "Prompt user if `default-directory' is a dirty Git repository.
     Return t if the user answers yes, if the repository is clean, or
     if there is no Git repository.
-    
+
     Return nil (and run `magit-status') if the user answers no."
       (cond ((not (magit-anything-modified-p)) t)
-    	((yes-or-no-p
-    	  (format "You have uncommitted changes in %S. Really clock out? "
-    		  default-directory)) t)
-    	(t (magit-status) nil)))
-    
+            ((yes-or-no-p
+              (format "You have uncommitted changes in %S. Really clock out? "
+                      default-directory)) t)
+            (t (magit-status) nil)))
+
     (add-hook 'chronometrist-before-out-functions 'my-commit-prompt)
 
 
@@ -285,14 +285,14 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
 ## How to display the current time interval in the activity indicator
 
     (defun my-activity-indicator ()
-      (thread-last (plist-put (chronometrist-last)
-    			  :stop (chronometrist-format-time-iso8601))
-        list
-        chronometrist-events-to-durations
-        (-reduce #'+)
-        truncate
-        chronometrist-format-time))
-    
+      (--> (chronometrist-latest-record (chronometrist-active-backend))
+           (plist-put it :stop (chronometrist-format-time-iso8601))
+           (list it)
+           (chronometrist-events-to-durations it)
+           (-reduce #'+ it)
+           (truncate it)
+           (chronometrist-format-duration it)))
+
     (setq chronometrist-activity-indicator #'my-activity-indicator)
 
 
@@ -300,27 +300,42 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
 
 ## How to back up your Chronometrist data
 
-I suggest backing up Chronometrist data on each save. Here's how you can do that.
+I suggest backing up Chronometrist data on each save using the [async-backup](https://tildegit.org/contrapunctus/async-backup) package.<sup><a id="fnr.3" class="footref" href="#fn.3" role="doc-backlink">3</a></sup> Here's how you can do that.
 
 1.  Add the following to your init.
-    
-        (setq backup-by-copying t
-              kept-new-versions 10
-              kept-old-versions 10
-              version-control t)
-        
-        (defun my-force-backup ()
-          (setq buffer-backed-up nil))
-2.  Open your Chronometrist file and add the function to `before-save-hook`.
-    
+
+        (use-package async-backup)
+2.  Open your Chronometrist file and add `async-backup` to a buffer-local `after-save-hook`.
+
         M-x chronometrist-open-log
-        M-x add-file-local-variable-prop-line RET eval RET (add-hook 'before-save-hook #'my-force-backup nil t) RET
+        M-x add-file-local-variable-prop-line RET eval RET (add-hook 'after-save-hook #'async-backup nil t) RET
 3.  Optionally, configure `backup-directory-alist` to set a specific directory for the backups.
 
 Adapted from this [StackOverflow answer](https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save).
 
 
-<a id="orgd02a44a"></a>
+<a id="howto-vertico"></a>
+
+## How to configure Vertico for use with Chronometrist
+
+By default, [Vertico](https://github.com/minad/vertico) uses its own sorting function - for some commands (such as `chronometrist-key-values-unified-prompt`) this results in *worse* suggestions, since Chronometrist sorts suggestions in most-recent-first order.
+
+You can either disable Vertico's sorting entirely -
+
+    (setq vertico-sort-function nil)
+
+Or use `vertico-multiform` to disable sorting for only specific commands -
+
+    (use-package vertico-multiform
+      :init (vertico-multiform-mode)
+      :config
+      (setq vertico-multiform-commands
+            '((chronometrist-toggle-task          (vertico-sort-function . nil))
+              (chronometrist-toggle-task-no-hooks (vertico-sort-function . nil))
+              (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
+
+
+<a id="org4f83f29"></a>
 
 # Explanation
 
@@ -331,12 +346,12 @@ Adapted from this [StackOverflow answer](https://stackoverflow.com/questions/691
 
 Chronometrist is a literate program, made using Org - the canonical source is the `chronometrist.org` file, which contains source blocks. These are provided to users after *tangling* (extracting the source into an Emacs Lisp file).
 
-The Org file can also be loaded directly using the   [literate-elisp](https://github.com/jingtaozf/literate-elisp) package, so that all source links (e.g. `xref`, `describe-function`) lead to the Org file, within the context of the concerned documentation. See [How to load the program using literate-elisp](#how-to-literate-elisp).
+The Org file can also be loaded directly using the [literate-elisp](https://github.com/jingtaozf/literate-elisp) package, so that all source links (e.g. `xref`, `describe-function`) lead to the Org file, within the context of the concerned documentation. See [How to load the program using literate-elisp](#how-to-literate-elisp).
 
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org215fb52"></a>
+<a id="org07932c3"></a>
 
 # User's reference
 
@@ -393,7 +408,7 @@ I'd rather make a request - please do everything you can to help that dream come
 
 Chronometrist is released under your choice of [Unlicense](https://unlicense.org/) or the [WTFPL](http://www.wtfpl.net/).
 
-(See files <UNLICENSE> and <WTFPL>).
+(See files [UNLICENSE](UNLICENSE) and [WTFPL](WTFPL)).
 
 
 <a id="thanks"></a>
@@ -402,11 +417,16 @@ Chronometrist is released under your choice of [Unlicense](https://unlicense.org
 
 wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
 
-jwiegley for timeclock.el, which we used as a backend in earlier versions
+jwiegley for `timeclock.el`, which we used as a backend in earlier versions
 
 blandest for helping me with the name
 
 fiete and wu-lee for testing and bug reports
+
+
+<a id="org6ca2f77"></a>
+
+# Local variables     :NOEXPORT:
 
 
 # Footnotes
@@ -414,3 +434,5 @@ fiete and wu-lee for testing and bug reports
 <sup><a id="fn.1" href="#fnr.1">1</a></sup> but not `chronometrist-before-in-functions`
 
 <sup><a id="fn.2" href="#fnr.2">2</a></sup> but not `chronometrist-before-in-functions`
+
+<sup><a id="fn.3" href="#fnr.3">3</a></sup> It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.

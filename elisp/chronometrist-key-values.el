@@ -427,7 +427,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
        (chronometrist-plist-update
         latest
         (read (completing-read (format "Key-values for %s: " task)
-                               key-values))))))
+                               key-values nil nil nil 'chronometrist-key-values-unified-prompt-history))))))
   t)
 
 (provide 'chronometrist-key-values)
