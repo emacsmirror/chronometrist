@@ -16,6 +16,7 @@ I hope this book—when completed—passes Tim Daly's [[https://www.youtube.com/
 :PROPERTIES:
 :DESCRIPTION: The design, the implementation, and a little history
 :END:
+
 ** Why I wrote Chronometrist
 It probably started off with a desire for introspection and self-awareness - what did I do all day? How much time have I spent doing X? It is also a tool to help me stay focused on a single task at a time, and to not go overboard and work on something for 7 hours straight.
 
@@ -119,12 +120,14 @@ These mess up data consumption in all sorts of unforeseen ways, especially inter
 2. finding the time spent on a task on a given day - if the day's intervals used for this contain a midnight-spanning interval, you'll have inaccurate results - it will include yesterday's time from the interval as well as today's.
 
 There are a few different approaches of dealing with them. (Currently, Chronometrist uses #3.)
+
 *** Check the code of the first event of the day (timeclock format)
 :PROPERTIES:
 :DESCRIPTION: When the code of the first event in the day is "o", it's a midnight-spanning event.
 :END:
 + Advantage - very simple to detect
 + Disadvantage - "in" and "out" events must be represented separately
+
 *** Split them at the file level
 + Advantage - operation is performed only once for each such event + simpler data-consuming code + reduced post-parsing load.
 + What happens when the user changes their day-start-time? The split-up events are now split wrongly, and the second event may get split /again./
@@ -134,9 +137,11 @@ Possible solutions -
 2. Add a :split tag to split events. It can denote that the next event was originally a part of this one.
 3. Re-check and update the file when the day-start-time changes.
    - Possible with ~add-variable-watcher~ or ~:custom-set~ in Customize (thanks bpalmer)
+
 *** Split them at the hash-table-level
 Handled by ~chronometrist-sexp-events-populate~
 + Advantage - simpler data-consuming code.
+
 *** Split them at the data-consumer level (e.g. when calculating time for one day/getting events for one day)
 + Advantage - reduced repetitive post-parsing load.
 
@@ -170,6 +175,7 @@ A quick description, starting from the first time [[* chronometrist-report][=chr
 :CUSTOM_ID: explanation-literate-programming
 :END:
 The shift from a bunch of Elisp files to a single Org literate program was born out of frustration with programs stored as text files, which are expensive to restructure (especially in the presence of a VCS). While some dissatisfactions remain, I generally prefer the outcome - tree and source-block folding, tags, properties, and =org-match= have made it trivial to get different views of the program, and literate programming may allow me to express the "explanation" documentation in the same context as the program, without having to try to link between documentation and source.
+
 *** Tangling
 At first, I tried tangling. Back when I used =benchmark.el= to test it, =org-babel-tangle= took about 30 seconds to tangle this file. Thus, I wrote a little sed one-liner (in the file-local variables) to do the tangling, which was nearly instant. It emitted anything between lines matching the exact strings ="#+BEGIN_SRC emacs-lisp"= and ="#+END_SRC"= -
 
@@ -219,6 +225,7 @@ Further details are stored in properties -
 2. :VALUE: list|hash table|...
    * for functions, this is the return value
 3. :STATE: <external file or data structure read or written to>
+
 *** TODO Issues [40%]
 1. [X] When opening this file, Emacs may freeze at the prompt for file-local variable values; if so, C-g will quit the prompt, and permanently marking them as safe will make the freezing stop. [fn:3]
 2. [ ] I like =visual-fill-column-mode= for natural language, but I don't want it applied to code blocks. =polymode.el= may hold answers.
@@ -229,6 +236,7 @@ Further details are stored in properties -
    * A workaround is to press =M-o M-o=
 
 [fn:3] No longer a problem since we switched to =literate-elisp=
+
 ** Currently-Used Time Formats
 :PROPERTIES:
 :CUSTOM_ID: explanation-time-formats
@@ -237,22 +245,27 @@ Further details are stored in properties -
 *** ts
   ts.el struct
   * Used by nearly all internal functions
+
 *** iso-timestamp
   ="YYYY-MM-DDTHH:MM:SSZ"=
   * Used in the s-expression file format
   * Read by chronometrist-sexp-events-populate
   * Used in the plists in the chronometrist-events hash table values
+
 *** iso-date
   ="YYYY-MM-DD"=
   * Used as hash table keys in chronometrist-events - can't use ts structs for keys, you'd have to make a hash table predicate which uses ts=
+
 *** seconds
   integer seconds as duration
   * Used for most durations
   * May be changed to floating point to allow larger durations. The minimum range of =most-positive-fixnum= is 536870911, which seems to be enough to represent durations of 17 years.
   * Used for update intervals (chronometrist-update-interval, chronometrist-change-update-interval)
+
 *** minutes
   integer minutes as duration
   * Used by [[https://tildegit.org/contrapunctus/chronometrist-goal][chronometrist-goal]] (chronometrist-goals-list, chronometrist-get-goal) - minutes seems like the ideal unit for users to enter
+
 *** list-duration
   =(hours minute seconds)=
   * Only returned by =chronometrist-seconds-to-hms=, called by =chronometrist-format-time=
@@ -490,6 +503,7 @@ supplied, 3 spaces are used."
                  (format "%02d" s))))
         (concat h m s)))))
 #+END_SRC
+
 *** file-empty-p                                                   :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-file-empty-p (file)
@@ -511,6 +525,7 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
          (-interpose ", ")
          (apply #'concat))))
 #+END_SRC
+
 *** day-start-time                                        :custom:variable:
 [[* events-maybe-split][=chronometrist-events-maybe-split=]] refers to this, but I'm not sure this has the desired effect at the moment—haven't even tried using it.
 #+BEGIN_SRC emacs-lisp
@@ -520,12 +535,14 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
 The default is midnight, i.e. \"00:00:00\"."
   :type 'string)
 #+END_SRC
+
 *** week-start-day                                        :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-report-week-start-day "Sunday"
   "The day used for start of week by `chronometrist-report'."
   :type 'string)
 #+END_SRC
+
 *** weekday-number-alist                                  :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-report-weekday-number-alist
@@ -539,6 +556,7 @@ The default is midnight, i.e. \"00:00:00\"."
   "Alist in the form (\"NAME\" . NUMBER), where \"NAME\" is the name of a weekday and NUMBER its associated number."
   :type 'alist)
 #+END_SRC
+
 *** previous-week-start                                            :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-previous-week-start (ts)
@@ -556,6 +574,7 @@ TS must be a ts struct (see `ts.el')."
     do (ts-decf (ts-day ts))
     finally return ts))
 #+END_SRC
+
 *** plist-remove                                                 :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-remove (plist &rest keys)
@@ -608,6 +627,7 @@ TS must be a ts struct (see `ts.el')."
   "Return user key-values from PLIST."
   (chronometrist-plist-remove plist :name :tags :start :stop))
 #+END_SRC
+
 *** plist-p                                                      :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-p (list)
@@ -705,6 +725,7 @@ Reading directly from the file could be difficult, especially when your most com
 The data from =chronometrist-events= is used by most (all?) interval-consuming functions, but is never written to the user's file itself.
 
 [fn:4] it might be the case that the [[#program-backend][file format]] is not suited to our most frequent operation...
+
 *** reset                                                         :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-reset ()
@@ -728,6 +749,7 @@ Return value is a ts struct (see `ts.el')."
     (ts-apply :hour h :minute m :second s
               (chronometrist-iso-to-ts timestamp))))
 #+END_SRC
+
 **** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-apply-time ()
@@ -817,6 +839,7 @@ If REPLACE is non-nil, replace the last interval with PLIST."
          (last it)
          (car it))))
 #+END_SRC
+
 *** events-subset                                                  :reader:
 :PROPERTIES:
 :VALUE:    hash table
@@ -839,6 +862,7 @@ treated as though their time is 00:00:00."
              hash-table)
     subset))
 #+END_SRC
+
 *** task-time-one-day                                              :reader:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-ts)) (backend (chronometrist-active-backend)))
@@ -910,6 +934,7 @@ TIMESTAMP must be an ISO-8601 timestamp, as handled by
               :dow dow   :tz-offset utcoff))))
 
 #+END_SRC
+
 **** tests
 #+BEGIN_SRC emacs-lisp :tangle chronometrist-tests.el :load test
 (ert-deftest chronometrist-iso-to-ts ()
@@ -921,6 +946,7 @@ TIMESTAMP must be an ISO-8601 timestamp, as handled by
                         :hour 1    :minute 1 :second 1))))
 
 #+END_SRC
+
 *** events-to-durations                                          :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-events-to-durations (events)
@@ -941,6 +967,7 @@ Return 0 if EVENTS is nil."
           (ts-diff stop-ts start-ts)))
     0))
 #+END_SRC
+
 *** date-iso                                                     :function:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-date-iso (&optional (ts (ts-now)))
@@ -967,6 +994,7 @@ Optional argument UNIX-TIME should be a time value (see
 ;; Note - this assumes that an event never crosses >1 day. This seems
 ;; sufficient for all conceivable cases.
 #+END_SRC
+
 *** FIXME split-time                                               :reader:
 It does not matter here that the =:stop= dates in the returned plists are different from the =:start=, because =chronometrist-events-populate= uses only the date segment of the =:start= values as hash table keys. (The hash table keys form the rest of the program's notion of "days", and that of which plists belong to which day.)
 
@@ -1036,6 +1064,7 @@ SECONDS must be a positive integer."
          (h       (/ seconds 3600)))
     (list h m s)))
 #+END_SRC
+
 *** interval                                                     :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-interval (event)
@@ -1046,6 +1075,7 @@ EVENT should be a plist (see `chronometrist-file')."
     (time-subtract (parse-iso8601-time-string stop)
                    (parse-iso8601-time-string start))))
 #+END_SRC
+
 *** format-duration-long                                         :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-format-duration-long (seconds)
@@ -1065,6 +1095,7 @@ SECONDS is less than 60, return a blank string."
                      hours hour-string
                      minutes minute-string)))))
 #+END_SRC
+
 **** tests
 #+BEGIN_SRC emacs-lisp :tangle ../tests/chronometrist-tests.el :load test
 (ert-deftest chronometrist-format-duration-long ()
@@ -1080,6 +1111,7 @@ SECONDS is less than 60, return a blank string."
   (should (equal (chronometrist-format-duration-long 7260) "2 hours, 1 minute"))
   (should (equal (chronometrist-format-duration-long 7320) "2 hours, 2 minutes")))
 #+END_SRC
+
 ** Plist pretty-printing
 :PROPERTIES:
 :CUSTOM_ID: program-pretty-printer
@@ -1106,6 +1138,7 @@ Point is placed at the end of the space."
     (delete-region (match-beginning 0) (match-end 0))
     (insert " ")))
 #+END_SRC
+
 *** column                                                         :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-pp-column ()
@@ -1113,12 +1146,14 @@ Point is placed at the end of the space."
 0 means point is at the beginning of the line."
   (- (point) (point-at-bol)))
 #+END_SRC
+
 *** pair-p                                                       :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-pp-pair-p (cons)
   "Return non-nil if CONS is a pair, i.e. (CAR . CDR)."
   (and (listp cons) (not (listp (cdr cons)))))
 #+END_SRC
+
 *** alist-p                                                      :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-pp-alist-p (list)
@@ -1129,6 +1164,7 @@ considers it an alist."
   (when (listp list)
     (cl-loop for elt in list thereis (chronometrist-pp-pair-p elt))))
 #+END_SRC
+
 *** plist-group-p                                                :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-group-p (list)
@@ -1151,6 +1187,7 @@ that point is after the first opening parenthesis."
       when (keywordp sexp)
       maximize (length (symbol-name sexp)))))
 #+END_SRC
+
 *** indent-sexp                                                  :function:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-pp-indent-sexp (sexp &optional (right-indent 0))
@@ -1158,6 +1195,7 @@ that point is after the first opening parenthesis."
   (format (concat "% -" (number-to-string right-indent) "s")
           sexp))
 #+END_SRC
+
 *** buffer                                                         :writer:
 It might help to make =in-sublist= an integer representing depth, instead of a boolean. But at the moment, it's getting the job done.
 
@@ -1289,10 +1327,12 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
   (princ (chronometrist-pp-to-string object)
          (or stream standard-output)))
 #+END_SRC
+
 ** Backends
 :PROPERTIES:
 :CUSTOM_ID: program-backend
 :END:
+
 *** chronometrist-file                                                 :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-file
@@ -1788,6 +1828,7 @@ These can be implemented in terms of the minimal protocol above.
   `(with-current-buffer (find-file-noselect ,file)
      (save-excursion ,@body)))
 #+END_SRC
+
 **** pre-read-check                                            :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-sexp-pre-read-check (buffer)
@@ -1868,6 +1909,7 @@ expression first)."
     (should (= 1256 last-start))
     (should (= 1426 last-end))))
 #+END_SRC
+
 **** file-change-type                                             :reader:
 + rest-start - start of first sexp
 + rest-end - end of second last sexp
@@ -2189,6 +2231,7 @@ Boilerplate for updating state between file operations in tests.
            (list :last (chronometrist-file-hash :before-last nil nil ,file)
                  :rest (chronometrist-file-hash nil :before-last t ,file)))))
 #+END_SRC
+
 **** backend                                                       :class:
 #+BEGIN_SRC emacs-lisp
 (defclass chronometrist-plist-backend (chronometrist-elisp-sexp-backend chronometrist-file-backend-mixin)
@@ -2786,6 +2829,7 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
                   output-file)
       (message "Conversion aborted."))))
 #+END_SRC
+
 *** table                                                        :variable:
 :PROPERTIES:
 :VALUE:    hash table
@@ -2793,6 +2837,7 @@ We apply the same hack as in the [[<<hack-note-plist-group-insert>>][insert]] me
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-migrate-table (make-hash-table))
 #+END_SRC
+
 *** EXTEND populate                                                :writer:
 :PROPERTIES:
 :STATE: chronometrist-migrate-table
@@ -2886,6 +2931,7 @@ file names respectively."
                  chronometrist-migrate-table)
         (save-buffer)))))
 #+END_SRC
+
 *** check                                                          :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-migrate-check ()
@@ -2898,6 +2944,7 @@ file names respectively."
         (chronometrist-migrate-timelog-file-to-sexp-file timeclock-file chronometrist-file)
       (message "You can migrate later using `chronometrist-migrate-timelog-file-to-sexp-file'."))))
 #+END_SRC
+
 ** Timer
 Instead of the Emacs convention of pressing ~g~ to update, we keep buffers updated with a timer.
 
@@ -2911,10 +2958,12 @@ Note - sometimes, when hacking or dealing with errors, timers may result in subt
 This is not guaranteed to be accurate - see (info \"(elisp)Timers\")."
   :type 'integer)
 #+END_SRC
+
 *** timer-object                                        :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist--timer-object nil)
 #+END_SRC
+
 *** timer-hook                                       :hook:custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-timer-hook nil
@@ -2999,6 +3048,7 @@ modified."
 All four of these use [[info:elisp#Tabulated List Mode][=(info "(elisp)Tabulated List Mode")=]]. Each of them also contains a "-print-non-tabular" function, which prints the non-tabular parts of the buffer.
 
 1. [ ] There is some duplication between the four frontend commands, e.g. all four act as toggles for their respective buffers, point preservation, etc.
+
 *** Chronometrist
 :PROPERTIES:
 :CUSTOM_ID: program-frontend-chronometrist
@@ -3008,12 +3058,14 @@ All four of these use [[info:elisp#Tabulated List Mode][=(info "(elisp)Tabulated
 1. [X] Define hooks with defcustom instead of defvar
 2. [ ] Change abnormal hooks to normal hooks
 3. [ ] midnight-spanning plist not displayed (may have to do with partial updates)
+
 **** buffer-name                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-buffer-name "*Chronometrist*"
   "The name of the buffer created by `chronometrist'."
   :type 'string)
 #+END_SRC
+
 **** hide-cursor                                         :custom:variable:
 I have not yet gotten this to work as well as I wanted.
 
@@ -3022,6 +3074,7 @@ I have not yet gotten this to work as well as I wanted.
   "If non-nil, hide the cursor and only highlight the current line in the `chronometrist' buffer."
   :type 'boolean)
 #+END_SRC
+
 **** activity-indicator                                  :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-activity-indicator "*"
@@ -3030,10 +3083,12 @@ Can be a string to be displayed, or a function which returns this string.
 The default is \"*\""
   :type '(choice string function))
 #+END_SRC
+
 **** point                                             :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist--point nil)
 #+END_SRC
+
 **** open-log                                                    :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-open-log (&optional _button)
@@ -3090,11 +3145,13 @@ Return the value returned by Fₙ."
 See `tabulated-list-format'."
   :type '(vector))
 #+END_SRC
+
 **** chronometrist-mode-hook                                             :hook:normal:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-hook nil
   "Normal hook run at the very end of `chronometrist-mode'.")
 #+END_SRC
+
 **** schema-transformers                              :extension:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-schema-transformers nil
@@ -3278,6 +3335,7 @@ refresh the `chronometrist' buffer."
          (chronometrist-out))
     t))
 #+END_SRC
+
 **** chronometrist-in                                                        :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-in (task &optional _prefix)
@@ -3288,6 +3346,7 @@ TASK is the name of the task, a string. PREFIX is ignored."
     (chronometrist-insert (chronometrist-active-backend) plist)
     (chronometrist-refresh)))
 #+END_SRC
+
 **** chronometrist-out                                                       :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-out (&optional _prefix)
@@ -3298,6 +3357,7 @@ PREFIX is ignored."
          (plist  (plist-put latest :stop (chronometrist-format-time-iso8601))))
     (chronometrist-replace-last (chronometrist-active-backend) plist)))
 #+END_SRC
+
 **** run-functions-and-clock-in                                   :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-run-functions-and-clock-in (task)
@@ -3306,6 +3366,7 @@ PREFIX is ignored."
   (chronometrist-in task)
   (run-hook-with-args 'chronometrist-after-in-functions task))
 #+END_SRC
+
 **** run-functions-and-clock-out                                  :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-run-functions-and-clock-out (task)
@@ -3314,6 +3375,7 @@ PREFIX is ignored."
     (chronometrist-out)
     (run-hook-with-args 'chronometrist-after-out-functions task)))
 #+END_SRC
+
 **** chronometrist-mode-map                                                   :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-mode-map
@@ -3334,6 +3396,7 @@ PREFIX is ignored."
     map)
   "Keymap used by `chronometrist-mode'.")
 #+END_SRC
+
 **** chronometrist-menu                                                         :menu:
 #+BEGIN_SRC emacs-lisp
 (easy-menu-define chronometrist-menu chronometrist-mode-map
@@ -3359,6 +3422,7 @@ PREFIX is ignored."
     ["Reset state" chronometrist-reset]
     ["Import/export data" chronometrist-migrate]))
 #+END_SRC
+
 **** chronometrist-mode                                                   :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-mode tabulated-list-mode "Chronometrist"
@@ -3374,6 +3438,7 @@ PREFIX is ignored."
   (setq revert-buffer-function #'chronometrist-refresh)
   (run-hooks 'chronometrist-mode-hook))
 #+END_SRC
+
 **** toggle-task-button                                           :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-toggle-task-button (_button)
@@ -3392,6 +3457,7 @@ action, and is ignored."
     (unless (equal at-point current)
       (chronometrist-run-functions-and-clock-in at-point))))
 #+END_SRC
+
 **** add-new-task-button                                          :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-add-new-task-button (_button)
@@ -3404,6 +3470,7 @@ action, and is ignored."
     (let ((task (read-from-minibuffer "New task name: " nil nil nil nil nil t)))
       (chronometrist-run-functions-and-clock-in task))))
 #+END_SRC
+
 **** toggle-task                                                 :command:
 #+BEGIN_SRC emacs-lisp
 ;; TODO - if clocked in and point not on a task, just clock out
@@ -3572,18 +3639,21 @@ run `chronometrist-statistics'."
 *** Report
 **** TODO [0%]
 1. [ ] preserve point when clicking buttons
+
 **** report                                                 :custom:group:
 #+BEGIN_SRC emacs-lisp
 (defgroup chronometrist-report nil
   "Weekly report for the `chronometrist' time tracker."
   :group 'chronometrist)
 #+END_SRC
+
 **** buffer-name                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-report-buffer-name "*Chronometrist-Report*"
   "The name of the buffer created by `chronometrist-report'."
   :type 'string)
 #+END_SRC
+
 **** ui-date                                           :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-report--ui-date nil
@@ -3591,16 +3661,19 @@ run `chronometrist-statistics'."
 A value of nil means the current week. Otherwise, it must be a
 date in the form \"YYYY-MM-DD\".")
 #+END_SRC
+
 **** ui-week-dates                                     :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-report--ui-week-dates nil
   "List of dates currently displayed by `chronometrist-report'.
 Each date is a list containing calendrical information (see (info \"(elisp)Time Conversion\"))")
 #+END_SRC
+
 **** point                                             :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-report--point nil)
 #+END_SRC
+
 **** date-to-dates-in-week                                      :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-date-to-dates-in-week (first-date-in-week)
@@ -3611,6 +3684,7 @@ FIRST-DATE-IN-WEEK must be a ts struct representing the first date."
   (cl-loop for i from 0 to 6 collect
            (ts-adjust 'day i first-date-in-week)))
 #+END_SRC
+
 **** date-to-week-dates                                         :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-date-to-week-dates ()
@@ -3624,6 +3698,7 @@ The first date is the first occurrence of
        (chronometrist-previous-week-start)
        (chronometrist-report-date-to-dates-in-week)))
 #+END_SRC
+
 **** rows                                                      :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-rows ()
@@ -3645,6 +3720,7 @@ The first date is the first occurrence of
              duration-strings ;; vconcat converts lists to vectors
              total-duration)))))
 #+END_SRC
+
 **** print-keybind                                             :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-print-keybind (command &optional description firstonly)
@@ -3657,6 +3733,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
           " - "
           (if description description "")))
 #+END_SRC
+
 **** CLEANUP print-non-tabular                                 :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-print-non-tabular ()
@@ -3694,6 +3771,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
     (chronometrist-report-print-keybind 'chronometrist-open-log)
     (insert-text-button "open log file" 'action #'chronometrist-open-log 'follow-link t)))
 #+END_SRC
+
 **** REVIEW refresh                                            :procedure:
 Merge this into `chronometrist-refresh-file', while moving the -refresh call to the call site?
 
@@ -3708,6 +3786,7 @@ Merge this into `chronometrist-refresh-file', while moving the -refresh call to 
       (chronometrist-maybe-start-timer)
       (set-window-point w p))))
 #+END_SRC
+
 **** refresh-file                                                 :writer:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-refresh-file (fs-event)
@@ -3716,6 +3795,7 @@ Merge this into `chronometrist-refresh-file', while moving the -refresh call to 
   (chronometrist-on-change (chronometrist-active-backend) fs-event)
   (chronometrist-report-refresh))
 #+END_SRC
+
 **** report-mode-map                                              :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-report-mode-map
@@ -3735,6 +3815,7 @@ Merge this into `chronometrist-refresh-file', while moving the -refresh call to 
     map)
   "Keymap used by `chronometrist-report-mode'.")
 #+END_SRC
+
 **** report-mode                                              :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-report-mode tabulated-list-mode "Chronometrist-Report"
@@ -3791,6 +3872,7 @@ current week. Otherwise, display data from the week specified by
                (chronometrist-report-refresh-file nil)
                (goto-char (or chronometrist-report--point 1)))))))
 #+END_SRC
+
 **** report-previous-week                                        :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-previous-week (arg)
@@ -3809,6 +3891,7 @@ With prefix argument ARG, move back ARG weeks."
   (kill-buffer)
   (chronometrist-report t))
 #+END_SRC
+
 **** report-next-week                                            :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-report-next-week (arg)
@@ -3827,6 +3910,7 @@ With prefix argument ARG, move forward ARG weeks."
     (kill-buffer)
     (chronometrist-report t)))
 #+END_SRC
+
 *** Statistics
 **** statistics                                             :custom:group:
 #+BEGIN_SRC emacs-lisp
@@ -3834,12 +3918,14 @@ With prefix argument ARG, move forward ARG weeks."
   "Statistics buffer for the `chronometrist' time tracker."
   :group 'chronometrist)
 #+END_SRC
+
 **** buffer-name                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-statistics-buffer-name "*Chronometrist-Statistics*"
   "The name of the buffer created by `chronometrist-statistics'."
   :type 'string)
 #+END_SRC
+
 **** ui-state                                          :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-statistics--ui-state nil
@@ -3859,14 +3945,17 @@ weekly/monthly/yearly respectively.
 :START and :END are the start and end of the date range to be
 displayed. They must be ts structs (see `ts.el').")
 #+END_SRC
+
 **** point                                             :internal:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-statistics--point nil)
 #+END_SRC
+
 **** mode-map                                                     :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-statistics-mode-map)
 #+END_SRC
+
 **** count-average-time-spent                                   :function:
 #+BEGIN_SRC emacs-lisp
 (cl-defun chronometrist-statistics-count-average-time-spent (task &optional (backend (chronometrist-active-backend)))
@@ -3884,6 +3973,7 @@ displayed. They must be ts structs (see `ts.el').")
         (/ (-reduce #'+ per-day-time-list) days)
       0)))
 #+END_SRC
+
 **** rows-internal                                                :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-rows-internal (table)
@@ -3910,6 +4000,7 @@ reduced to the desired range using
            (content        (vector task active-days active-percent average-time)))
       (list task content))))
 #+END_SRC
+
 **** TEST rows                                                    :reader:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-rows ()
@@ -3930,6 +4021,7 @@ reduced to the desired range using
          (setq chronometrist-statistics--ui-state `(:mode week :start ,start :end ,end))
          (chronometrist-statistics-rows-internal ht))))))
 #+END_SRC
+
 **** print-keybind                                             :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-print-keybind (command &optional description firstonly)
@@ -3943,6 +4035,7 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
           " - "
           (if description description "")))
 #+END_SRC
+
 **** print-non-tabular                                         :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-print-non-tabular ()
@@ -3961,6 +4054,7 @@ If FIRSTONLY is non-nil, return only the first keybinding found."
              (ts-format "%F" (plist-get chronometrist-statistics--ui-state :start))
              (ts-format "%F" (plist-get chronometrist-statistics--ui-state :end))))))
 #+END_SRC
+
 **** refresh                                                   :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-refresh (&optional _ignore-auto _noconfirm)
@@ -3978,6 +4072,7 @@ value of `revert-buffer-function'."
       (chronometrist-maybe-start-timer)
       (set-window-point w p))))
 #+END_SRC
+
 **** mode-map                                                     :keymap:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-statistics-mode-map
@@ -3988,6 +4083,7 @@ value of `revert-buffer-function'."
     map)
   "Keymap used by `chronometrist-statistics-mode'.")
 #+END_SRC
+
 **** statistics-mode                                          :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-statistics-mode tabulated-list-mode "Chronometrist-Statistics"
@@ -4046,6 +4142,7 @@ specified by `chronometrist-statistics--ui-state'."
              (switch-to-buffer buffer)
              (chronometrist-statistics-refresh))))))
 #+END_SRC
+
 **** previous-range                                              :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-previous-range (arg)
@@ -4066,6 +4163,7 @@ If ARG is a numeric argument, go back that many times."
     (kill-buffer)
     (chronometrist-statistics t)))
 #+END_SRC
+
 **** next-range                                                  :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-statistics-next-range (arg)
@@ -4086,6 +4184,7 @@ If ARG is a numeric argument, go forward that many times."
     (kill-buffer)
     (chronometrist-statistics t)))
 #+END_SRC
+
 *** Details
 =chronometrist= displays the total time spent on a task - but what were the details? That's where =chronometrist-details= comes in - to display details of recorded time intervals for a given day, in a format terser and more informative than the plists in the file.
 
@@ -4120,6 +4219,7 @@ If ARG is a numeric argument, go forward that many times."
     (format "*%s*" chronometrist-details-buffer-name-base)))
 
 #+END_SRC
+
 **** display-tags                                        :custom:variable:
 If the value of this variable is a function and the string it returns contains a newline, the results may be undesirable...but hardly unrecoverable, so try it and see, if you wish.
 
@@ -4259,6 +4359,7 @@ using `chronometrist-details-schema-transformers'.")
     map))
 
 #+END_SRC
+
 **** chronometrist-details-menu                                     :menu:
 #+BEGIN_SRC emacs-lisp
 (easy-menu-define chronometrist-details-menu chronometrist-details-mode-map
@@ -4270,6 +4371,7 @@ using `chronometrist-details-schema-transformers'.")
     ["View/edit log file" chronometrist-open-log]
     ["Reset state" chronometrist-reset]))
 #+END_SRC
+
 **** chronometrist-details-mode                               :major:mode:
 #+BEGIN_SRC emacs-lisp
 (define-derived-mode chronometrist-details-mode tabulated-list-mode "Details"
@@ -4295,6 +4397,7 @@ BUFFER-OR-NAME must be an existing buffer."
     (tabulated-list-print)))
 
 #+END_SRC
+
 **** chronometrist-details                                       :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details ()
@@ -4333,6 +4436,7 @@ range.")
    string))
 
 #+END_SRC
+
 **** intervals-for-range                                          :reader:
 This is basically like [[#program-data-structures-events-subset][chronometrist-events-subset]], but returns a list instead of a hash table. Might replace one with the other in the future.
 
