@@ -41,4 +41,5 @@
 * Local variables                                                  :NOEXPORT:
 # Local Variables:
 # my-org-src-default-lang: "emacs-lisp"
+# eval: (when (package-installed-p 'literate-elisp) (require 'literate-elisp) (literate-elisp-load (buffer-file-name)))
 # End:
