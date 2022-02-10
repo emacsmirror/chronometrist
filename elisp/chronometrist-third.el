@@ -1,4 +1,3 @@
-;; [[file:chronometrist-third.org::*Library headers and commentary][Library headers and commentary:1]]
 ;;; chronometrist-third.el --- Third Time support for Chronometrist -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
@@ -25,14 +24,10 @@
 ;; https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work
 
 ;; For information on usage and customization, see https://tildegit.org/contrapunctus/chronometrist-goal/src/branch/production/README.md
-;; Library headers and commentary:1 ends here
 
-;; [[file:chronometrist-third.org::*Dependencies][Dependencies:1]]
 ;;; Code:
 (require 'chronometrist)
 (require 'alert)
-(declare-function chronometrist-last "chronometrist")
-;; Dependencies:1 ends here
 
 ;; [[file:chronometrist-third.org::*group][group:1]]
 (defgroup chronometrist-third nil
@@ -42,12 +37,14 @@
 
 ;; [[file:chronometrist-third.org::*divisor][divisor:1]]
 (defcustom chronometrist-third-divisor 3
-  "Number to determine accumulation of break time relative to work time.")
+  "Number to determine accumulation of break time relative to work time."
+  :type 'number)
 ;; divisor:1 ends here
 
 ;; [[file:chronometrist-third.org::*duration-format][duration-format:1]]
 (defcustom chronometrist-third-duration-format "%H, %M, and %S%z"
-  "Format string for durations, passed to `format-seconds'.")
+  "Format string for durations, passed to `format-seconds'."
+  :type 'string)
 ;; duration-format:1 ends here
 
 ;; [[file:chronometrist-third.org::*break-time][break-time:1]]
@@ -111,7 +108,7 @@ in turn should call `alert' to notify the user."
 ;; stop-alert-timers:1 ends here
 
 ;; [[file:chronometrist-third.org::*clock-in][clock-in:1]]
-(defun chronometrist-third-clock-in (&optional arg)
+(defun chronometrist-third-clock-in (&optional _arg)
   ;; stop alert timer
   (chronometrist-third-stop-alert-timers)
   ;; update break-time
@@ -127,7 +124,7 @@ in turn should call `alert' to notify the user."
 ;; clock-in:1 ends here
 
 ;; [[file:chronometrist-third.org::*clock-out][clock-out:1]]
-(defun chronometrist-third-clock-out (&optional arg)
+(defun chronometrist-third-clock-out (&optional _arg)
   (let* ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend))))
          (break-time-increment (/ latest-work-duration chronometrist-third-divisor)))
     (cl-incf chronometrist-third-break-time break-time-increment)
@@ -147,3 +144,7 @@ in turn should call `alert' to notify the user."
         (t (remove-hook 'chronometrist-after-in-functions #'chronometrist-third-clock-in)
            (remove-hook 'chronometrist-after-out-functions #'chronometrist-third-clock-out))))
 ;; third-minor-mode:1 ends here
+
+(provide 'chronometrist-third)
+
+;;; chronometrist-third.el ends here

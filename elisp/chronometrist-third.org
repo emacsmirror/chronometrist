@@ -4,7 +4,7 @@
 
 * Program source
 ** Library headers and commentary
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :comments no
 ;;; chronometrist-third.el --- Third Time support for Chronometrist -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
@@ -24,9 +24,9 @@
 ;; For more information, please refer to <https://unlicense.org>
 
 ;;; Commentary:
-;; Add support for the Third Time system to Chronometrist. In Third
+;; Add support for the Third Time system to Chronometrist.  In Third
 ;; Time, you work for any length of time you like, and "earn" a third
-;; of the work time as break time. For a more detailed explanation,
+;; of the work time as break time.  For a more detailed explanation,
 ;; see
 ;; https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work
 
@@ -34,11 +34,10 @@
 #+END_SRC
 
 ** Dependencies
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :comments no
 ;;; Code:
 (require 'chronometrist)
 (require 'alert)
-(declare-function chronometrist-last "chronometrist")
 #+END_SRC
 
 ** group                                                      :custom:group:
@@ -51,13 +50,15 @@
 ** divisor                                                 :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-third-divisor 3
-  "Number to determine accumulation of break time relative to work time.")
+  "Number to determine accumulation of break time relative to work time."
+  :type 'number)
 #+END_SRC
 
 ** duration-format                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-third-duration-format "%H, %M, and %S%z"
-  "Format string for durations, passed to `format-seconds'.")
+  "Format string for durations, passed to `format-seconds'."
+  :type 'string)
 #+END_SRC
 
 ** break-time                                                     :variable:
@@ -126,7 +127,7 @@ in turn should call `alert' to notify the user."
 
 ** clock-in
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-third-clock-in (&optional arg)
+(defun chronometrist-third-clock-in (&optional _arg)
   ;; stop alert timer
   (chronometrist-third-stop-alert-timers)
   ;; update break-time
@@ -143,7 +144,7 @@ in turn should call `alert' to notify the user."
 
 ** clock-out
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-third-clock-out (&optional arg)
+(defun chronometrist-third-clock-out (&optional _arg)
   (let* ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend))))
          (break-time-increment (/ latest-work-duration chronometrist-third-divisor)))
     (cl-incf chronometrist-third-break-time break-time-increment)
@@ -163,6 +164,13 @@ in turn should call `alert' to notify the user."
          (add-hook 'chronometrist-after-out-functions #'chronometrist-third-clock-out))
         (t (remove-hook 'chronometrist-after-in-functions #'chronometrist-third-clock-in)
            (remove-hook 'chronometrist-after-out-functions #'chronometrist-third-clock-out))))
+#+END_SRC
+
+** Provide
+#+BEGIN_SRC emacs-lisp :comments no
+(provide 'chronometrist-third)
+
+;;; chronometrist-third.el ends here
 #+END_SRC
 
 * Local variables                                                  :NOEXPORT:
