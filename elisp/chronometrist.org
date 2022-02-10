@@ -870,7 +870,7 @@ treated as though their time is 00:00:00."
 The return value is seconds, as an integer."
   (let ((task-events (chronometrist-task-records-for-date backend task date)))
     (if task-events
-        (->> (chronometrist-events-to-durations task-events)
+        (->> (chronometrist-plists-to-durations task-events)
              (-reduce #'+)
              (truncate))
       ;; no events for this task on DATE, i.e. no time spent
@@ -947,25 +947,13 @@ TIMESTAMP must be an ISO-8601 timestamp, as handled by
 
 #+END_SRC
 
-*** events-to-durations                                          :function:
+*** plists-to-durations                                          :function:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-events-to-durations (events)
-  "Convert EVENTS into a list of durations in seconds.
-EVENTS must be a list of valid Chronometrist property lists (see
-`chronometrist-file').
-
-Return 0 if EVENTS is nil."
-  (if events
-      (cl-loop for plist in events collect
-        (let* ((start-ts (chronometrist-iso-to-ts
-                          (plist-get plist :start)))
-               (stop-iso (plist-get plist :stop))
-               ;; Add a stop time if it does not exist.
-               (stop-ts  (if stop-iso
-                             (chronometrist-iso-to-ts stop-iso)
-                           (ts-now))))
-          (ts-diff stop-ts start-ts)))
-    0))
+(defun chronometrist-plists-to-durations (plists)
+  "Convert PLISTS into a list of durations in seconds.
+PLISTS must be a list of valid Chronometrist property lists (see
+`chronometrist-file'). Return 0 if PLISTS is nil."
+  (if plists (mapcar #'chronometrist-interval plists) 0))
 #+END_SRC
 
 *** date-iso                                                     :function:
@@ -1067,13 +1055,14 @@ SECONDS must be a positive integer."
 
 *** interval                                                     :function:
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-interval (event)
+(defun chronometrist-interval (plist)
   "Return the period of time covered by EVENT as a time value.
 EVENT should be a plist (see `chronometrist-file')."
-  (let ((start (plist-get event :start))
-        (stop  (plist-get event :stop)))
-    (time-subtract (parse-iso8601-time-string stop)
-                   (parse-iso8601-time-string start))))
+  (let* ((start-ts  (chronometrist-iso-to-ts (plist-get plist :start)))
+         (stop-iso  (plist-get plist :stop))
+         ;; Add a stop time if it does not exist.
+         (stop-ts   (if stop-iso (chronometrist-iso-to-ts stop-iso) (ts-now))))
+    (ts-diff stop-ts start-ts)))
 #+END_SRC
 
 *** format-duration-long                                         :function:
@@ -3966,7 +3955,7 @@ displayed. They must be ts structs (see `ts.el').")
     when (setq events-in-day (chronometrist-task-records-for-date backend task date))
     do (cl-incf days) and
     collect
-    (-reduce #'+ (chronometrist-events-to-durations events-in-day))
+    (-reduce #'+ (chronometrist-plists-to-durations events-in-day))
     into per-day-time-list
     finally return
     (if per-day-time-list
