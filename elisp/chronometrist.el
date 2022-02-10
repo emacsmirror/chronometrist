@@ -1853,6 +1853,7 @@ Return value is either a list in the form
     (error "No record to replace in %s" (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (chronometrist-remove-last backend :save nil)
+    (delete-trailing-whitespace)
     (chronometrist-insert backend plist :save nil)
     (save-buffer)
     t))

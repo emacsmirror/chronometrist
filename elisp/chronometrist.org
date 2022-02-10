@@ -2811,6 +2811,7 @@ We apply the same hack as in the [[hack-note-plist-group-insert][insert]] method
     (error "No record to replace in %s" (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (chronometrist-remove-last backend :save nil)
+    (delete-trailing-whitespace)
     (chronometrist-insert backend plist :save nil)
     (save-buffer)
     t))
