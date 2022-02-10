@@ -3,7 +3,7 @@
 #+PROPERTY: header-args :tangle yes :load yes :comments link
 
 * Program source
-** fraction
+** divisor
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-third-divisor 3
   "Number to determine accumulation of break time relative to work time.")
@@ -18,16 +18,24 @@
 ** clock-in
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-clock-in ()
-  (let ((latest-break-duration ))
-    ))
-
-;; (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend)))
+  (unless (zerop chronometrist-third-break-time)
+    (-let* (((&plist :stop stop) (cl-second (chronometrist-to-list (chronometrist-active-backend))))
+            (used-break-duration (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
+            (new-break-time      (- chronometrist-third-break-time used-break-duration)))
+      (setq chronometrist-third-break-time
+            (if (> new-break-time 0)
+                new-break-time
+              0)))))
 #+END_SRC
 
 ** clock-out
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-clock-out ()
-  (let ((latest-work-duration ))))
+  (let ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend)))))
+    (cl-incf chronometrist-third-break-time (/ latest-work-duration chronometrist-third-divisor))
+    ;; start notification timer(s)
+    ;; ...
+    ))
 #+END_SRC
 
 * Local variables                                                  :NOEXPORT:
