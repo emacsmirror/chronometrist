@@ -856,7 +856,7 @@ With different checks, for different levels of speed/thoroughness -
 
 It doesn't do anything not already possible in the current formats. At best, it removes some duplication when the same task is "paused" and "resumed".
 
-** "event"/non-interval records                                    :feature:
+** "event records" - records with only a timestamp                 :feature:
 :PROPERTIES:
 :CREATED:  2021-12-18T11:48:53+0530
 :END:
@@ -865,6 +865,22 @@ Records not used for time tracking, but to store data associated with a date or 
 (event "<date or timestamp>"
  [<keyword-value pair>] ...)
 #+END_SRC
+
+** tagging dates with key-values                                   :feature:
+:PROPERTIES:
+:CREATED:  2022-02-10T22:59:45+0530
+:CUSTOM_ID: date-key-values
+:END:
+Straightforward enough for the plist group backend -
+#+BEGIN_SRC elisp
+("<date>"
+ [<keyword> <value>]*
+ <plist>+)
+#+END_SRC
+
+=to-list= could omit them, since it has no concept of dates. =to-hash-table= could have them at the start of the lists of plists, i.e. hash values would be =(cdr <plist group>)=.
+
+The plist backend could theoretically be extended to support it, but I'd rather deprecate that format (since it suffers from performance issues) and not deal with it again.
 
 * undesired file watcher created after literate-elisp-load              :bug:
 :PROPERTIES:
@@ -906,15 +922,22 @@ Additional rules:
 + /Avoid taking other unearned breaks/ if possible — so try to do personal tasks during normal or big breaks, or before/after your work day.
 #+END_QUOTE
 
-1. =chronometrist-third-fraction=
-2. =chronometrist-third-break-time=
-3. on clock out, increment =break-time= and start timed notification
-4. on clock in, calculate duration of latest break (duration between last =:stop= and now), and subtract it from =break-time=; if the resulting time is negative, set it to zero.
+1. [X] =chronometrist-third-fraction=
+2. [X] =chronometrist-third-break-time=
+3. [X] on clock out, increment =break-time= and start timed notification
+4. [X] on clock in, calculate duration of latest break (duration between last =:stop= and now), and subtract it from =break-time=; if the resulting time is negative, set it to zero.
+5. [ ] "big break" command - user enters a time, for which we set an alarm. User must resume working around that time.
+6. [ ] define work hours?
+   * As a custom variable - this is easy to implement, but cannot vary over time without affecting (the interpretation of) past data.
+   * [[#date-key-values][Key values associated with a day?]] The user could define the default in a custom variable.
+7. [ ] displaying/recording breaks. Probably done implicitly - when work hours are defined, any time not spent working can be interpreted as break time.
 
 Extras
 1. persist =break-time= between Emacs sessions
 2. audible alerts
 3. handle user edits to the database
+   * last record modified - ?
+   * remove last record - ?
 
 Example flow
 1. work for 30m
