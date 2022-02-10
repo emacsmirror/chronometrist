@@ -910,7 +910,11 @@ Additional rules:
 2. =chronometrist-third-break-time=
 3. on clock out, increment =break-time= and start timed notification
 4. on clock in, calculate duration of latest break (duration between last =:stop= and now), and subtract it from =break-time=; if the resulting time is negative, set it to zero.
-5. persist =break-time= between Emacs sessions
+
+Extras
+1. persist =break-time= between Emacs sessions
+2. audible alerts
+3. handle user edits to the database
 
 Example flow
 1. work for 30m
