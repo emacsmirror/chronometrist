@@ -15,9 +15,31 @@
   "Accumulated break time in seconds.")
 #+END_SRC
 
+** alert-functions
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-third-alert-functions
+  '(chronometrist-half-alert chronometrist-quarter-alert)
+  "List of timed alerts for the Third Time system.
+
+Typically, each function in this list should call `run-at-time'
+to run another function, which in turn should call `alert' to
+notify the user."
+  :group 'chronometrist-third
+  :type 'hook)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-third-half-alert ()
+  (and (not (zerop chronometrist-third-break-time))
+       (run-at-time )))
+#+END_SRC
+
 ** clock-in
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-third-clock-in ()
+(defun chronometrist-third-clock-in (&optional arg)
+  ;; stop alert timer
+  ;; ...
+  ;; update break-time
   (unless (zerop chronometrist-third-break-time)
     (-let* (((&plist :stop stop) (cl-second (chronometrist-to-list (chronometrist-active-backend))))
             (used-break-duration (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
@@ -30,12 +52,23 @@
 
 ** clock-out
 #+BEGIN_SRC emacs-lisp
-(defun chronometrist-third-clock-out ()
+(defun chronometrist-third-clock-out (&optional arg)
   (let ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend)))))
     (cl-incf chronometrist-third-break-time (/ latest-work-duration chronometrist-third-divisor))
-    ;; start notification timer(s)
+    ;; start alert timer(s)
     ;; ...
     ))
+#+END_SRC
+
+** third-minor-mode
+#+BEGIN_SRC emacs-lisp
+(define-minor-mode chronometrist-third-minor-mode
+  nil nil nil nil
+  (cond (chronometrist-third-minor-mode
+         (add-hook 'chronometrist-after-in-functions #'chronometrist-third-clock-in)
+         (add-hook 'chronometrist-after-out-functions #'chronometrist-third-clock-out))
+        (t (remove-hook 'chronometrist-after-in-functions #'chronometrist-third-clock-in)
+           (remove-hook 'chronometrist-after-out-functions #'chronometrist-third-clock-out))))
 #+END_SRC
 
 * Local variables                                                  :NOEXPORT:
