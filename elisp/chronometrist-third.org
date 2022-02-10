@@ -1,0 +1,36 @@
+#+TITLE: chronometrist-third
+#+SUBTITLE: Third Time System extension for Chronometrist
+#+PROPERTY: header-args :tangle yes :load yes :comments link
+
+* Program source
+** fraction
+#+BEGIN_SRC emacs-lisp
+(defcustom chronometrist-third-divisor 3
+  "Number to determine accumulation of break time relative to work time.")
+#+END_SRC
+
+** break-time
+#+BEGIN_SRC emacs-lisp
+(defvar chronometrist-third-break-time 0
+  "Accumulated break time in seconds.")
+#+END_SRC
+
+** clock-in
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-third-clock-in ()
+  (let ((latest-break-duration ))
+    ))
+
+;; (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend)))
+#+END_SRC
+
+** clock-out
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-third-clock-out ()
+  (let ((latest-work-duration ))))
+#+END_SRC
+
+* Local variables                                                  :NOEXPORT:
+# Local Variables:
+# my-org-src-default-lang: "emacs-lisp"
+# End:
