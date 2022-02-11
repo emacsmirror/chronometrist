@@ -181,6 +181,7 @@ break time is up."
 
 ** third-minor-mode                                             :minor:mode:
 #+BEGIN_SRC emacs-lisp
+;;;###autoload
 (define-minor-mode chronometrist-third-minor-mode
   nil nil nil nil
   (cond (chronometrist-third-minor-mode

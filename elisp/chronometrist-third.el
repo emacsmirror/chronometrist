@@ -155,6 +155,7 @@ break time is up."
 ;; clock-out:1 ends here
 
 ;; [[file:chronometrist-third.org::*third-minor-mode][third-minor-mode:1]]
+;;;###autoload
 (define-minor-mode chronometrist-third-minor-mode
   nil nil nil nil
   (cond (chronometrist-third-minor-mode
