@@ -119,7 +119,8 @@ and stopped when they clock in."
           (lambda ()
             (alert
              (format "%s left on your break."
-                     (format-seconds chronometrist-third-duration-format three-fourths))))))))
+                     (format-seconds chronometrist-third-duration-format
+                                     (- chronometrist-third-break-time three-fourths)))))))))
 #+END_SRC
 
 ** break-over-alert                                              :procedure:

@@ -99,7 +99,8 @@ and stopped when they clock in."
           (lambda ()
             (alert
              (format "%s left on your break."
-                     (format-seconds chronometrist-third-duration-format three-fourths))))))))
+                     (format-seconds chronometrist-third-duration-format
+                                     (- chronometrist-third-break-time three-fourths)))))))))
 ;; quarter-alert:1 ends here
 
 ;; [[file:chronometrist-third.org::*break-over-alert][break-over-alert:1]]
