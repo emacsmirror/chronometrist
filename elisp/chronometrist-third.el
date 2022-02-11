@@ -17,9 +17,9 @@
 ;; For more information, please refer to <https://unlicense.org>
 
 ;;; Commentary:
-;; Add support for the Third Time system to Chronometrist. In Third
+;; Add support for the Third Time system to Chronometrist.  In Third
 ;; Time, you work for any length of time you like, and "earn" a third
-;; of the work time as break time. For a more detailed explanation,
+;; of the work time as break time.  For a more detailed explanation,
 ;; see
 ;; https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work
 
@@ -58,60 +58,75 @@
 
 Typically, each function in this list should call
 `chronometrist-third-run-at-time' to run another function, which
-in turn should call `alert' to notify the user."
+in turn should call `alert' to notify the user.
+
+All functions in this list are started when the user clocks out,
+and stopped when they clock in."
   :group 'chronometrist-third
   :type 'hook)
 ;; alert-functions:1 ends here
 
-;; [[file:chronometrist-third.org::*alert-functions][alert-functions:2]]
+;; [[file:chronometrist-third.org::*timer-list][timer-list:1]]
 (defvar chronometrist-third-timer-list nil)
+;; timer-list:1 ends here
 
+;; [[file:chronometrist-third.org::*run-at-time][run-at-time:1]]
 (defun chronometrist-third-run-at-time (time repeat function &rest args)
+  "Like `run-at-time', but store timer objects in `chronometrist-third-timer-list'."
   (cl-pushnew (apply #'run-at-time time repeat function args) chronometrist-third-timer-list))
+;; run-at-time:1 ends here
 
+;; [[file:chronometrist-third.org::*half-alert][half-alert:1]]
 (defun chronometrist-third-half-alert ()
-  "Display an alert when half the break time has been crossed."
-  (and (not (zerop chronometrist-third-break-time))
-       (chronometrist-third-run-at-time
-        (/ chronometrist-third-break-time 2) nil
-        (lambda ()
-          (alert
-           (format "%s left on your break."
-                   (format-seconds chronometrist-third-duration-format (/ chronometrist-third-break-time 2))))))))
+  "Display an alert when half the break time is consumed."
+  (let ((half-time (/ chronometrist-third-break-time 2.0)))
+    (and (not (zerop chronometrist-third-break-time))
+         (chronometrist-third-run-at-time
+          half-time nil
+          (lambda ()
+            (alert
+             (format "%s left on your break."
+                     (format-seconds chronometrist-third-duration-format half-time))))))))
+;; half-alert:1 ends here
 
+;; [[file:chronometrist-third.org::*quarter-alert][quarter-alert:1]]
 (defun chronometrist-third-quarter-alert ()
   "Display an alert when 3/4ths of the break time is consumed."
-  (and (not (zerop chronometrist-third-break-time))
-       (chronometrist-third-run-at-time
-        (* chronometrist-third-break-time (/ 3.0 4)) nil
-        (lambda ()
-          (alert
-           (format "%s left on your break."
-                   (format-seconds chronometrist-third-duration-format (* chronometrist-third-break-time (/ 3.0 4)))))))))
+  (let ((three-fourths (* chronometrist-third-break-time 7.5)))
+    (and (not (zerop chronometrist-third-break-time))
+         (chronometrist-third-run-at-time
+          three-fourths nil
+          (lambda ()
+            (alert
+             (format "%s left on your break."
+                     (format-seconds chronometrist-third-duration-format three-fourths))))))))
+;; quarter-alert:1 ends here
 
+;; [[file:chronometrist-third.org::*break-over-alert][break-over-alert:1]]
 (defun chronometrist-third-break-over-alert ()
   "Display an alert when break time is over."
   (and (not (zerop chronometrist-third-break-time))
        (chronometrist-third-run-at-time
         chronometrist-third-break-time nil
         (lambda () (alert (format "Break time is over!"))))))
-;; alert-functions:2 ends here
+;; break-over-alert:1 ends here
 
 ;; [[file:chronometrist-third.org::*start-alert-timers][start-alert-timers:1]]
 (defun chronometrist-third-start-alert-timers ()
+  "Run functions in `chronometrist-third-alert-functions'."
   (mapc #'funcall chronometrist-third-alert-functions))
 ;; start-alert-timers:1 ends here
 
 ;; [[file:chronometrist-third.org::*stop-alert-timers][stop-alert-timers:1]]
 (defun chronometrist-third-stop-alert-timers ()
+  "Stop timers in `chronometrist-third-timer-list'."
   (mapc (lambda (timer) (cancel-timer timer)) chronometrist-third-timer-list))
 ;; stop-alert-timers:1 ends here
 
 ;; [[file:chronometrist-third.org::*clock-in][clock-in:1]]
 (defun chronometrist-third-clock-in (&optional _arg)
-  ;; stop alert timer
+  "Stop alert timers and update break time."
   (chronometrist-third-stop-alert-timers)
-  ;; update break-time
   (unless (zerop chronometrist-third-break-time)
     (-let* (((&plist :stop stop) (cl-second (chronometrist-to-list (chronometrist-active-backend))))
             (used-break-duration (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
@@ -125,6 +140,9 @@ in turn should call `alert' to notify the user."
 
 ;; [[file:chronometrist-third.org::*clock-out][clock-out:1]]
 (defun chronometrist-third-clock-out (&optional _arg)
+  "Update break time based on the latest work interval.
+Run `chronometrist-third-alert-functions' to alert user when
+break time is up."
   (let* ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend))))
          (break-time-increment (/ latest-work-duration chronometrist-third-divisor)))
     (cl-incf chronometrist-third-break-time break-time-increment)

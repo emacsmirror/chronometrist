@@ -67,44 +67,63 @@
   "Accumulated break time in seconds.")
 #+END_SRC
 
-** alert-functions
+** alert-functions                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-third-alert-functions '(chronometrist-third-half-alert chronometrist-third-quarter-alert chronometrist-third-break-over-alert)
   "List of timed alerts for the Third Time system.
 
 Typically, each function in this list should call
 `chronometrist-third-run-at-time' to run another function, which
-in turn should call `alert' to notify the user."
+in turn should call `alert' to notify the user.
+
+All functions in this list are started when the user clocks out,
+and stopped when they clock in."
   :group 'chronometrist-third
   :type 'hook)
 #+END_SRC
 
+** timer-list                                                     :variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-third-timer-list nil)
+#+END_SRC
 
+** run-at-time                                                   :procedure:
+#+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-run-at-time (time repeat function &rest args)
+  "Like `run-at-time', but store timer objects in `chronometrist-third-timer-list'."
   (cl-pushnew (apply #'run-at-time time repeat function args) chronometrist-third-timer-list))
+#+END_SRC
 
+** half-alert                                                    :procedure:
+#+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-half-alert ()
-  "Display an alert when half the break time has been crossed."
-  (and (not (zerop chronometrist-third-break-time))
-       (chronometrist-third-run-at-time
-        (/ chronometrist-third-break-time 2) nil
-        (lambda ()
-          (alert
-           (format "%s left on your break."
-                   (format-seconds chronometrist-third-duration-format (/ chronometrist-third-break-time 2))))))))
+  "Display an alert when half the break time is consumed."
+  (let ((half-time (/ chronometrist-third-break-time 2.0)))
+    (and (not (zerop chronometrist-third-break-time))
+         (chronometrist-third-run-at-time
+          half-time nil
+          (lambda ()
+            (alert
+             (format "%s left on your break."
+                     (format-seconds chronometrist-third-duration-format half-time))))))))
+#+END_SRC
 
+** quarter-alert                                                 :procedure:
+#+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-quarter-alert ()
   "Display an alert when 3/4ths of the break time is consumed."
-  (and (not (zerop chronometrist-third-break-time))
-       (chronometrist-third-run-at-time
-        (* chronometrist-third-break-time (/ 3.0 4)) nil
-        (lambda ()
-          (alert
-           (format "%s left on your break."
-                   (format-seconds chronometrist-third-duration-format (* chronometrist-third-break-time (/ 3.0 4)))))))))
+  (let ((three-fourths (* chronometrist-third-break-time 7.5)))
+    (and (not (zerop chronometrist-third-break-time))
+         (chronometrist-third-run-at-time
+          three-fourths nil
+          (lambda ()
+            (alert
+             (format "%s left on your break."
+                     (format-seconds chronometrist-third-duration-format three-fourths))))))))
+#+END_SRC
 
+** break-over-alert                                              :procedure:
+#+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-break-over-alert ()
   "Display an alert when break time is over."
   (and (not (zerop chronometrist-third-break-time))
@@ -113,24 +132,25 @@ in turn should call `alert' to notify the user."
         (lambda () (alert (format "Break time is over!"))))))
 #+END_SRC
 
-** start-alert-timers
+** start-alert-timers                                            :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-start-alert-timers ()
+  "Run functions in `chronometrist-third-alert-functions'."
   (mapc #'funcall chronometrist-third-alert-functions))
 #+END_SRC
 
-** stop-alert-timers
+** stop-alert-timers                                             :procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-stop-alert-timers ()
+  "Stop timers in `chronometrist-third-timer-list'."
   (mapc (lambda (timer) (cancel-timer timer)) chronometrist-third-timer-list))
 #+END_SRC
 
-** clock-in
+** clock-in                                                 :hook:procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-clock-in (&optional _arg)
-  ;; stop alert timer
+  "Stop alert timers and update break time."
   (chronometrist-third-stop-alert-timers)
-  ;; update break-time
   (unless (zerop chronometrist-third-break-time)
     (-let* (((&plist :stop stop) (cl-second (chronometrist-to-list (chronometrist-active-backend))))
             (used-break-duration (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
@@ -142,9 +162,12 @@ in turn should call `alert' to notify the user."
   (alert "%s left on your break" (format-seconds chronometrist-third-duration-format chronometrist-third-break-time)))
 #+END_SRC
 
-** clock-out
+** clock-out                                                :hook:procedure:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-third-clock-out (&optional _arg)
+  "Update break time based on the latest work interval.
+Run `chronometrist-third-alert-functions' to alert user when
+break time is up."
   (let* ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend))))
          (break-time-increment (/ latest-work-duration chronometrist-third-divisor)))
     (cl-incf chronometrist-third-break-time break-time-increment)
@@ -155,7 +178,7 @@ in turn should call `alert' to notify the user."
     (chronometrist-third-start-alert-timers)))
 #+END_SRC
 
-** third-minor-mode
+** third-minor-mode                                             :minor:mode:
 #+BEGIN_SRC emacs-lisp
 (define-minor-mode chronometrist-third-minor-mode
   nil nil nil nil
