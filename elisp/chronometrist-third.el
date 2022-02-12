@@ -83,10 +83,11 @@ and stopped when they clock in."
     (and (not (zerop chronometrist-third-break-time))
          (chronometrist-third-run-at-time
           half-time nil
-          (lambda ()
+          (lambda (half-time)
             (alert
              (format "%s left on your break."
-                     (format-seconds chronometrist-third-duration-format half-time))))))))
+                     (format-seconds chronometrist-third-duration-format half-time))))
+          half-time))))
 ;; half-alert:1 ends here
 
 ;; [[file:chronometrist-third.org::*quarter-alert][quarter-alert:1]]
@@ -96,11 +97,12 @@ and stopped when they clock in."
     (and (not (zerop chronometrist-third-break-time))
          (chronometrist-third-run-at-time
           three-fourths nil
-          (lambda ()
+          (lambda (three-fourths)
             (alert
              (format "%s left on your break."
                      (format-seconds chronometrist-third-duration-format
-                                     (- chronometrist-third-break-time three-fourths)))))))))
+                                     (- chronometrist-third-break-time three-fourths)))))
+          three-fourths))))
 ;; quarter-alert:1 ends here
 
 ;; [[file:chronometrist-third.org::*break-over-alert][break-over-alert:1]]
