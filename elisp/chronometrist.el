@@ -3349,10 +3349,13 @@ TABLE must be a hash table as returned by
              collect plist)
            do (ts-adjustf begin-ts 'day 1)))))))
 
-;; (chronometrist-details-intervals-for-range nil chronometrist-events)
-;; (chronometrist-details-intervals-for-range "2021-06-01" chronometrist-events)
-;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
-;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30") chronometrist-events)
+;; (chronometrist-details-intervals-for-range nil (chronometrist-to-hash-table (chronometrist-active-backend)))
+;; (chronometrist-details-intervals-for-range "2021-06-01"
+;;                        (chronometrist-to-hash-table (chronometrist-active-backend)))
+;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03")
+;;                        (chronometrist-to-hash-table (chronometrist-active-backend)))
+;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30")
+;;                        (chronometrist-to-hash-table (chronometrist-active-backend)))
 ;; intervals-for-range:1 ends here
 
 ;; [[file:chronometrist.org::*input-to-value][input-to-value:1]]
