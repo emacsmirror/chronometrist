@@ -135,8 +135,8 @@ and stopped when they clock in."
       (setq chronometrist-third-break-time
             (if (> new-break-time 0)
                 new-break-time
-              0))))
-  (alert "%s left on your break" (format-seconds chronometrist-third-duration-format chronometrist-third-break-time)))
+              0))
+      (alert (format "%s left on your break" (format-seconds chronometrist-third-duration-format chronometrist-third-break-time))))))
 ;; clock-in:1 ends here
 
 ;; [[file:chronometrist-third.org::*clock-out][clock-out:1]]
@@ -147,9 +147,9 @@ break time is up."
   (let* ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend))))
          (break-time-increment (/ latest-work-duration chronometrist-third-divisor)))
     (cl-incf chronometrist-third-break-time break-time-increment)
-    (alert "%s added to break time (%s total)"
-           (format-seconds chronometrist-third-duration-format break-time-increment)
-           (format-seconds chronometrist-third-duration-format chronometrist-third-break-time))
+    (alert (format "%s added to break time (%s total)"
+                   (format-seconds chronometrist-third-duration-format break-time-increment)
+                   (format-seconds chronometrist-third-duration-format chronometrist-third-break-time)))
     ;; start alert timer(s)
     (chronometrist-third-start-alert-timers)))
 ;; clock-out:1 ends here

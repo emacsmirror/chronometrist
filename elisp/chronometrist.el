@@ -1647,7 +1647,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
         t))))
 ;; insert:1 ends here
 
-;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
+;; [[file:chronometrist.org::#program-data-structures-plists-split-p][plists-split-p:1]]
 (defun chronometrist-plists-split-p (old-plist new-plist)
   "Return t if OLD-PLIST and NEW-PLIST are split plists.
 Split plists means the :stop time of old-plist must be the same as
@@ -2296,7 +2296,7 @@ task. N must be a positive integer."
     (chronometrist-task-at-point)))
 ;; goto-nth-task:1 ends here
 
-;; [[file:chronometrist.org::*refresh][refresh:1]]
+;; [[file:chronometrist.org::#program-frontend-chronometrist-refresh][refresh:1]]
 (defun chronometrist-refresh (&optional _ignore-auto _noconfirm)
   "Refresh the `chronometrist' buffer, without re-reading `chronometrist-file'.
 The optional arguments _IGNORE-AUTO and _NOCONFIRM are ignored,
@@ -2571,7 +2571,7 @@ Has no effect if a task is active."
       (message "Nothing to discard - use this when clocked in."))))
 ;; discard-active:1 ends here
 
-;; [[file:chronometrist.org::*chronometrist][chronometrist:1]]
+;; [[file:chronometrist.org::#program-frontend-chronometrist-command][chronometrist:1]]
 ;;;###autoload
 (defun chronometrist (&optional arg)
   "Display the user's tasks and the time spent on them today.
@@ -2805,7 +2805,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
   (chronometrist-setup-file-watch))
 ;; report-mode:1 ends here
 
-;; [[file:chronometrist.org::*chronometrist-report][chronometrist-report:1]]
+;; [[file:chronometrist.org::#program-frontend-report-command][chronometrist-report:1]]
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
   "Display a weekly report of the data in `chronometrist-file'.
@@ -3056,7 +3056,7 @@ value of `revert-buffer-function'."
   (chronometrist-setup-file-watch))
 ;; statistics-mode:1 ends here
 
-;; [[file:chronometrist.org::*chronometrist-statistics][chronometrist-statistics:1]]
+;; [[file:chronometrist.org::#program-frontend-statistics-command][chronometrist-statistics:1]]
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
   "Display statistics for Chronometrist data.
