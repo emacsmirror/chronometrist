@@ -155,14 +155,20 @@ and stopped when they clock in."
   "Stop alert timers and update break time."
   (chronometrist-third-stop-alert-timers)
   (unless (zerop chronometrist-third-break-time)
-    (-let* (((&plist :stop stop) (cl-second (chronometrist-to-list (chronometrist-active-backend))))
-            (used-break-duration (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
-            (new-break-time      (- chronometrist-third-break-time used-break-duration)))
-      (setq chronometrist-third-break-time
-            (if (> new-break-time 0)
-                new-break-time
-              0))
-      (alert (format "%s left on your break" (format-seconds chronometrist-third-duration-format chronometrist-third-break-time))))))
+    (-let* (((&plist :stop stop)        (cl-second (chronometrist-to-list (chronometrist-active-backend))))
+            (used-break-duration        (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
+            (new-break-time             (- chronometrist-third-break-time used-break-duration))
+            (old-break-time             chronometrist-third-break-time)
+            (used-break-duration-string (format-seconds chronometrist-third-duration-format
+                                                        used-break-duration)))
+      (setq chronometrist-third-break-time (if (> new-break-time 0) new-break-time 0))
+      (alert
+       (if (zerop chronometrist-third-break-time)
+           (format "You have used up all %s of your break time (%s break)"
+                   old-break-time used-break-duration-string)
+         (format "You have used %s of your break time (%s left)"
+                 used-break-duration-string
+                 (format-seconds chronometrist-third-duration-format chronometrist-third-break-time)))))))
 #+END_SRC
 
 ** clock-out                                                :hook:procedure:
@@ -174,7 +180,7 @@ break time is up."
   (let* ((latest-work-duration (chronometrist-interval (chronometrist-latest-record (chronometrist-active-backend))))
          (break-time-increment (/ latest-work-duration chronometrist-third-divisor)))
     (cl-incf chronometrist-third-break-time break-time-increment)
-    (alert (format "%s added to break time (%s total)"
+    (alert (format "You have gained %s of break time (%s total)"
                    (format-seconds chronometrist-third-duration-format break-time-increment)
                    (format-seconds chronometrist-third-duration-format chronometrist-third-break-time)))
     ;; start alert timer(s)
