@@ -13,7 +13,7 @@
     1.  [chronometrist](#usage-chronometrist)
     2.  [chronometrist-report](#usage-chronometrist-report)
     3.  [chronometrist-statistics](#usage-chronometrist-statistics)
-    4.  [chronometrist-details](#org0f35db3)
+    4.  [chronometrist-details](#orga55ac83)
     5.  [common commands](#usage-common-commands)
     6.  [Time goals/targets](#time-goals)
 6.  [How-to](#how-to)
@@ -21,15 +21,15 @@
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#orgdf1f18f)
+    5.  [How to skip running hooks/attaching tags and key values](#orgae7b0f6)
     6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
     7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
     9.  [How to back up your Chronometrist data](#how-to-backup)
     10. [How to configure Vertico for use with Chronometrist](#howto-vertico)
-7.  [Explanation](#org280cb94)
+7.  [Explanation](#org15771af)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#orgf24e40f)
+8.  [User's reference](#org020377a)
 9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
@@ -158,7 +158,7 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="org0f35db3"></a>
+<a id="orga55ac83"></a>
 
 ## chronometrist-details
 
@@ -233,7 +233,7 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="orgdf1f18f"></a>
+<a id="orgae7b0f6"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -310,8 +310,6 @@ I suggest backing up Chronometrist data on each save using the [async-backup](ht
         M-x add-file-local-variable-prop-line RET eval RET (add-hook 'after-save-hook #'async-backup nil t) RET
 3.  Optionally, configure `backup-directory-alist` to set a specific directory for the backups.
 
-Adapted from this [StackOverflow answer](https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save).
-
 
 <a id="howto-vertico"></a>
 
@@ -334,7 +332,7 @@ Or use `vertico-multiform` to disable sorting for only specific commands -
               (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
 
 
-<a id="org280cb94"></a>
+<a id="org15771af"></a>
 
 # Explanation
 
@@ -350,7 +348,7 @@ The Org file can also be loaded directly using the [literate-elisp](https://gith
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="orgf24e40f"></a>
+<a id="org020377a"></a>
 
 # User's reference
 

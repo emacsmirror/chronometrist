@@ -281,8 +281,6 @@ I suggest backing up Chronometrist data on each save using the [[https://tildegi
    : M-x add-file-local-variable-prop-line RET eval RET (add-hook 'after-save-hook #'async-backup nil t) RET
 3. Optionally, configure =backup-directory-alist= to set a specific directory for the backups.
 
-Adapted from this [[https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save][StackOverflow answer]].
-
 [fn:1] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
 
 ** How to configure Vertico for use with Chronometrist
