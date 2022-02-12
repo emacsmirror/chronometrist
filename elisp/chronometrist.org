@@ -1558,8 +1558,12 @@ Signal an error if there is no record to remove.")
 ***** latest-record                                    :generic:function:
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
+  "Return the latest record from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a `:stop'
+key-value.
+
+If the latest record starts on one day and ends on another, the
+entire (unsplit) record must be returned.")
 #+END_SRC
 
 ***** task-records-for-date                            :generic:function:
@@ -2822,7 +2826,10 @@ Return value is either a list in the form
 ***** latest-record                                       :reader:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (cl-first (last (chronometrist-latest-date-records backend))))
+  (with-slots (file) backend
+    (if (chronometrist-last-two-split-p file)
+        (apply #'chronometrist-plist-unify (chronometrist-last-two-split-p (chronometrist-backend-file (chronometrist-active-backend))))
+      (cl-first (last (chronometrist-latest-date-records backend))))))
 #+END_SRC
 
 ***** task-records-for-date                               :reader:method:

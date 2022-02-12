@@ -886,8 +886,12 @@ Signal an error if there is no record to remove.")
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
+  "Return the latest record from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a `:stop'
+key-value.
+
+If the latest record starts on one day and ends on another, the
+entire (unsplit) record must be returned.")
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
@@ -1820,7 +1824,10 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (cl-first (last (chronometrist-latest-date-records backend))))
+  (with-slots (file) backend
+    (if (chronometrist-last-two-split-p file)
+        (apply #'chronometrist-plist-unify (chronometrist-last-two-split-p (chronometrist-backend-file (chronometrist-active-backend))))
+      (cl-first (last (chronometrist-latest-date-records backend))))))
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
