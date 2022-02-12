@@ -13,7 +13,7 @@
     1.  [chronometrist](#usage-chronometrist)
     2.  [chronometrist-report](#usage-chronometrist-report)
     3.  [chronometrist-statistics](#usage-chronometrist-statistics)
-    4.  [chronometrist-details](#org690c2df)
+    4.  [chronometrist-details](#org0f35db3)
     5.  [common commands](#usage-common-commands)
     6.  [Time goals/targets](#time-goals)
 6.  [How-to](#how-to)
@@ -21,19 +21,18 @@
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#org63b85c6)
+    5.  [How to skip running hooks/attaching tags and key values](#orgdf1f18f)
     6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
     7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
     9.  [How to back up your Chronometrist data](#how-to-backup)
     10. [How to configure Vertico for use with Chronometrist](#howto-vertico)
-7.  [Explanation](#org4f83f29)
+7.  [Explanation](#org280cb94)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org07932c3)
+8.  [User's reference](#orgf24e40f)
 9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
-12. [Local variables](#org6ca2f77):NOEXPORT:
 
 <a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
 
@@ -159,7 +158,7 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="org690c2df"></a>
+<a id="org0f35db3"></a>
 
 ## chronometrist-details
 
@@ -234,7 +233,7 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="org63b85c6"></a>
+<a id="orgdf1f18f"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -335,7 +334,7 @@ Or use `vertico-multiform` to disable sorting for only specific commands -
               (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
 
 
-<a id="org4f83f29"></a>
+<a id="org280cb94"></a>
 
 # Explanation
 
@@ -351,7 +350,7 @@ The Org file can also be loaded directly using the [literate-elisp](https://gith
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org07932c3"></a>
+<a id="orgf24e40f"></a>
 
 # User's reference
 
@@ -422,11 +421,6 @@ jwiegley for `timeclock.el`, which we used as a backend in earlier versions
 blandest for helping me with the name
 
 fiete and wu-lee for testing and bug reports
-
-
-<a id="org6ca2f77"></a>
-
-# Local variables     :NOEXPORT:
 
 
 # Footnotes

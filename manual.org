@@ -384,7 +384,7 @@ blandest for helping me with the name
 
 fiete and wu-lee for testing and bug reports
 
-* Local variables                                                  :NOEXPORT:
+* Local variables                                                  :noexport:
 # Local Variables:
 # eval: (progn (require 'ox-md) (add-hook 'after-save-hook (lambda () (org-export-to-file 'md "manual.md")) nil t))
 # my-org-src-default-lang: "emacs-lisp"
