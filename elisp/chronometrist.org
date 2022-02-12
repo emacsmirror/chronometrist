@@ -2693,8 +2693,14 @@ Return value is either a list in the form
         (new-plist-wo-time (chronometrist-plist-remove new-plist :start :stop)))
     (cond ((not (and old-plist new-plist)) nil)
           ((equal old-plist-wo-time new-plist-wo-time)
-           (let ((plist (cl-copy-list old-plist)))
-             (plist-put plist :stop (plist-get new-plist :stop))))
+           (let* ((plist    (cl-copy-list old-plist))
+                  (new-stop (plist-get new-plist :stop)))
+             ;; Usually, a split plist has a `:stop' key. However, a
+             ;; user may clock out and delete the stop time, resulting
+             ;; in a split record without a `:stop' key.
+             (if new-stop
+                 (plist-put plist :stop new-stop)
+               (chronometrist-plist-remove plist :stop))))
           (t (error "Attempt to unify plists with non-identical key-values")))))
 #+END_SRC
 
