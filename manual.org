@@ -190,7 +190,7 @@ Evaluate or add to your init.el the following -
 :CUSTOM_ID: how-to-key-value-pairs
 :END:
 
-1. Add =chronometrist-kv-add= to one or more of these hooks [fn:3] -
+1. Add =chronometrist-kv-add= to one or more of these hooks [fn:2] -
 
    #+BEGIN_SRC emacs-lisp
    (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
@@ -199,8 +199,6 @@ Evaluate or add to your init.el the following -
    #+END_SRC
 
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press =C-c C-c= to accept the key-values, or =C-c C-k= to cancel.
-
-[fn:3] but not =chronometrist-before-in-functions=
 
 ** How to skip running hooks/attaching tags and key values
 Use =M-RET= (=chronometrist-toggle-task-no-hooks=) to clock in/out.

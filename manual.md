@@ -13,7 +13,7 @@
     1.  [chronometrist](#usage-chronometrist)
     2.  [chronometrist-report](#usage-chronometrist-report)
     3.  [chronometrist-statistics](#usage-chronometrist-statistics)
-    4.  [chronometrist-details](#orga55ac83)
+    4.  [chronometrist-details](#org09eaa12)
     5.  [common commands](#usage-common-commands)
     6.  [Time goals/targets](#time-goals)
 6.  [How-to](#how-to)
@@ -21,15 +21,15 @@
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#orgae7b0f6)
+    5.  [How to skip running hooks/attaching tags and key values](#orga569ce7)
     6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
     7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
     9.  [How to back up your Chronometrist data](#how-to-backup)
     10. [How to configure Vertico for use with Chronometrist](#howto-vertico)
-7.  [Explanation](#org15771af)
+7.  [Explanation](#org2a03f3a)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org020377a)
+8.  [User's reference](#org2585c1f)
 9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
@@ -158,7 +158,7 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="orga55ac83"></a>
+<a id="org09eaa12"></a>
 
 ## chronometrist-details
 
@@ -224,7 +224,7 @@ Evaluate or add to your init.el the following -
 
 ## How to attach key-values to time intervals
 
-1.  Add `chronometrist-kv-add` to one or more of these hooks <sup><a id="fnr.2" class="footref" href="#fn.2" role="doc-backlink">2</a></sup> -
+1.  Add `chronometrist-kv-add` to one or more of these hooks <sup><a id="fnr.1.100" class="footref" href="#fn.1" role="doc-backlink">1</a></sup> -
 
         (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
         (add-to-list 'chronometrist-before-out-functions 'chronometrist-kv-add)
@@ -233,7 +233,7 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="orgae7b0f6"></a>
+<a id="orga569ce7"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -299,7 +299,7 @@ Another one, prompting the user if they have uncommitted changes in a git reposi
 
 ## How to back up your Chronometrist data
 
-I suggest backing up Chronometrist data on each save using the [async-backup](https://tildegit.org/contrapunctus/async-backup) package.<sup><a id="fnr.3" class="footref" href="#fn.3" role="doc-backlink">3</a></sup> Here's how you can do that.
+I suggest backing up Chronometrist data on each save using the [async-backup](https://tildegit.org/contrapunctus/async-backup) package.<sup><a id="fnr.2" class="footref" href="#fn.2" role="doc-backlink">2</a></sup> Here's how you can do that.
 
 1.  Add the following to your init.
 
@@ -332,7 +332,7 @@ Or use `vertico-multiform` to disable sorting for only specific commands -
               (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
 
 
-<a id="org15771af"></a>
+<a id="org2a03f3a"></a>
 
 # Explanation
 
@@ -348,7 +348,7 @@ The Org file can also be loaded directly using the [literate-elisp](https://gith
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org020377a"></a>
+<a id="org2585c1f"></a>
 
 # User's reference
 
@@ -425,6 +425,4 @@ fiete and wu-lee for testing and bug reports
 
 <sup><a id="fn.1" href="#fnr.1">1</a></sup> but not `chronometrist-before-in-functions`
 
-<sup><a id="fn.2" href="#fnr.2">2</a></sup> but not `chronometrist-before-in-functions`
-
-<sup><a id="fn.3" href="#fnr.3">3</a></sup> It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
+<sup><a id="fn.2" href="#fnr.2">2</a></sup> It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
