@@ -1105,6 +1105,7 @@ hash table values must be in chronological order.")
 
 ;; [[file:chronometrist.org::*on-file-path-change][on-file-path-change:1]]
 (cl-defmethod chronometrist-on-file-path-change ((backend chronometrist-file-backend-mixin) _old-path new-path)
+  "Update path and file slots of BACKEND to use NEW-PATH when `chronometrist-file' is changed."
   (with-slots (path extension file) backend
     (setf path new-path
           file (concat path "." extension))))

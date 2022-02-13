@@ -1810,9 +1810,10 @@ These can be implemented in terms of the minimal protocol above.
       (find-file-noselect file)))))
 #+END_SRC
 
-**** on-file-path-change                                :generic:function:
+**** on-file-path-change                                   :writer:method:
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-on-file-path-change ((backend chronometrist-file-backend-mixin) _old-path new-path)
+  "Update path and file slots of BACKEND to use NEW-PATH when `chronometrist-file' is changed."
   (with-slots (path extension file) backend
     (setf path new-path
           file (concat path "." extension))))
