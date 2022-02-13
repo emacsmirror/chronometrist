@@ -855,6 +855,9 @@ With different checks, for different levels of speed/thoroughness -
 #+END_SRC
 
 It doesn't do anything not already possible in the current formats. At best, it removes some duplication when the same task is "paused" and "resumed".
++ Sometimes you pause and resume a task and don't want to split your key-values between >1 intervals (to avoid messing up completion suggestions for the future). An alternative means to the same end could be to add a key like =:deduct "<duration>"= or =:deduct ("<start time>" . "<stop time>")=.
+  - This will also make it easier to support formats like [[https://klog.jotaen.net/][klog]], which support this feature.
+  - It will probably complicate all data consuming code, though...think of =chronometrist-details= 🤔
 
 ** "event records" - records with only a timestamp                 :feature:
 :PROPERTIES:
