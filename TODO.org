@@ -737,7 +737,9 @@ for <predicate>)"
 #+END_SRC
 
 * STARTED customizable duration output                              :feature:
-See branch =format-seconds=.
+:PROPERTIES:
+:branch:   format-seconds
+:END:
 1. [X] define =chronometrist-duration-formats= to hold duration formats for different use cases in Chronometrist.
 2. [ ] define customization type for =chronometrist-duration-formats= to create user-friendly Custom interface
 3. [ ] make non-tabular parts of Chronometrist buffers adapt to column widths, to accomodate changes in duration formats
@@ -933,6 +935,11 @@ Additional rules:
 + /Avoid taking other unearned breaks/ if possible — so try to do personal tasks during normal or big breaks, or before/after your work day.
 #+END_QUOTE
 
+Example flow
+1. work for 30m
+2. clock out - add 10m to =break-time=
+3. clock in after a 5m break - subtract 5m from =break-time=
+
 1. [X] =chronometrist-third-fraction=
 2. [X] =chronometrist-third-break-time=
 3. [X] on clock out, increment =break-time= and start timed notification
@@ -950,8 +957,23 @@ Extras
 3. handle user edits to the database
    * last record modified - ?
    * remove last record - ?
+   * example - interval extended
+     1. work 10 minutes and clock out - +3m break time
+     2. edit stop time to add +20 minutes of work (30m total)
+        * compare with old data in hash table - decrement break time added by old plist, increment break time added by new plist
 
-Example flow
-1. work for 30m
-2. clock out - add 10m to =break-time=
-3. clock in after a 5m break - subtract 5m from =break-time=
+* Customizable alerts
+:PROPERTIES:
+:CREATED:  2022-02-14T08:22:36+0530
+:END:
+=chronometrist-third= and =chronometrist-goal= have nearly identical alert code; additionally, users cannot customize the alert style per-alert without basically rewriting the alert functions.
+
+Convert =chronometrist-third-alert-functions= and =chronometrist-goal-alert-functions= to customizable alists whose entries take the form =(SYMBOL FUNCTION ALERT-FN &rest ALERT-ARGS)=, where
++ =SYMBOL= uniquely identifies the alert,
++ =FUNCTION= is a function calling =chronometrist-*-run-at-time= and =ALERT-FN=, and
++ =ALERT-ARGS= are passed to =ALERT-FN=.
+
+=ALERT-FN= will usually be =alert=, and =ALERT-ARGS= will usually be keyword arguments passed to =alert=.
+Similar to how they behave now, these packages will start/stop functions for all entries provided in these alists. (So the user can still control which alerts are run.)
+
+Also define =chronometrist--timer-alist=, which associates =symbol= with a timer object.
