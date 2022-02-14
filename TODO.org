@@ -966,10 +966,11 @@ Additional rules:
 * Customizable alerts
 :PROPERTIES:
 :CREATED:  2022-02-14T08:22:36+0530
+:CUSTOM_ID: customizable-alerts
 :END:
 =chronometrist-third= and =chronometrist-goal= have nearly identical alert code; additionally, users cannot customize the alert style per-alert without basically rewriting the alert functions.
 
-Convert =chronometrist-third-alert-functions= and =chronometrist-goal-alert-functions= to customizable alists whose entries take the form =(SYMBOL FUNCTION ALERT-FN &rest ALERT-ARGS)=, where
+Convert =chronometrist-third-alert-functions= and =chronometrist-goal-alert-functions= to customizable alists[fn:4] whose entries take the form =(SYMBOL FUNCTION ALERT-FN &rest ALERT-ARGS)=, where
 + =SYMBOL= uniquely identifies the alert,
 + =FUNCTION= is a function calling =chronometrist-*-run-at-time= and =ALERT-FN=, and
 + =ALERT-ARGS= are passed to =ALERT-FN=.
@@ -978,3 +979,5 @@ Convert =chronometrist-third-alert-functions= and =chronometrist-goal-alert-func
 Similar to how they behave now, these packages will start/stop functions for all entries provided in these alists. (So the user can still control which alerts are run.)
 
 Also define =chronometrist--timer-alist=, which associates =symbol= with a timer object.
+
+[fn:4] Actually, make a macro to define such alists, since the docstrings are likely to be near-identical.
