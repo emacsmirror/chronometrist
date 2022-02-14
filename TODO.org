@@ -935,11 +935,12 @@ Additional rules:
 + /Avoid taking other unearned breaks/ if possible — so try to do personal tasks during normal or big breaks, or before/after your work day.
 #+END_QUOTE
 
-Example flow
+** Example flow
 1. work for 30m
 2. clock out - add 10m to =break-time=
 3. clock in after a 5m break - subtract 5m from =break-time=
 
+** Tasks
 1. [X] =chronometrist-third-fraction=
 2. [X] =chronometrist-third-break-time=
 3. [X] on clock out, increment =break-time= and start timed notification
@@ -951,7 +952,7 @@ Example flow
    * [ ] Hook function which prompts for work hours whenever you first clock in on a date. If work hours are defined in the custom variable, ask whether to use them - on negative answer, prompt for today's work hours. If work hours are not defined, prompt for today's work hours.
 7. [ ] Displaying/recording breaks. Probably done implicitly - when work hours are defined, any time not spent working can be interpreted as break time.
 
-Extras
+** Extras
 1. persist =break-time= between Emacs sessions
 2. audible alerts
 3. handle user edits to the database
