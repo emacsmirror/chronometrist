@@ -2853,7 +2853,7 @@ Return value is either a list in the form
     collect plist))
 #+END_SRC
 
-***** TODO active-days                           :reader:method:NOEXPORT:
+***** TODO active-days                           :reader:method:noexport:
 #+BEGIN_SRC emacs-lisp :tangle no
 (cl-defmethod chronometrist-active-days ((backend chronometrist-plist-group-backend) task &key start end)
   (cl-check-type task string)
@@ -2878,7 +2878,7 @@ We apply the same hack as in the [[hack-note-plist-group-insert][insert]] method
     t))
 #+END_SRC
 
-***** count-records                              :reader:method:NOEXPORT:
+***** count-records                              :reader:method:noexport:
 #+BEGIN_SRC emacs-lisp :tangle no
 (cl-defmethod chronometrist-count-records ((backend chronometrist-plist-group-backend)))
 #+END_SRC
@@ -4765,7 +4765,7 @@ Return value is a list as specified by `tabulated-list-entries'."
 ;;; chronometrist.el ends here
 #+END_SRC
 
-* Local variables                                                  :NOEXPORT:
+* Local variables                                                  :noexport:
 Evaluate this to be able to insert the package prefix via =nameless-insert-name=, at the cost of having all =nameless-aliases= break (= less readable code).
 
 #+BEGIN_SRC emacs-lisp :load no :tangle no

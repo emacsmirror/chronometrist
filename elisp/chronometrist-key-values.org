@@ -741,7 +741,7 @@ Return t, to permit use in `chronometrist-before-out-functions'."
 ;;; chronometrist-key-values.el ends here
 #+END_SRC
 
-* Local variables                                                  :NOEXPORT:
+* Local variables                                                  :noexport:
 # Local Variables:
 # eval: (when (package-installed-p 'literate-elisp) (require 'literate-elisp) (literate-elisp-load (buffer-file-name)))
 # End:

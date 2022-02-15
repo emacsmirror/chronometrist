@@ -206,7 +206,7 @@ break time is up."
 ;;; chronometrist-third.el ends here
 #+END_SRC
 
-* Local variables                                                  :NOEXPORT:
+* Local variables                                                  :noexport:
 # Local Variables:
 # my-org-src-default-lang: "emacs-lisp"
 # eval: (when (package-installed-p 'literate-elisp) (require 'literate-elisp) (literate-elisp-load (buffer-file-name)))

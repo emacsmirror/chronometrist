@@ -737,7 +737,9 @@ for <predicate>)"
 #+END_SRC
 
 * STARTED customizable duration output                              :feature:
-See branch =format-seconds=.
+:PROPERTIES:
+:branch:   format-seconds
+:END:
 1. [X] define =chronometrist-duration-formats= to hold duration formats for different use cases in Chronometrist.
 2. [ ] define customization type for =chronometrist-duration-formats= to create user-friendly Custom interface
 3. [ ] make non-tabular parts of Chronometrist buffers adapt to column widths, to accomodate changes in duration formats
@@ -797,12 +799,18 @@ protocol implementation progress
 20. [ ] [superclass] chronometrist-timer
 
 * New backends                                                      :feature:
-1. Org time tracking
-2. timeclock
-3. [[https://klog.jotaen.net/][klog]]
-4. SQLite
-5. https://github.com/projecthamster/hamster
-   + https://github.com/projecthamster/hamster/wiki/Our-datamodel
+** Org time tracking
+** timeclock
+See docstring of =timeclock-log-data=
+
+** [[https://klog.jotaen.net/][klog]]
+:PROPERTIES:
+:CUSTOM_ID: new-backends-klog
+:END:
+** SQLite
+** Project Hamster
+https://github.com/projecthamster/hamster
++ https://github.com/projecthamster/hamster/wiki/Our-datamodel
 
 * Functions doing similar things                                       :code:
 1. =task-time-one-day=
@@ -810,9 +818,10 @@ protocol implementation progress
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
-* STARTED customizable task list                                    :feature:
-1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
-2. Adding a task? We can modify the task list, but how to persist it?
+* STARTED customizable task list [33%]                              :feature:
+1. [X] Make =chronometrist-task-list= customizable
+2. [ ] Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
+3. [ ] Adding a task? We can modify the task list, but how to persist it?
 
 * Extend time range prompt                                          :feature:
 Support inputs like "today", "yesterday", "5 days ago", etc.
@@ -855,6 +864,10 @@ With different checks, for different levels of speed/thoroughness -
 #+END_SRC
 
 It doesn't do anything not already possible in the current formats. At best, it removes some duplication when the same task is "paused" and "resumed".
++ Sometimes you pause and resume a task and don't want to split your key-values between >1 intervals (to avoid messing up completion suggestions for the future). An alternative means to the same end could be to add a key like =:deduct "<duration>"= or =:deduct ("<start time>" . "<stop time>")=.
+  - This will also make it easier to support formats like [[#new-backends-klog][klog]], which support this feature.
+  - It will probably complicate all data consuming code, though...think of =chronometrist-details= 🤔
+  - An alternative idea could be to define a custom variable to hold the user's key values. If this variable is defined, it would be used instead of generating suggestions from past key-values. That way, such situations will not affect key-value suggestions.
 
 ** "event records" - records with only a timestamp                 :feature:
 :PROPERTIES:
@@ -906,7 +919,7 @@ The plist backend could theoretically be extended to support it, but I'd rather 
 :CREATED:  2022-01-08T23:32:37+0530
 :END:
 1. [ ] default suggested input backend should be the active backend
-2. [ ] conserve file local variables prop line
+2. [ ] conserve file local variables prop line for text backends
 
 * STARTED Support for the Third Time System [57%]                 :extension:
 :PROPERTIES:
@@ -930,6 +943,12 @@ Additional rules:
 + /Avoid taking other unearned breaks/ if possible — so try to do personal tasks during normal or big breaks, or before/after your work day.
 #+END_QUOTE
 
+** Example flow
+1. work for 30m
+2. clock out - add 10m to =break-time=
+3. clock in after a 5m break - subtract 5m from =break-time=
+
+** Tasks
 1. [X] =chronometrist-third-fraction=
 2. [X] =chronometrist-third-break-time=
 3. [X] on clock out, increment =break-time= and start timed notification
@@ -941,14 +960,36 @@ Additional rules:
    * [ ] Hook function which prompts for work hours whenever you first clock in on a date. If work hours are defined in the custom variable, ask whether to use them - on negative answer, prompt for today's work hours. If work hours are not defined, prompt for today's work hours.
 7. [ ] Displaying/recording breaks. Probably done implicitly - when work hours are defined, any time not spent working can be interpreted as break time.
 
-Extras
+** Extras
 1. persist =break-time= between Emacs sessions
 2. audible alerts
 3. handle user edits to the database
    * last record modified - ?
    * remove last record - ?
+   * example - interval extended
+     1. work 10 minutes and clock out - +3m break time
+     2. edit stop time to add +20 minutes of work (30m total)
+        * compare with old data in hash table - decrement break time added by old plist, increment break time added by new plist
 
-Example flow
-1. work for 30m
-2. clock out - add 10m to =break-time=
-3. clock in after a 5m break - subtract 5m from =break-time=
+* STARTED Customizable alerts [50%]                            :feature:code:
+:PROPERTIES:
+:CREATED:  2022-02-14T08:22:36+0530
+:CUSTOM_ID: customizable-alerts
+:branch:   alert-macro
+:END:
+=chronometrist-third= and =chronometrist-goal= have nearly identical alert code; additionally, users cannot customize the alert style per-alert without basically rewriting the alert functions.
+
+Convert =chronometrist-third-alert-functions= and =chronometrist-goal-alert-functions= to customizable alists[fn:4] whose entries take the form =(SYMBOL FUNCTION ALERT-FN &rest ALERT-ARGS)=, where
++ =SYMBOL= uniquely identifies the alert,
++ =FUNCTION= is a function calling =chronometrist-*-run-at-time= and =ALERT-FN=, and
++ =ALERT-ARGS= are passed to =ALERT-FN=.
+
+=ALERT-FN= will usually be =alert=, and =ALERT-ARGS= will usually be keyword arguments passed to =alert=.
+Similar to how they behave now, these packages will start/stop functions for all entries provided in these alists. (So the user can still control which alerts are run.)
+
+Also define =chronometrist--timer-alist=, which associates =symbol= with a timer object.
+
+1. [X] write macro
+2. [ ] use in =chronometrist-goal= and =chronometrist-third=
+
+[fn:4] Actually, make a macro to define such alists, since the docstrings are likely to be near-identical.
