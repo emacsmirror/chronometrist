@@ -919,7 +919,7 @@ The plist backend could theoretically be extended to support it, but I'd rather 
 :CREATED:  2022-01-08T23:32:37+0530
 :END:
 1. [ ] default suggested input backend should be the active backend
-2. [ ] conserve file local variables prop line
+2. [ ] conserve file local variables prop line for text backends
 
 * STARTED Support for the Third Time System [57%]                 :extension:
 :PROPERTIES:
