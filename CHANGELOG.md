@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## unreleased
+1. `chronometrist-third`, an extension to add support for the [Third Time](https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work) system.
+
+## [0.10.0] - 2022-02-15
 ### Changed
 1. The value of `chronometrist-file` must now be a file path _without extension._ Please update your configurations.
 2. The existing file format used by Chronometrist is now called the `plist` format.
@@ -17,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
 5. New command `chronometrist-discard-active`, to discard the active interval.
 6. Debug logging messages - to view them, set `chronometrist-debug-enable`.
-7. `chronometrist-third`, an extension to add support for the [Third Time](https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work) system.
 
 ### Fixed
 1. Code to detect the type of change made to the file has been rewritten, hopefully fixing some uncommon `read` errors and `args out of range` errors.
