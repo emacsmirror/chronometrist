@@ -315,8 +315,8 @@ Return value is a ts struct (see `ts.el')."
                     (plist-put :stop  stop-2))))))))
 ;; split-plist:1 ends here
 
-;; [[file:chronometrist.org::*events-update][events-update:1]]
-(defun chronometrist-events-update (plist hash-table &optional replace)
+;; [[file:chronometrist.org::*ht-update][ht-update:1]]
+(defun chronometrist-ht-update (plist hash-table &optional replace)
   "Return HASH-TABLE with PLIST added as the latest interval.
 If REPLACE is non-nil, replace the last interval with PLIST."
   (let* ((date (->> (plist-get plist :start)
@@ -327,28 +327,29 @@ If REPLACE is non-nil, replace the last interval with PLIST."
          (append it (list plist))
          (puthash date it hash-table))
     hash-table))
-;; events-update:1 ends here
+;; ht-update:1 ends here
 
-;; [[file:chronometrist.org::*last-date][last-date:1]]
-(defun chronometrist-events-last-date (hash-table)
+;; [[file:chronometrist.org::*ht-last-date][ht-last-date:1]]
+(defun chronometrist-ht-last-date (hash-table)
   "Return an ISO-8601 date string for the latest date present in `chronometrist-events'."
   (--> (hash-table-keys hash-table)
+       (sort it #'string-lessp)
        (last it)
-       (car it)))
-;; last-date:1 ends here
+       (cl-first it)))
+;; ht-last-date:1 ends here
 
-;; [[file:chronometrist.org::*events-last][events-last:1]]
-(cl-defun chronometrist-events-last (&optional (backend (chronometrist-active-backend)))
+;; [[file:chronometrist.org::*ht-last][ht-last:1]]
+(cl-defun chronometrist-ht-last (&optional (backend (chronometrist-active-backend)))
   "Return the last plist from `chronometrist-events'."
   (let* ((hash-table (chronometrist-backend-hash-table backend))
-         (last-date  (chronometrist-events-last-date hash-table)))
+         (last-date  (chronometrist-ht-last-date hash-table)))
     (--> (gethash last-date hash-table)
          (last it)
          (car it))))
-;; events-last:1 ends here
+;; ht-last:1 ends here
 
-;; [[file:chronometrist.org::#program-data-structures-events-subset][events-subset:1]]
-(defun chronometrist-events-subset (start end hash-table)
+;; [[file:chronometrist.org::#program-data-structures-ht-subset][ht-subset:1]]
+(defun chronometrist-ht-subset (start end hash-table)
   "Return a subset of HASH-TABLE.
 The subset will contain values between dates START and END (both
 inclusive).
@@ -363,7 +364,7 @@ treated as though their time is 00:00:00."
                  (puthash key value subset)))
              hash-table)
     subset))
-;; events-subset:1 ends here
+;; ht-subset:1 ends here
 
 ;; [[file:chronometrist.org::*task-time-one-day][task-time-one-day:1]]
 (cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-ts)) (backend (chronometrist-active-backend)))
@@ -1388,7 +1389,7 @@ STREAM (which is the value of `current-buffer')."
   (chronometrist-backend-run-assertions backend)
   (with-slots (hash-table) backend
     (when-let*
-        ((latest-date (chronometrist-events-last-date hash-table))
+        ((latest-date (chronometrist-ht-last-date hash-table))
          (records     (gethash latest-date hash-table)))
       (cons latest-date records))))
 ;; latest-date-records:1 ends here
@@ -1497,7 +1498,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 `chronometrist-plist-backend' file."
   (with-slots (hash-table) backend
     (-let [(new-plist &as &plist :name new-task) (chronometrist-latest-record backend)]
-      (setf hash-table (chronometrist-events-update new-plist hash-table))
+      (setf hash-table (chronometrist-ht-update new-plist hash-table))
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-add:1 ends here
 
@@ -1507,8 +1508,8 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 `chronometrist-plist-backend' file is modified."
   (with-slots (hash-table) backend
     (-let (((new-plist &as &plist :name new-task) (chronometrist-latest-record backend))
-           ((&plist :name old-task) (chronometrist-events-last backend)))
-      (setf hash-table (chronometrist-events-update new-plist hash-table t))
+           ((&plist :name old-task) (chronometrist-ht-last backend)))
+      (setf hash-table (chronometrist-ht-update new-plist hash-table t))
       (chronometrist-remove-from-task-list old-task backend)
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-modify:1 ends here
@@ -1518,8 +1519,8 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
   "Function run when the newest plist in a
 `chronometrist-plist-backend' file is deleted."
   (with-slots (hash-table) backend
-    (-let (((&plist :name old-task) (chronometrist-events-last))
-           (date  (chronometrist-events-last-date hash-table)))
+    (-let (((&plist :name old-task) (chronometrist-ht-last))
+           (date  (chronometrist-ht-last-date hash-table)))
       ;; `chronometrist-remove-from-task-list' checks the hash table to determine
       ;; if `chronometrist-task-list' is to be updated. Thus, the hash table must
       ;; not be updated until the task list is.
@@ -1788,7 +1789,7 @@ Return value is either a list in the form
 `chronometrist-plist-group-backend' file is modified."
   (with-slots (hash-table) backend
     (-let* (((date . plists) (chronometrist-latest-date-records backend))
-            (old-date        (chronometrist-events-last-date hash-table))
+            (old-date        (chronometrist-ht-last-date hash-table))
             (old-plists      (gethash old-date hash-table)))
       (puthash date plists hash-table)
       (cl-loop for plist in old-plists
@@ -1802,7 +1803,7 @@ Return value is either a list in the form
   "Function run when the newest plist-group in a
 `chronometrist-plist-group-backend' file is deleted."
   (with-slots (hash-table) backend
-    (-let* ((old-date        (chronometrist-events-last-date hash-table))
+    (-let* ((old-date        (chronometrist-ht-last-date hash-table))
             (old-plists      (gethash old-date hash-table)))
       (cl-loop for plist in old-plists
         do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
@@ -2946,7 +2947,7 @@ displayed. They must be ts structs (see `ts.el').")
 It simply operates on the entire hash table TABLE (see
 `chronometrist-to-hash-table' for table format), so ensure that TABLE is
 reduced to the desired range using
-`chronometrist-events-subset'."
+`chronometrist-ht-subset'."
   (cl-loop for task in (chronometrist-task-list) collect
     (let* ((active-days    (chronometrist-statistics-count-active-days task table))
            (active-percent (cl-case (plist-get chronometrist-statistics--ui-state :mode)
@@ -2975,12 +2976,12 @@ reduced to the desired range using
       ('week
        (let* ((start (plist-get chronometrist-statistics--ui-state :start))
               (end   (plist-get chronometrist-statistics--ui-state :end))
-              (ht    (chronometrist-events-subset start end hash-table)))
+              (ht    (chronometrist-ht-subset start end hash-table)))
          (chronometrist-statistics-rows-internal ht)))
       (t ;; `chronometrist-statistics--ui-state' is nil, show current week's data
        (let* ((start (chronometrist-previous-week-start (chronometrist-date-ts)))
               (end   (ts-adjust 'day 7 start))
-              (ht    (chronometrist-events-subset start end hash-table)))
+              (ht    (chronometrist-ht-subset start end hash-table)))
          (setq chronometrist-statistics--ui-state `(:mode week :start ,start :end ,end))
          (chronometrist-statistics-rows-internal ht))))))
 ;; rows:1 ends here
