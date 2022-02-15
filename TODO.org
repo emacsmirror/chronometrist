@@ -964,7 +964,7 @@ Additional rules:
      2. edit stop time to add +20 minutes of work (30m total)
         * compare with old data in hash table - decrement break time added by old plist, increment break time added by new plist
 
-* STARTED Customizable alerts [50%]
+* STARTED Customizable alerts [50%]                            :feature:code:
 :PROPERTIES:
 :CREATED:  2022-02-14T08:22:36+0530
 :CUSTOM_ID: customizable-alerts
