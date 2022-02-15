@@ -818,9 +818,10 @@ https://github.com/projecthamster/hamster
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
-* STARTED customizable task list                                    :feature:
-1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
-2. Adding a task? We can modify the task list, but how to persist it?
+* STARTED customizable task list [33%]                              :feature:
+1. [X] Make =chronometrist-task-list= customizable
+2. [ ] Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
+3. [ ] Adding a task? We can modify the task list, but how to persist it?
 
 * Extend time range prompt                                          :feature:
 Support inputs like "today", "yesterday", "5 days ago", etc.

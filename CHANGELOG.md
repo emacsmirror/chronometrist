@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 1. Multiple backend support - new custom variable `chronometrist-active-backend` to determine active backend, new command `chronometrist-switch-backend` to temporarily select a backend (with completion).
 2. New `plist-group` backend, reducing time taken in startup and after changes to the file.
 3. Unified migration interface with command `chronometrist-migrate`.
-4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
+4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database. Setting it also disables generation of the task list from the database, speeding up many operations.
 5. New command `chronometrist-discard-active`, to discard the active interval.
 6. Debug logging messages - to view them, set `chronometrist-debug-enable`.
 7. `chronometrist-third`, an extension to add support for the [Third Time](https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work) system.
