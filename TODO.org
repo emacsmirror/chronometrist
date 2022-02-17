@@ -879,7 +879,7 @@ Records not used for time tracking, but to store data associated with a date or 
  [<keyword-value pair>] ...)
 #+END_SRC
 
-** STARTED tagging dates with key-values                           :feature:
+** STARTED tagging dates with key-values [0%]                      :feature:
 :PROPERTIES:
 :CREATED:  2022-02-10T22:59:45+0530
 :CUSTOM_ID: date-key-values
@@ -903,6 +903,10 @@ Alternatively, this would be easier to work with - easier to select the key-valu
 =to-list= could omit the date key-values, since it has no concept of dates. =to-hash-table= could have them at the start of the lists of plists, i.e. hash values would still be =(cdr <plist group>)=.
 
 The plist backend could theoretically be extended to support it, but I'd rather deprecate that format (since it suffers from performance issues) and not deal with it again.
+
+1. [ ] Update call sites of =chronometrist-latest-date-records= (which may now also contain key-values)
+2. [ ] Update code accessing the hash table
+3. [ ] Update =plist-pp= to handle
 
 * undesired file watcher created after literate-elisp-load              :bug:
 :PROPERTIES:
