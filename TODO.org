@@ -855,6 +855,9 @@ With different checks, for different levels of speed/thoroughness -
 
 * format changes
 ** multiple intervals per record                                   :feature:
+:PROPERTIES:
+:CUSTOM_ID: multiple-intervals-per-record
+:END:
 #+BEGIN_SRC emacs-lisp
 (:name "<name>"
  [<keyword-value pair>] ...
@@ -996,3 +999,16 @@ Also define =chronometrist--timer-alist=, which associates =symbol= with a timer
 2. [ ] use in =chronometrist-goal= and =chronometrist-third=
 
 [fn:4] Actually, make a macro to define such alists, since the docstrings are likely to be near-identical.
+
+* Predefined key-values for tasks [100%]
+:PROPERTIES:
+:CREATED:  2022-02-17T23:34:17+0530
+:END:
+Benefits
+1. Speeds up key-value completion for very large data sets.
+2. Prevents key-value suggestions from being affected by [[#multiple-intervals-per-record][splitting of tasks across multiple intervals]].
+
+#+BEGIN_SRC emacs-lisp
+'(("Task" <plist> ...)
+  ...)
+#+END_SRC
