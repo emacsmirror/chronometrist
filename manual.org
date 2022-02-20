@@ -4,14 +4,19 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
 #+BEGIN_EXPORT html
-<a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
+<a href="https://liberapay.com/contrapunctus/donate">
+  <img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay">
+</a>
 
-<a href="https://melpa.org/#/chronometrist"><img src="https://melpa.org/packages/chronometrist-badge.svg"></a>
+<a href="https://melpa.org/#/chronometrist">
+  <img src="https://melpa.org/packages/chronometrist-badge.svg">
+</a>
 #+END_EXPORT
 
-A time tracker in Emacs with a nice interface
+Chronometrist is a friendly and powerful personal time tracker and analyzer for Emacs.
 
-Largely modelled after the Android application, [[https://github.com/netmackan/ATimeTracker][A Time Tracker]]
+#+CAPTION: The main Chronometrist buffer, with the enabled extensions [[#time-goals][chronometrist-goal]] ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).
+[[file:doc/2022-02-20 13-26-53.png]]
 
 * Benefits
 :PROPERTIES:
@@ -371,6 +376,7 @@ Chronometrist is released under your choice of [[https://unlicense.org/][Unlicen
 :PROPERTIES:
 :CUSTOM_ID: thanks
 :END:
+The main buffer and the report buffer are copied from the Android application, [[https://github.com/netmackan/ATimeTracker][A Time Tracker]]
 
 wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
 
@@ -382,6 +388,5 @@ fiete and wu-lee for testing and bug reports
 
 * Local variables                                                  :noexport:
 # Local Variables:
-# eval: (progn (require 'ox-md) (add-hook 'after-save-hook (lambda () (org-export-to-file 'md "manual.md")) nil t))
 # my-org-src-default-lang: "emacs-lisp"
 # End:
