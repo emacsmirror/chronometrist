@@ -72,8 +72,6 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 :END:
 
 1. Set up MELPA - https://melpa.org/#/getting-started
-
-   (Chronometrist uses Semantic Versioning and the developer is accident-prone, so using MELPA Stable is suggested 😏)
 2. =M-x package-install RET chronometrist RET=
 
 ** from Git
