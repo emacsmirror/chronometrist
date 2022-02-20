@@ -13,7 +13,7 @@
     1.  [chronometrist](#usage-chronometrist)
     2.  [chronometrist-report](#usage-chronometrist-report)
     3.  [chronometrist-statistics](#usage-chronometrist-statistics)
-    4.  [chronometrist-details](#org09eaa12)
+    4.  [chronometrist-details](#org6ee0fb7)
     5.  [common commands](#usage-common-commands)
     6.  [Time goals/targets](#time-goals)
 6.  [How-to](#how-to)
@@ -21,26 +21,30 @@
     2.  [How to load the program using literate-elisp](#how-to-literate-elisp)
     3.  [How to attach tags to time intervals](#how-to-tags)
     4.  [How to attach key-values to time intervals](#how-to-key-value-pairs)
-    5.  [How to skip running hooks/attaching tags and key values](#orga569ce7)
+    5.  [How to skip running hooks/attaching tags and key values](#orgfbe4680)
     6.  [How to open certain files when you start a task](#how-to-open-files-on-task-start)
     7.  [How to warn yourself about uncommitted changes](#how-to-warn-uncommitted-changes)
     8.  [How to display the current time interval in the activity indicator](#how-to-activity-indicator)
     9.  [How to back up your Chronometrist data](#how-to-backup)
     10. [How to configure Vertico for use with Chronometrist](#howto-vertico)
-7.  [Explanation](#org2a03f3a)
+7.  [Explanation](#org25cd1c5)
     1.  [Literate Program](#explanation-literate-program)
-8.  [User's reference](#org2585c1f)
+8.  [User's reference](#org5f69f60)
 9.  [Contributions and contact](#contributions-contact)
 10. [License](#license)
 11. [Thanks](#thanks)
 
-<a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
+<a href="https://liberapay.com/contrapunctus/donate">
+  <img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay">
+</a>
 
-<a href="https://melpa.org/#/chronometrist"><img src="https://melpa.org/packages/chronometrist-badge.svg"></a>
+<a href="https://melpa.org/#/chronometrist">
+  <img src="https://melpa.org/packages/chronometrist-badge.svg">
+</a>
 
-A time tracker in Emacs with a nice interface
+Chronometrist is a friendly and powerful personal time tracker and analyzer for Emacs.
 
-Largely modelled after the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
+![img](doc/2022-02-20 13-26-53.png "Screenshot of the main Chronometrist buffer, with the enabled extensions [chronometrist-goal](#time-goals) ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).")
 
 
 <a id="benefits"></a>
@@ -158,7 +162,7 @@ Run `M-x chronometrist-statistics` (or `chronometrist` with a prefix argument of
 Press `b` to look at past time ranges, and `f` for future ones.
 
 
-<a id="org09eaa12"></a>
+<a id="org6ee0fb7"></a>
 
 ## chronometrist-details
 
@@ -233,7 +237,7 @@ Evaluate or add to your init.el the following -
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press `C-c C-c` to accept the key-values, or `C-c C-k` to cancel.
 
 
-<a id="orga569ce7"></a>
+<a id="orgfbe4680"></a>
 
 ## How to skip running hooks/attaching tags and key values
 
@@ -332,7 +336,7 @@ Or use `vertico-multiform` to disable sorting for only specific commands -
               (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
 
 
-<a id="org2a03f3a"></a>
+<a id="org25cd1c5"></a>
 
 # Explanation
 
@@ -348,7 +352,7 @@ The Org file can also be loaded directly using the [literate-elisp](https://gith
 `chronometrist.org` is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
 
-<a id="org2585c1f"></a>
+<a id="org5f69f60"></a>
 
 # User's reference
 
@@ -411,6 +415,8 @@ Chronometrist is released under your choice of [Unlicense](https://unlicense.org
 <a id="thanks"></a>
 
 # Thanks
+
+The main buffer and the report buffer are copied from the Android application, [A Time Tracker](https://github.com/netmackan/ATimeTracker)
 
 wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
 
