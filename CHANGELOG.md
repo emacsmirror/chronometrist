@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## unreleased
+### Added
 1. `chronometrist-third`, an extension to add support for the [Third Time](https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work) system.
+2. New custom variable `chronometrist-key-value-preset-alist`, to define completion suggestions in advance.
+3. New custom variable `chronometrist-key-value-use-database-history`, to control whether database history is used for key-value suggestions.
 
 ## [0.10.0] - 2022-02-15
 ### Changed
