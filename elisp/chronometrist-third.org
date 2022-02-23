@@ -155,19 +155,19 @@ and stopped when they clock in."
   "Stop alert timers and update break time."
   (chronometrist-third-stop-alert-timers)
   (unless (zerop chronometrist-third-break-time)
-    (-let* (((&plist :stop stop)        (cl-second (chronometrist-to-list (chronometrist-active-backend))))
-            (used-break-duration        (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
-            (new-break-time             (- chronometrist-third-break-time used-break-duration))
-            (old-break-time             chronometrist-third-break-time)
-            (used-break-duration-string (format-seconds chronometrist-third-duration-format
-                                                        used-break-duration)))
-      (setq chronometrist-third-break-time (if (> new-break-time 0) new-break-time 0))
+    (-let* (((&plist :stop stop) (cl-second (chronometrist-to-list (chronometrist-active-backend))))
+            (used-break          (ts-diff (ts-now) (chronometrist-iso-to-ts stop)))
+            (used-break-string   (format-seconds chronometrist-third-duration-format used-break))
+            (new-break           (- chronometrist-third-break-time used-break))
+            (old-break           chronometrist-third-break-time))
+      (setq chronometrist-third-break-time (if (> new-break 0) new-break 0))
       (alert
        (if (zerop chronometrist-third-break-time)
            (format "You have used up all %s of your break time (%s break)"
-                   old-break-time used-break-duration-string)
+                   (format-seconds chronometrist-third-duration-format old-break)
+                   used-break-string)
          (format "You have used %s of your break time (%s left)"
-                 used-break-duration-string
+                 used-break-string
                  (format-seconds chronometrist-third-duration-format chronometrist-third-break-time)))))))
 #+END_SRC
 
