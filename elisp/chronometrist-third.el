@@ -42,7 +42,7 @@
 ;; divisor:1 ends here
 
 ;; [[file:chronometrist-third.org::*duration-format][duration-format:1]]
-(defcustom chronometrist-third-duration-format "%H, %M, and %S%z"
+(defcustom chronometrist-third-duration-format "%H, %M and %S%z"
   "Format string for durations, passed to `format-seconds'."
   :type 'string)
 ;; duration-format:1 ends here

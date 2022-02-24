@@ -56,7 +56,7 @@
 
 ** duration-format                                         :custom:variable:
 #+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-third-duration-format "%H, %M, and %S%z"
+(defcustom chronometrist-third-duration-format "%H, %M and %S%z"
   "Format string for durations, passed to `format-seconds'."
   :type 'string)
 #+END_SRC
