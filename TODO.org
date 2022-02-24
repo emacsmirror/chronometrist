@@ -1000,7 +1000,7 @@ Also define =chronometrist--timer-alist=, which associates =symbol= with a timer
 
 [fn:4] Actually, make a macro to define such alists, since the docstrings are likely to be near-identical.
 
-* Predefined key-values for tasks [100%]
+* DONE Predefined key-values for tasks
 :PROPERTIES:
 :CREATED:  2022-02-17T23:34:17+0530
 :END:
@@ -1012,3 +1012,11 @@ Benefits
 '(("Task" <plist> ...)
   ...)
 #+END_SRC
+
+* no-goal-alert - "You have spent  on <task>" [0%]                      :bug:
+:PROPERTIES:
+:CREATED:  2022-02-25T00:19:49+0530
+:END:
+=chronometrist-goal-no-goal-alert= uses =chronometrist-task-time-one-day=, which calls =chronometrist-task-records-for-date= with the /current/ date.
+
+1. [ ] Use the data for the latest date recorded in the database, rather than the current date.
