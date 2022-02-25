@@ -433,7 +433,8 @@ used in `chronometrist-before-out-functions'."
 Return t, to permit use in `chronometrist-before-out-functions'."
   (interactive)
   (let* ((backend (chronometrist-active-backend))
-         (presets (chronometrist-key-value-get-presets task))
+         (presets (--map (format "%S" it)
+                         (chronometrist-key-value-get-presets task)))
          (key-values
           (when chronometrist-key-value-use-database-history
             (cl-loop for plist in (chronometrist-to-list backend)
