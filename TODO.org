@@ -845,6 +845,9 @@ Command to delete the interval currently being recorded. (bind to 'k')
 ** put each list element on its own line if length of list exceeds fill-column :feature:
 
 * verify command [20%]                                              :feature:
+:PROPERTIES:
+:CUSTOM_ID: verify-command
+:END:
 With different checks, for different levels of speed/thoroughness -
 1. [X] (plist group) Sequence of plist group dates
 2. [ ] Check that every record (except the last) has a =:stop=
@@ -1020,3 +1023,14 @@ Benefits
 =chronometrist-goal-no-goal-alert= uses =chronometrist-task-time-one-day=, which calls =chronometrist-task-records-for-date= with the /current/ date.
 
 1. [ ] Use the data for the latest date recorded in the database, rather than the current date.
+
+* better error reporting
+:PROPERTIES:
+:CREATED:  2022-02-28T11:35:37+0530
+:END:
+Similar to [[#verify-command][verify command]], perhaps, but this is really about making error messages thrown by the program more meaningful to the user.
+
+** record does not contain intervals
+:PROPERTIES:
+:CREATED:  2022-02-28T11:35:47+0530
+:END:
