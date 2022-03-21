@@ -4,14 +4,19 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
 #+BEGIN_EXPORT html
-<a href="https://liberapay.com/contrapunctus/donate"><img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay"></a>
+<a href="https://liberapay.com/contrapunctus/donate">
+  <img alt="Donate using Liberapay" src="https://img.shields.io/liberapay/receives/contrapunctus.svg?logo=liberapay">
+</a>
 
-<a href="https://melpa.org/#/chronometrist"><img src="https://melpa.org/packages/chronometrist-badge.svg"></a>
+<a href="https://melpa.org/#/chronometrist">
+  <img src="https://melpa.org/packages/chronometrist-badge.svg">
+</a>
 #+END_EXPORT
 
-A time tracker in Emacs with a nice interface
+Chronometrist is a friendly and powerful personal time tracker and analyzer for Emacs.
 
-Largely modelled after the Android application, [[https://github.com/netmackan/ATimeTracker][A Time Tracker]]
+#+CAPTION: The main Chronometrist buffer, with the enabled extensions [[#time-goals][chronometrist-goal]] ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).
+[[file:doc/2022-02-20 13-26-53.png]]
 
 * Benefits
 :PROPERTIES:
@@ -67,8 +72,6 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 :END:
 
 1. Set up MELPA - https://melpa.org/#/getting-started
-
-   (Chronometrist uses Semantic Versioning and the developer is accident-prone, so using MELPA Stable is suggested 😏)
 2. =M-x package-install RET chronometrist RET=
 
 ** from Git
@@ -190,7 +193,7 @@ Evaluate or add to your init.el the following -
 :CUSTOM_ID: how-to-key-value-pairs
 :END:
 
-1. Add =chronometrist-kv-add= to one or more of these hooks [fn:3] -
+1. Add =chronometrist-kv-add= to one or more of these hooks [fn:2] -
 
    #+BEGIN_SRC emacs-lisp
    (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
@@ -199,8 +202,6 @@ Evaluate or add to your init.el the following -
    #+END_SRC
 
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press =C-c C-c= to accept the key-values, or =C-c C-k= to cancel.
-
-[fn:3] but not =chronometrist-before-in-functions=
 
 ** How to skip running hooks/attaching tags and key values
 Use =M-RET= (=chronometrist-toggle-task-no-hooks=) to clock in/out.
@@ -280,8 +281,6 @@ I suggest backing up Chronometrist data on each save using the [[https://tildegi
    : M-x chronometrist-open-log
    : M-x add-file-local-variable-prop-line RET eval RET (add-hook 'after-save-hook #'async-backup nil t) RET
 3. Optionally, configure =backup-directory-alist= to set a specific directory for the backups.
-
-Adapted from this [[https://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save][StackOverflow answer]].
 
 [fn:1] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
 
@@ -375,6 +374,7 @@ Chronometrist is released under your choice of [[https://unlicense.org/][Unlicen
 :PROPERTIES:
 :CUSTOM_ID: thanks
 :END:
+The main buffer and the report buffer are copied from the Android application, [[https://github.com/netmackan/ATimeTracker][A Time Tracker]]
 
 wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
 
@@ -384,8 +384,7 @@ blandest for helping me with the name
 
 fiete and wu-lee for testing and bug reports
 
-* Local variables                                                  :NOEXPORT:
+* Local variables                                                  :noexport:
 # Local Variables:
-# eval: (progn (require 'ox-md) (add-hook 'after-save-hook (lambda () (org-export-to-file 'md "manual.md")) nil t))
 # my-org-src-default-lang: "emacs-lisp"
 # End:

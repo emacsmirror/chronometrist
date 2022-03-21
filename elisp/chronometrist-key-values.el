@@ -192,6 +192,29 @@ used in `chronometrist-before-out-functions'."
   "Add key-values to Chronometrist time intervals."
   :group 'chronometrist)
 
+(defcustom chronometrist-key-value-use-database-history t
+  "If non-nil, use database to generate key-value suggestions.
+If nil, only `chronometrist-key-value-preset-alist' is used."
+  :type 'boolean
+  :group 'chronometrist-key-value)
+
+(defcustom chronometrist-key-value-preset-alist nil
+  "Alist of key-value suggestions for `chronometrist-key-value' prompts.
+Each element must be in the form (\"TASK\" <KEYWORD> <VALUE> ...)"
+  :type
+  '(repeat
+    (cons
+     (string :tag "Task name")
+     (repeat :tag "Property preset"
+             (plist :tag "Property"
+                    ;; :key-type 'keyword :value-type 'sexp
+                    ))))
+  :group 'chronometrist-key-values)
+
+(defun chronometrist-key-value-get-presets (task)
+  "Return presets for TASK from `chronometrist-key-value-preset-alist' as a list of plists."
+  (alist-get task chronometrist-key-value-preset-alist nil nil #'equal))
+
 (defcustom chronometrist-kv-buffer-name "*Chronometrist-Key-Values*"
   "Name of buffer in which key-values are entered."
   :group 'chronometrist-key-values
@@ -404,30 +427,35 @@ used in `chronometrist-before-out-functions'."
     ["Change tags and key-values for active/last interval"
      chronometrist-key-values-unified-prompt]))
 
-(cl-defun chronometrist-key-values-unified-prompt (&optional (task (plist-get (chronometrist-latest-record (chronometrist-active-backend)) :name)))
+(cl-defun chronometrist-key-values-unified-prompt
+    (&optional (task (plist-get (chronometrist-latest-record (chronometrist-active-backend)) :name)))
   "Query user for tags and key-values to be added for TASK.
 Return t, to permit use in `chronometrist-before-out-functions'."
   (interactive)
   (let* ((backend (chronometrist-active-backend))
+         (presets (--map (format "%S" it)
+                         (chronometrist-key-value-get-presets task)))
          (key-values
-          (cl-loop for plist in (chronometrist-to-list backend)
-            when (equal (plist-get plist :name) task)
-            collect
-            (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
-              (when plist (format "%S" plist)))
-            into key-value-plists
-            finally return
-            (--> (seq-filter #'identity key-value-plists)
-                 (cl-remove-duplicates it :test #'equal :from-end t))))
+          (when chronometrist-key-value-use-database-history
+            (cl-loop for plist in (chronometrist-to-list backend)
+              when (equal (plist-get plist :name) task)
+              collect
+              (let ((plist (chronometrist-plist-remove plist :name :start :stop)))
+                (when plist (format "%S" plist)))
+              into key-value-plists
+              finally return
+              (--> (seq-filter #'identity key-value-plists)
+                   (cl-remove-duplicates it :test #'equal :from-end t)))))
          (latest (chronometrist-latest-record backend)))
-    (if (null key-values)
+    (if (and (null presets) (null key-values))
         (progn (chronometrist-tags-add) (chronometrist-kv-add))
-      (chronometrist-replace-last
-       backend
-       (chronometrist-plist-update
-        latest
-        (read (completing-read (format "Key-values for %s: " task)
-                               key-values nil nil nil 'chronometrist-key-values-unified-prompt-history))))))
+      (let* ((candidates (append presets key-values))
+             (input      (completing-read
+                          (format "Key-values for %s: " task)
+                          candidates nil nil nil 'chronometrist-key-values-unified-prompt-history)))
+        (chronometrist-replace-last backend
+                        (chronometrist-plist-update latest
+                                        (read input))))))
   t)
 
 (provide 'chronometrist-key-values)

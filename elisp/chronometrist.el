@@ -5,7 +5,7 @@
 ;; Keywords: calendar
 ;; Homepage: https://tildegit.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "27.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
-;; Version: 0.9.0
+;; Version: 0.10.0
 
 ;; This is free and unencumbered software released into the public domain.
 ;;
@@ -315,8 +315,8 @@ Return value is a ts struct (see `ts.el')."
                     (plist-put :stop  stop-2))))))))
 ;; split-plist:1 ends here
 
-;; [[file:chronometrist.org::*events-update][events-update:1]]
-(defun chronometrist-events-update (plist hash-table &optional replace)
+;; [[file:chronometrist.org::*ht-update][ht-update:1]]
+(defun chronometrist-ht-update (plist hash-table &optional replace)
   "Return HASH-TABLE with PLIST added as the latest interval.
 If REPLACE is non-nil, replace the last interval with PLIST."
   (let* ((date (->> (plist-get plist :start)
@@ -327,28 +327,29 @@ If REPLACE is non-nil, replace the last interval with PLIST."
          (append it (list plist))
          (puthash date it hash-table))
     hash-table))
-;; events-update:1 ends here
+;; ht-update:1 ends here
 
-;; [[file:chronometrist.org::*last-date][last-date:1]]
-(defun chronometrist-events-last-date (hash-table)
+;; [[file:chronometrist.org::*ht-last-date][ht-last-date:1]]
+(defun chronometrist-ht-last-date (hash-table)
   "Return an ISO-8601 date string for the latest date present in `chronometrist-events'."
   (--> (hash-table-keys hash-table)
+       (sort it #'string-lessp)
        (last it)
-       (car it)))
-;; last-date:1 ends here
+       (cl-first it)))
+;; ht-last-date:1 ends here
 
-;; [[file:chronometrist.org::*events-last][events-last:1]]
-(cl-defun chronometrist-events-last (&optional (backend (chronometrist-active-backend)))
+;; [[file:chronometrist.org::*ht-last][ht-last:1]]
+(cl-defun chronometrist-ht-last (&optional (backend (chronometrist-active-backend)))
   "Return the last plist from `chronometrist-events'."
   (let* ((hash-table (chronometrist-backend-hash-table backend))
-         (last-date  (chronometrist-events-last-date hash-table)))
+         (last-date  (chronometrist-ht-last-date hash-table)))
     (--> (gethash last-date hash-table)
          (last it)
          (car it))))
-;; events-last:1 ends here
+;; ht-last:1 ends here
 
-;; [[file:chronometrist.org::#program-data-structures-events-subset][events-subset:1]]
-(defun chronometrist-events-subset (start end hash-table)
+;; [[file:chronometrist.org::#program-data-structures-ht-subset][ht-subset:1]]
+(defun chronometrist-ht-subset (start end hash-table)
   "Return a subset of HASH-TABLE.
 The subset will contain values between dates START and END (both
 inclusive).
@@ -363,7 +364,7 @@ treated as though their time is 00:00:00."
                  (puthash key value subset)))
              hash-table)
     subset))
-;; events-subset:1 ends here
+;; ht-subset:1 ends here
 
 ;; [[file:chronometrist.org::*task-time-one-day][task-time-one-day:1]]
 (cl-defun chronometrist-task-time-one-day (task &optional (date (chronometrist-date-ts)) (backend (chronometrist-active-backend)))
@@ -371,7 +372,7 @@ treated as though their time is 00:00:00."
 The return value is seconds, as an integer."
   (let ((task-events (chronometrist-task-records-for-date backend task date)))
     (if task-events
-        (->> (chronometrist-events-to-durations task-events)
+        (->> (chronometrist-plists-to-durations task-events)
              (-reduce #'+)
              (truncate))
       ;; no events for this task on DATE, i.e. no time spent
@@ -427,25 +428,13 @@ TIMESTAMP must be an ISO-8601 timestamp, as handled by
               :dow dow   :tz-offset utcoff))))
 ;; iso-to-ts:1 ends here
 
-;; [[file:chronometrist.org::*events-to-durations][events-to-durations:1]]
-(defun chronometrist-events-to-durations (events)
-  "Convert EVENTS into a list of durations in seconds.
-EVENTS must be a list of valid Chronometrist property lists (see
-`chronometrist-file').
-
-Return 0 if EVENTS is nil."
-  (if events
-      (cl-loop for plist in events collect
-        (let* ((start-ts (chronometrist-iso-to-ts
-                          (plist-get plist :start)))
-               (stop-iso (plist-get plist :stop))
-               ;; Add a stop time if it does not exist.
-               (stop-ts  (if stop-iso
-                             (chronometrist-iso-to-ts stop-iso)
-                           (ts-now))))
-          (ts-diff stop-ts start-ts)))
-    0))
-;; events-to-durations:1 ends here
+;; [[file:chronometrist.org::*plists-to-durations][plists-to-durations:1]]
+(defun chronometrist-plists-to-durations (plists)
+  "Convert PLISTS into a list of durations in seconds.
+PLISTS must be a list of valid Chronometrist property lists (see
+`chronometrist-file'). Return 0 if PLISTS is nil."
+  (if plists (mapcar #'chronometrist-interval plists) 0))
+;; plists-to-durations:1 ends here
 
 ;; [[file:chronometrist.org::*date-iso][date-iso:1]]
 (cl-defun chronometrist-date-iso (&optional (ts (ts-now)))
@@ -510,13 +499,14 @@ SECONDS must be a positive integer."
 ;; seconds-to-hms:1 ends here
 
 ;; [[file:chronometrist.org::*interval][interval:1]]
-(defun chronometrist-interval (event)
+(defun chronometrist-interval (plist)
   "Return the period of time covered by EVENT as a time value.
 EVENT should be a plist (see `chronometrist-file')."
-  (let ((start (plist-get event :start))
-        (stop  (plist-get event :stop)))
-    (time-subtract (parse-iso8601-time-string stop)
-                   (parse-iso8601-time-string start))))
+  (let* ((start-ts  (chronometrist-iso-to-ts (plist-get plist :start)))
+         (stop-iso  (plist-get plist :stop))
+         ;; Add a stop time if it does not exist.
+         (stop-ts   (if stop-iso (chronometrist-iso-to-ts stop-iso) (ts-now))))
+    (ts-diff stop-ts start-ts)))
 ;; interval:1 ends here
 
 ;; [[file:chronometrist.org::*format-duration-long][format-duration-long:1]]
@@ -897,8 +887,12 @@ Signal an error if there is no record to remove.")
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defgeneric chronometrist-latest-record (backend)
-  "Return the latest entry from BACKEND as a plist, or nil if BACKEND contains no records.
-Return value may be active, i.e. it may or may not have a :stop key-value.")
+  "Return the latest record from BACKEND as a plist, or nil if BACKEND contains no records.
+Return value may be active, i.e. it may or may not have a `:stop'
+key-value.
+
+If the latest record starts on one day and ends on another, the
+entire (unsplit) record must be returned.")
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
@@ -1112,6 +1106,7 @@ hash table values must be in chronological order.")
 
 ;; [[file:chronometrist.org::*on-file-path-change][on-file-path-change:1]]
 (cl-defmethod chronometrist-on-file-path-change ((backend chronometrist-file-backend-mixin) _old-path new-path)
+  "Update path and file slots of BACKEND to use NEW-PATH when `chronometrist-file' is changed."
   (with-slots (path extension file) backend
     (setf path new-path
           file (concat path "." extension))))
@@ -1394,7 +1389,7 @@ STREAM (which is the value of `current-buffer')."
   (chronometrist-backend-run-assertions backend)
   (with-slots (hash-table) backend
     (when-let*
-        ((latest-date (chronometrist-events-last-date hash-table))
+        ((latest-date (chronometrist-ht-last-date hash-table))
          (records     (gethash latest-date hash-table)))
       (cons latest-date records))))
 ;; latest-date-records:1 ends here
@@ -1503,7 +1498,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 `chronometrist-plist-backend' file."
   (with-slots (hash-table) backend
     (-let [(new-plist &as &plist :name new-task) (chronometrist-latest-record backend)]
-      (setf hash-table (chronometrist-events-update new-plist hash-table))
+      (setf hash-table (chronometrist-ht-update new-plist hash-table))
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-add:1 ends here
 
@@ -1513,8 +1508,8 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
 `chronometrist-plist-backend' file is modified."
   (with-slots (hash-table) backend
     (-let (((new-plist &as &plist :name new-task) (chronometrist-latest-record backend))
-           ((&plist :name old-task) (chronometrist-events-last backend)))
-      (setf hash-table (chronometrist-events-update new-plist hash-table t))
+           ((&plist :name old-task) (chronometrist-ht-last backend)))
+      (setf hash-table (chronometrist-ht-update new-plist hash-table t))
       (chronometrist-remove-from-task-list old-task backend)
       (chronometrist-add-to-task-list new-task backend))))
 ;; on-modify:1 ends here
@@ -1524,8 +1519,8 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
   "Function run when the newest plist in a
 `chronometrist-plist-backend' file is deleted."
   (with-slots (hash-table) backend
-    (-let (((&plist :name old-task) (chronometrist-events-last))
-           (date  (chronometrist-events-last-date hash-table)))
+    (-let (((&plist :name old-task) (chronometrist-ht-last))
+           (date  (chronometrist-ht-last-date hash-table)))
       ;; `chronometrist-remove-from-task-list' checks the hash table to determine
       ;; if `chronometrist-task-list' is to be updated. Thus, the hash table must
       ;; not be updated until the task list is.
@@ -1658,7 +1653,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
         t))))
 ;; insert:1 ends here
 
-;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
+;; [[file:chronometrist.org::#program-data-structures-plists-split-p][plists-split-p:1]]
 (defun chronometrist-plists-split-p (old-plist new-plist)
   "Return t if OLD-PLIST and NEW-PLIST are split plists.
 Split plists means the :stop time of old-plist must be the same as
@@ -1708,8 +1703,14 @@ Return value is either a list in the form
         (new-plist-wo-time (chronometrist-plist-remove new-plist :start :stop)))
     (cond ((not (and old-plist new-plist)) nil)
           ((equal old-plist-wo-time new-plist-wo-time)
-           (let ((plist (cl-copy-list old-plist)))
-             (plist-put plist :stop (plist-get new-plist :stop))))
+           (let* ((plist    (cl-copy-list old-plist))
+                  (new-stop (plist-get new-plist :stop)))
+             ;; Usually, a split plist has a `:stop' key. However, a
+             ;; user may clock out and delete the stop time, resulting
+             ;; in a split record without a `:stop' key.
+             (if new-stop
+                 (plist-put plist :stop new-stop)
+               (chronometrist-plist-remove plist :stop))))
           (t (error "Attempt to unify plists with non-identical key-values")))))
 ;; plist-unify:1 ends here
 
@@ -1788,7 +1789,7 @@ Return value is either a list in the form
 `chronometrist-plist-group-backend' file is modified."
   (with-slots (hash-table) backend
     (-let* (((date . plists) (chronometrist-latest-date-records backend))
-            (old-date        (chronometrist-events-last-date hash-table))
+            (old-date        (chronometrist-ht-last-date hash-table))
             (old-plists      (gethash old-date hash-table)))
       (puthash date plists hash-table)
       (cl-loop for plist in old-plists
@@ -1802,7 +1803,7 @@ Return value is either a list in the form
   "Function run when the newest plist-group in a
 `chronometrist-plist-group-backend' file is deleted."
   (with-slots (hash-table) backend
-    (-let* ((old-date        (chronometrist-events-last-date hash-table))
+    (-let* ((old-date        (chronometrist-ht-last-date hash-table))
             (old-plists      (gethash old-date hash-table)))
       (cl-loop for plist in old-plists
         do (chronometrist-remove-from-task-list (plist-get plist :name) backend))
@@ -1831,7 +1832,10 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-group-backend))
-  (cl-first (last (chronometrist-latest-date-records backend))))
+  (with-slots (file) backend
+    (if (chronometrist-last-two-split-p file)
+        (apply #'chronometrist-plist-unify (chronometrist-last-two-split-p (chronometrist-backend-file (chronometrist-active-backend))))
+      (cl-first (last (chronometrist-latest-date-records backend))))))
 ;; latest-record:1 ends here
 
 ;; [[file:chronometrist.org::*task-records-for-date][task-records-for-date:1]]
@@ -1853,6 +1857,7 @@ Return value is either a list in the form
     (error "No record to replace in %s" (eieio-object-class-name backend)))
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
     (chronometrist-remove-last backend :save nil)
+    (delete-trailing-whitespace)
     (chronometrist-insert backend plist :save nil)
     (save-buffer)
     t))
@@ -2306,7 +2311,7 @@ task. N must be a positive integer."
     (chronometrist-task-at-point)))
 ;; goto-nth-task:1 ends here
 
-;; [[file:chronometrist.org::*refresh][refresh:1]]
+;; [[file:chronometrist.org::#program-frontend-chronometrist-refresh][refresh:1]]
 (defun chronometrist-refresh (&optional _ignore-auto _noconfirm)
   "Refresh the `chronometrist' buffer, without re-reading `chronometrist-file'.
 The optional arguments _IGNORE-AUTO and _NOCONFIRM are ignored,
@@ -2581,7 +2586,7 @@ Has no effect if a task is active."
       (message "Nothing to discard - use this when clocked in."))))
 ;; discard-active:1 ends here
 
-;; [[file:chronometrist.org::*chronometrist][chronometrist:1]]
+;; [[file:chronometrist.org::#program-frontend-chronometrist-command][chronometrist:1]]
 ;;;###autoload
 (defun chronometrist (&optional arg)
   "Display the user's tasks and the time spent on them today.
@@ -2815,7 +2820,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
   (chronometrist-setup-file-watch))
 ;; report-mode:1 ends here
 
-;; [[file:chronometrist.org::*chronometrist-report][chronometrist-report:1]]
+;; [[file:chronometrist.org::#program-frontend-report-command][chronometrist-report:1]]
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
   "Display a weekly report of the data in `chronometrist-file'.
@@ -2927,7 +2932,7 @@ displayed. They must be ts structs (see `ts.el').")
     when (setq events-in-day (chronometrist-task-records-for-date backend task date))
     do (cl-incf days) and
     collect
-    (-reduce #'+ (chronometrist-events-to-durations events-in-day))
+    (-reduce #'+ (chronometrist-plists-to-durations events-in-day))
     into per-day-time-list
     finally return
     (if per-day-time-list
@@ -2942,7 +2947,7 @@ displayed. They must be ts structs (see `ts.el').")
 It simply operates on the entire hash table TABLE (see
 `chronometrist-to-hash-table' for table format), so ensure that TABLE is
 reduced to the desired range using
-`chronometrist-events-subset'."
+`chronometrist-ht-subset'."
   (cl-loop for task in (chronometrist-task-list) collect
     (let* ((active-days    (chronometrist-statistics-count-active-days task table))
            (active-percent (cl-case (plist-get chronometrist-statistics--ui-state :mode)
@@ -2971,12 +2976,12 @@ reduced to the desired range using
       ('week
        (let* ((start (plist-get chronometrist-statistics--ui-state :start))
               (end   (plist-get chronometrist-statistics--ui-state :end))
-              (ht    (chronometrist-events-subset start end hash-table)))
+              (ht    (chronometrist-ht-subset start end hash-table)))
          (chronometrist-statistics-rows-internal ht)))
       (t ;; `chronometrist-statistics--ui-state' is nil, show current week's data
        (let* ((start (chronometrist-previous-week-start (chronometrist-date-ts)))
               (end   (ts-adjust 'day 7 start))
-              (ht    (chronometrist-events-subset start end hash-table)))
+              (ht    (chronometrist-ht-subset start end hash-table)))
          (setq chronometrist-statistics--ui-state `(:mode week :start ,start :end ,end))
          (chronometrist-statistics-rows-internal ht))))))
 ;; rows:1 ends here
@@ -3066,7 +3071,7 @@ value of `revert-buffer-function'."
   (chronometrist-setup-file-watch))
 ;; statistics-mode:1 ends here
 
-;; [[file:chronometrist.org::*chronometrist-statistics][chronometrist-statistics:1]]
+;; [[file:chronometrist.org::#program-frontend-statistics-command][chronometrist-statistics:1]]
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
   "Display statistics for Chronometrist data.
@@ -3359,10 +3364,13 @@ TABLE must be a hash table as returned by
              collect plist)
            do (ts-adjustf begin-ts 'day 1)))))))
 
-;; (chronometrist-details-intervals-for-range nil chronometrist-events)
-;; (chronometrist-details-intervals-for-range "2021-06-01" chronometrist-events)
-;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03") chronometrist-events)
-;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30") chronometrist-events)
+;; (chronometrist-details-intervals-for-range nil (chronometrist-to-hash-table (chronometrist-active-backend)))
+;; (chronometrist-details-intervals-for-range "2021-06-01"
+;;                        (chronometrist-to-hash-table (chronometrist-active-backend)))
+;; (chronometrist-details-intervals-for-range '("2021-06-01" . "2021-06-03")
+;;                        (chronometrist-to-hash-table (chronometrist-active-backend)))
+;; (chronometrist-details-intervals-for-range '("2021-06-02T01:00+05:30" . "2021-06-02T03:00+05:30")
+;;                        (chronometrist-to-hash-table (chronometrist-active-backend)))
 ;; intervals-for-range:1 ends here
 
 ;; [[file:chronometrist.org::*input-to-value][input-to-value:1]]

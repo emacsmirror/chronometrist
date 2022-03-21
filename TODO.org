@@ -737,7 +737,9 @@ for <predicate>)"
 #+END_SRC
 
 * STARTED customizable duration output                              :feature:
-See branch =format-seconds=.
+:PROPERTIES:
+:branch:   format-seconds
+:END:
 1. [X] define =chronometrist-duration-formats= to hold duration formats for different use cases in Chronometrist.
 2. [ ] define customization type for =chronometrist-duration-formats= to create user-friendly Custom interface
 3. [ ] make non-tabular parts of Chronometrist buffers adapt to column widths, to accomodate changes in duration formats
@@ -797,12 +799,18 @@ protocol implementation progress
 20. [ ] [superclass] chronometrist-timer
 
 * New backends                                                      :feature:
-1. Org time tracking
-2. timeclock
-3. [[https://klog.jotaen.net/][klog]]
-4. SQLite
-5. https://github.com/projecthamster/hamster
-   + https://github.com/projecthamster/hamster/wiki/Our-datamodel
+** Org time tracking
+** timeclock
+See docstring of =timeclock-log-data=
+
+** [[https://klog.jotaen.net/][klog]]
+:PROPERTIES:
+:CUSTOM_ID: new-backends-klog
+:END:
+** SQLite
+** Project Hamster
+https://github.com/projecthamster/hamster
++ https://github.com/projecthamster/hamster/wiki/Our-datamodel
 
 * Functions doing similar things                                       :code:
 1. =task-time-one-day=
@@ -810,9 +818,10 @@ protocol implementation progress
 3. =events-to-durations=
 
 * Use ISO date for functions operating on dates                 :time:format:
-* STARTED customizable task list                                    :feature:
-1. Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
-2. Adding a task? We can modify the task list, but how to persist it?
+* STARTED customizable task list [33%]                              :feature:
+1. [X] Make =chronometrist-task-list= customizable
+2. [ ] Interactive, buffer-local modification of task list, with completion (=completing-read-multiple=)
+3. [ ] Adding a task? We can modify the task list, but how to persist it?
 
 * Extend time range prompt                                          :feature:
 Support inputs like "today", "yesterday", "5 days ago", etc.
@@ -836,6 +845,9 @@ Command to delete the interval currently being recorded. (bind to 'k')
 ** put each list element on its own line if length of list exceeds fill-column :feature:
 
 * verify command [20%]                                              :feature:
+:PROPERTIES:
+:CUSTOM_ID: verify-command
+:END:
 With different checks, for different levels of speed/thoroughness -
 1. [X] (plist group) Sequence of plist group dates
 2. [ ] Check that every record (except the last) has a =:stop=
@@ -846,6 +858,9 @@ With different checks, for different levels of speed/thoroughness -
 
 * format changes
 ** multiple intervals per record                                   :feature:
+:PROPERTIES:
+:CUSTOM_ID: multiple-intervals-per-record
+:END:
 #+BEGIN_SRC emacs-lisp
 (:name "<name>"
  [<keyword-value pair>] ...
@@ -855,8 +870,12 @@ With different checks, for different levels of speed/thoroughness -
 #+END_SRC
 
 It doesn't do anything not already possible in the current formats. At best, it removes some duplication when the same task is "paused" and "resumed".
++ Sometimes you pause and resume a task and don't want to split your key-values between >1 intervals (to avoid messing up completion suggestions for the future). An alternative means to the same end could be to add a key like =:deduct "<duration>"= or =:deduct ("<start time>" . "<stop time>")=.
+  - This will also make it easier to support formats like [[#new-backends-klog][klog]], which support this feature.
+  - It will probably complicate all data consuming code, though...think of =chronometrist-details= 🤔
+  - An alternative idea could be to define a custom variable to hold the user's key values. If this variable is defined, it would be used instead of generating suggestions from past key-values. That way, such situations will not affect key-value suggestions.
 
-** "event"/non-interval records                                    :feature:
+** "event records" - records with only a timestamp                 :feature:
 :PROPERTIES:
 :CREATED:  2021-12-18T11:48:53+0530
 :END:
@@ -865,6 +884,35 @@ Records not used for time tracking, but to store data associated with a date or 
 (event "<date or timestamp>"
  [<keyword-value pair>] ...)
 #+END_SRC
+
+** STARTED tagging dates with key-values [0%]                      :feature:
+:PROPERTIES:
+:CREATED:  2022-02-10T22:59:45+0530
+:CUSTOM_ID: date-key-values
+:branch:   date-properties
+:END:
+Straightforward enough for the plist group backend -
+#+BEGIN_SRC elisp
+("<date>"
+ [<keyword> <value>]*
+ <plist>+)
+#+END_SRC
+
+Alternatively, this would be easier to work with - easier to select the key-values or the plists, as required -
+#+BEGIN_SRC elisp
+("<date>"
+ (key-values
+  [<keyword> <value>]+)
+ <plist>+)
+#+END_SRC
+
+=to-list= could omit the date key-values, since it has no concept of dates. =to-hash-table= could have them at the start of the lists of plists, i.e. hash values would still be =(cdr <plist group>)=.
+
+The plist backend could theoretically be extended to support it, but I'd rather deprecate that format (since it suffers from performance issues) and not deal with it again.
+
+1. [ ] Update call sites of =chronometrist-latest-date-records= (which may now also contain key-values)
+2. [ ] Update code accessing the hash table
+3. [ ] Update =plist-pp= to handle
 
 * undesired file watcher created after literate-elisp-load              :bug:
 :PROPERTIES:
@@ -881,4 +929,108 @@ Records not used for time tracking, but to store data associated with a date or 
 :CREATED:  2022-01-08T23:32:37+0530
 :END:
 1. [ ] default suggested input backend should be the active backend
-2. [ ] conserve file local variables prop line
+2. [ ] conserve file local variables prop line for text backends
+
+* STARTED Support for the Third Time System [57%]                 :extension:
+:PROPERTIES:
+:CREATED:  2022-02-10T14:12:12+0530
+:branch:   third-time
+:END:
+[[https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work][Third Time: a better way to work]]
+#+BEGIN_QUOTE
+Lastly, here in one place are all the steps for using Third Time:
+1. Note the time, or start a stopwatch
+2. /Work/ until you want or need to break
+3. Divide how long you’ve just worked by 3 (or use your chosen fraction), and add any minutes left over from previous breaks
+4. Set an alarm for that long
+5. /Break/ until the alarm goes off, or you decide to resume work
+6. If you resume early, note how much time was left, to add to your next break
+7. Go back to step 1.
+
+Additional rules:
++ If you have to stop work for a /non-work-related interruption/, start a break immediately.
++ You can (optionally) take a /big break/ for lunch and/or dinner, lasting as long as you like. Set an alarm at the start for when you’ll resume work. A big break uses up any saved break minutes, so you can’t carry them over to the afternoon/evening.
++ /Avoid taking other unearned breaks/ if possible — so try to do personal tasks during normal or big breaks, or before/after your work day.
+#+END_QUOTE
+
+1. [X] =chronometrist-third-fraction=
+2. [X] =chronometrist-third-break-time=
+3. [X] on clock out, increment =break-time= and start timed notification
+4. [X] on clock in, calculate duration of latest break (duration between last =:stop= and now), and subtract it from =break-time=; if the resulting time is negative, set it to zero.
+5. [ ] "big break" command - user enters a time, for which we set an alarm. User must resume working around that time.
+6. [ ] Define work hours
+   * [ ] Custom variable for default work hours.
+   * [ ] Hook function which inserts default work hours.
+   * [ ] Hook function which prompts for work hours whenever you first clock in on a date. If work hours are defined in the custom variable, ask whether to use them - on negative answer, prompt for today's work hours. If work hours are not defined, prompt for today's work hours.
+7. [ ] Displaying/recording breaks. Probably done implicitly - when work hours are defined, any time not spent working can be interpreted as break time.
+
+** Example flow
+1. work for 30m
+2. clock out - add 10m to =break-time=
+3. clock in after a 5m break - subtract 5m from =break-time=
+
+** Extras
+1. persist =break-time= between Emacs sessions
+2. audible alerts
+3. handle user edits to the database
+   * last record modified - ?
+   * remove last record - ?
+   * example - interval extended
+     1. work 10 minutes and clock out - +3m break time
+     2. edit stop time to add +20 minutes of work (30m total)
+        * compare with old data in hash table - decrement break time added by old plist, increment break time added by new plist
+
+* STARTED Customizable alerts [50%]                            :feature:code:
+:PROPERTIES:
+:CREATED:  2022-02-14T08:22:36+0530
+:CUSTOM_ID: customizable-alerts
+:branch:   alert-macro
+:END:
+=chronometrist-third= and =chronometrist-goal= have nearly identical alert code; additionally, users cannot customize the alert style per-alert without basically rewriting the alert functions.
+
+Convert =chronometrist-third-alert-functions= and =chronometrist-goal-alert-functions= to customizable alists[fn:4] whose entries take the form =(SYMBOL FUNCTION ALERT-FN &rest ALERT-ARGS)=, where
++ =SYMBOL= uniquely identifies the alert,
++ =FUNCTION= is a function calling =chronometrist-*-run-at-time= and =ALERT-FN=, and
++ =ALERT-ARGS= are passed to =ALERT-FN=.
+
+=ALERT-FN= will usually be =alert=, and =ALERT-ARGS= will usually be keyword arguments passed to =alert=.
+Similar to how they behave now, these packages will start/stop functions for all entries provided in these alists. (So the user can still control which alerts are run.)
+
+Also define =chronometrist--timer-alist=, which associates =symbol= with a timer object.
+
+1. [X] write macro
+2. [ ] use in =chronometrist-goal= and =chronometrist-third=
+
+[fn:4] Actually, make a macro to define such alists, since the docstrings are likely to be near-identical.
+
+* DONE Predefined key-values for tasks
+:PROPERTIES:
+:CREATED:  2022-02-17T23:34:17+0530
+:END:
+Benefits
+1. Speeds up key-value completion for very large data sets.
+2. Prevents key-value suggestions from being affected by [[#multiple-intervals-per-record][splitting of tasks across multiple intervals]].
+
+#+BEGIN_SRC emacs-lisp
+'(("Task" <plist> ...)
+  ...)
+#+END_SRC
+
+* no-goal-alert - "You have spent  on <task>" [0%]                      :bug:
+:PROPERTIES:
+:CREATED:  2022-02-25T00:19:49+0530
+:END:
+=chronometrist-goal-no-goal-alert= uses =chronometrist-task-time-one-day=, which calls =chronometrist-task-records-for-date= with the /current/ date.
+
+1. [ ] Use the data for the latest date recorded in the database, rather than the current date.
+
+* better error reporting
+:PROPERTIES:
+:CREATED:  2022-02-28T11:35:37+0530
+:END:
+Similar to [[#verify-command][verify command]], perhaps, but this is really about making error messages thrown by the program more meaningful to the user.
+
+** record does not contain intervals
+:PROPERTIES:
+:CREATED:  2022-02-28T11:35:47+0530
+:END:

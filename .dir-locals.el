@@ -14,7 +14,8 @@
                               ("cr" . "chronometrist-report")
                               ("cs" . "chronometrist-statistics")
                               ("cx" . "chronometrist-sexp")
-                              ("c" . "chronometrist")))))
+                              ("c" . "chronometrist")))
+         (sentence-end-double-space . t)))
  (org-mode
   . ((org-html-self-link-headlines . t)
      (eval . (org-indent-mode))

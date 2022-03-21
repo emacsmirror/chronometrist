@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## unreleased
+### Added
+1. `chronometrist-third`, an extension to add support for the [Third Time](https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work) system.
+2. New custom variable `chronometrist-key-value-preset-alist`, to define completion suggestions in advance.
+3. New custom variable `chronometrist-key-value-use-database-history`, to control whether database history is used for key-value suggestions.
+
+## [0.10.0] - 2022-02-15
 ### Changed
 1. The value of `chronometrist-file` must now be a file path _without extension._ Please update your configurations.
 2. The existing file format used by Chronometrist is now called the `plist` format.
@@ -14,12 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 1. Multiple backend support - new custom variable `chronometrist-active-backend` to determine active backend, new command `chronometrist-switch-backend` to temporarily select a backend (with completion).
 2. New `plist-group` backend, reducing time taken in startup and after changes to the file.
 3. Unified migration interface with command `chronometrist-migrate`.
-4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database.
+4. New custom variable `chronometrist-task-list`, to add/hide tasks without modifying the database. Setting it also disables generation of the task list from the database, speeding up many operations.
 5. New command `chronometrist-discard-active`, to discard the active interval.
 6. Debug logging messages - to view them, set `chronometrist-debug-enable`.
 
 ### Fixed
-1. File change detection code has been rewritten, hopefully fixing some uncommon `read` and `args out of range` errors.
+1. Code to detect the type of change made to the file has been rewritten, hopefully fixing some uncommon `read` errors and `args out of range` errors.
+
+### Deprecated
+1. The plist backend is deprecated and may be removed in a future release. The `plist-group` backend is more performant and extensible - please use `chronometrist-migrate` to convert your data to the `plist-group` backend.
 
 ## [0.9.0] - 2021-07-08
 ### Added
