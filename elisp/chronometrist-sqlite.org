@@ -76,11 +76,11 @@
          (columns  (mapcar (lambda (keyword)
                              (--> (symbol-name keyword)
                                   (s-chop-prefix ":" it)
-                                  ;; emacsql seems to automatically
-                                  ;; convert dashes in column names
-                                  ;; to underscores, so we do the
-                                  ;; same, lest we get a "column
-                                  ;; already exists" error
+                                  ;; emacsql automatically converts
+                                  ;; dashes in column names to
+                                  ;; underscores, so we do the same,
+                                  ;; lest we get a "column already
+                                  ;; exists" error
                                   (replace-regexp-in-string "-" "_" it)
                                   (intern it)))
                            keywords)))
@@ -129,19 +129,18 @@ Return the emacsql-sqlite connection object."
   (with-slots (file) backend
     (when-let ((db (emacsql-sqlite file)))
       (cl-loop for query in
-        '([:create-table tasks ([(task-id integer :primary-key)
-                                 (task text :unique :not-null)])]
-          [:create-table tags ([(tag-id integer :primary-key)
-                                (tag text :unique :not-null)])]
-          [:create-table records ([(record-id integer :primary-key)
-                                   (task-id integer :not-null)
-                                   (start-time integer :not-null)
-                                   (stop-time integer)]
-                                  (:foreign-key [task-id] :references tasks [task_id]))]
-          [:create-table record-tags ([(record-id integer)
-                                       (tag-id integer)]
-                                      (:foreign-key [record-id] :references records [record-id])
-                                      (:foreign-key [tag-id] :references tags [tag-id]))])
+        '([:create-table tasks
+                         ([(task-id integer :primary-key)
+                           (task text :unique :not-null)])]
+          [:create-table properties
+                         ([(prop-id integer :primary-key)
+                           (properties text :unique)])]
+          [:create-table records
+                         ([(record-id integer :primary-key)
+                           (task-id integer :not-null :references tasks [task_id])
+                           (start-time integer :not-null)
+                           (stop-time integer)
+                           (prop-id :references properties [prop-id])])])
         do (emacsql db query)))))
 #+END_SRC
 
