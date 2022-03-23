@@ -46,29 +46,52 @@
       finally return count do
       (message "chronometrist-migrate - finished converting %s events." count))))
 
+;; predicate to find prop-id for property if it exists
+;; insert property if it does not exist (procedure)
+;; insert date if it does not exist (procedure)
+;; insert event (generic)
+;; insert interval (generic)
+;; insert date properties (generic)
+(defun chronometrist-sqlite-insert-properties (backend plist)
+  "Insert properties from PLIST to BACKEND.
+Properties are key-values excluding :name, :start, and :stop.
+
+Insert nothing if the properties already exist. Return the
+prop-id of the inserted or existing property."
+  (with-slots (file) backend
+    (-let* ((db   (emacsql-sqlite file))
+            (json (json-encode (chronometrist-plist-key-values plist)))
+            ((results &as (prop-id))
+             (emacsql db [:select [prop-id]
+                          :from properties
+                          :where (= properties $s1)]
+                      json)))
+      (if prop-id
+          prop-id
+        (emacsql db [:insert-into properties [properties] :values [$s1]] json)
+        (last (emacsql db [:select [prop-id] :from properties]))))))
+
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
-  (let* ((keywords (seq-filter #'keywordp event))
-         (values   (seq-remove #'keywordp event))
-         (columns  (mapcar (lambda (keyword)
-                             (--> (symbol-name keyword)
-                                  (s-chop-prefix ":" it)
-                                  ;; emacsql automatically converts
-                                  ;; dashes in column names to
-                                  ;; underscores, so we do the same,
-                                  ;; lest we get a "column already
-                                  ;; exists" error
-                                  (replace-regexp-in-string "-" "_" it)
-                                  (intern it)))
-                           keywords)))
-    ;; ensure all keywords in this plist exist as SQL columns
-    (cl-loop for column in columns do
-      (let* ((pragma        (emacsql db [:pragma (funcall table_info events)]))
-             (column-exists (cl-loop for column-spec in pragma thereis
-                              (eq column (second column-spec)))))
-        (unless column-exists
-          (emacsql db [:alter-table events :add-column $i1] column))))
-    (emacsql db [:insert-into events [$i1] :values $v2]
-             (vconcat columns) (vconcat values))))
+  (-let* (((&plist :name name :start start :stop stop) plist)
+          ((name-results &as (name-id))
+           (emacsql db [:select [name-id] :from interval-names
+                                :where (= name $s1)]
+                    name))
+          (start-unix    (chronometrist-iso-to-unix start))
+          (stop-unix     (and stop (chronometrist-iso-to-unix stop))))
+    ;; insert name if it does not exist
+    (unless name-id
+      (emacsql db [:insert-into interval-names [name] :values [$s1]] name))
+    ;; XXX - insert interval properties if they do not exist
+    ;; insert interval and associate it with the date
+    (emacsql db [:insert-into intervals [name-id start-time stop-time]
+                              :values [$s1 $s2 $s3]]
+             name-id start-unix stop-unix)
+    (emacsql db [:insert-into date-intervals [date-id interval-id]
+                              :values [$s1 $s2]]
+             date-id
+             ;; the newest interval-id
+             )))
 
 (cl-defmethod chronometrist-edit-backend ((backend chronometrist-sqlite-backend))
   (require 'sql)
@@ -132,6 +155,28 @@ Return the emacsql-sqlite connection object."
                            (interval-id integer :not-null
                                         :references intervals [interval-id])])])
         do (emacsql db query)))))
+
+(defun chronometrist-iso-to-unix (timestamp)
+  (truncate (float-time (parse-iso8601-time-string timestamp))))
+
+(cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
+  (delete-file file)
+  (chronometrist-create-file backend file)
+  (when-let ((db (emacsql-sqlite file)))
+    (cl-loop for date in (sort (hash-table-keys hash-table) #'string-lessp) do
+      ;; insert date if it does not exist
+      (-let* ((date-unix     (chronometrist-iso-to-unix date))
+              ((date-results &as (date-id))
+               (emacsql db [:select [date-id] :from dates :where (= date $s1)]
+                        date-unix)))
+        (unless date-results
+          (emacsql db [:insert-into dates [date] :values [$s1]] date-unix))
+        ;; XXX - insert date properties
+        (cl-loop for plist in (gethash date hash-table) do
+          (chronometrist-insert backend plist)
+          ;; XXX - insert events
+          ))
+      )))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-sqlite-backend) plist)
   (emacsql db [:delete-from events :where ]))
