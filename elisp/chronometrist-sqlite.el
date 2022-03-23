@@ -90,18 +90,47 @@ Return the emacsql-sqlite connection object."
   (with-slots (file) backend
     (when-let ((db (emacsql-sqlite file)))
       (cl-loop for query in
-        '([:create-table tasks
-                         ([(task-id integer :primary-key)
-                           (task text :unique :not-null)])]
+        '(;; Properties are user-defined key-values stored as JSON.
           [:create-table properties
                          ([(prop-id integer :primary-key)
-                           (properties text :unique)])]
-          [:create-table records
-                         ([(record-id integer :primary-key)
-                           (task-id integer :not-null :references tasks [task_id])
+                           (properties text :unique :not-null)])]
+          ;; An event is a timestamp with a name and optional properties.
+          [:create-table event-names
+                         ([(name-id integer :primary-key)
+                           (name text :unique :not-null)])]
+          [:create-table events
+                         ([(event-id integer :primary-key)
+                           (name-id integer :not-null
+                                    :references event-names [name-id])])]
+          ;; An interval is a time range with a name and optional properties.
+          [:create-table interval-names
+                         ([(name-id integer :primary-key)
+                           (name text :unique :not-null)])]
+          [:create-table intervals
+                         ([(interval-id integer :primary-key)
+                           (name-id integer :not-null
+                                    :references interval-names [name-id])
                            (start-time integer :not-null)
+                           ;; The latest interval may be ongoing,
+                           ;; so the stop time may be NULL.
                            (stop-time integer)
-                           (prop-id :references properties [prop-id])])])
+                           (prop-id integer :references properties [prop-id])])]
+          ;; A date contains one or more events and intervals. It may
+          ;; also contain properties.
+          [:create-table dates
+                         ([(date-id integer :primary-key)
+                           (date integer :unique :not-null)
+                           (prop-id integer :references properties [prop-id])])]
+          [:create-table date-events
+                         ([(date-id integer :not-null
+                                    :references dates [date-id])
+                           (event-id integer :not-null
+                                     :references events [event-id])])]
+          [:create-table date-intervals
+                         ([(date-id integer :not-null
+                                    :references dates [date-id])
+                           (interval-id integer :not-null
+                                        :references intervals [interval-id])])])
         do (emacsql db query)))))
 
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-sqlite-backend) plist)
