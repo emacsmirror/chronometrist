@@ -2893,7 +2893,7 @@ We apply the same hack as in the [[hack-note-plist-group-insert][insert]] method
   (replace-regexp-in-string "^chronometrist-" "" string))
 #+END_SRC
 
-*** migrate
+*** migrate                                                       :command:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-migrate ()
   "Convert from one Chronometrist backend to another."
@@ -2927,7 +2927,7 @@ We apply the same hack as in the [[hack-note-plist-group-insert][insert]] method
                            input-backend-name
                            output-file
                            output-backend-name)))
-         (confirm-exists
+         (confirm-overwrite
           (if (and confirm
                    (file-exists-p output-file)
                    (not (chronometrist-file-empty-p output-file)))
@@ -2935,7 +2935,7 @@ We apply the same hack as in the [[hack-note-plist-group-insert][insert]] method
                (format "Overwrite existing non-empty file %s ?"
                        output-file))
             t)))
-    (if (and confirm confirm-exists)
+    (if (and confirm confirm-overwrite)
         (chronometrist-to-file (chronometrist-backend-hash-table input-backend)
                   output-backend
                   output-file)

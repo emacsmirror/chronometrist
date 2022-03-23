@@ -1901,7 +1901,7 @@ Return value is either a list in the form
                            input-backend-name
                            output-file
                            output-backend-name)))
-         (confirm-exists
+         (confirm-overwrite
           (if (and confirm
                    (file-exists-p output-file)
                    (not (chronometrist-file-empty-p output-file)))
@@ -1909,7 +1909,7 @@ Return value is either a list in the form
                (format "Overwrite existing non-empty file %s ?"
                        output-file))
             t)))
-    (if (and confirm confirm-exists)
+    (if (and confirm confirm-overwrite)
         (chronometrist-to-file (chronometrist-backend-hash-table input-backend)
                   output-backend
                   output-file)
