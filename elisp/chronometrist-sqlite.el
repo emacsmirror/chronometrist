@@ -75,7 +75,7 @@ prop-id of the inserted or existing property."
   (-let* (((&plist :name name :start start :stop stop) plist)
           ((name-results &as (name-id))
            (emacsql db [:select [name-id] :from interval-names
-                                :where (= name $s1)]
+                        :where (= name $s1)]
                     name))
           (start-unix    (chronometrist-iso-to-unix start))
           (stop-unix     (and stop (chronometrist-iso-to-unix stop))))
@@ -85,10 +85,10 @@ prop-id of the inserted or existing property."
     ;; XXX - insert interval properties if they do not exist
     ;; insert interval and associate it with the date
     (emacsql db [:insert-into intervals [name-id start-time stop-time]
-                              :values [$s1 $s2 $s3]]
+                 :values [$s1 $s2 $s3]]
              name-id start-unix stop-unix)
     (emacsql db [:insert-into date-intervals [date-id interval-id]
-                              :values [$s1 $s2]]
+                 :values [$s1 $s2]]
              date-id
              ;; the newest interval-id
              )))
@@ -115,45 +115,45 @@ Return the emacsql-sqlite connection object."
       (cl-loop for query in
         '(;; Properties are user-defined key-values stored as JSON.
           [:create-table properties
-                         ([(prop-id integer :primary-key)
-                           (properties text :unique :not-null)])]
+           ([(prop-id integer :primary-key)
+             (properties text :unique :not-null)])]
           ;; An event is a timestamp with a name and optional properties.
           [:create-table event-names
-                         ([(name-id integer :primary-key)
-                           (name text :unique :not-null)])]
+           ([(name-id integer :primary-key)
+             (name text :unique :not-null)])]
           [:create-table events
-                         ([(event-id integer :primary-key)
-                           (name-id integer :not-null
-                                    :references event-names [name-id])])]
+           ([(event-id integer :primary-key)
+             (name-id integer :not-null
+                      :references event-names [name-id])])]
           ;; An interval is a time range with a name and optional properties.
           [:create-table interval-names
-                         ([(name-id integer :primary-key)
-                           (name text :unique :not-null)])]
+           ([(name-id integer :primary-key)
+             (name text :unique :not-null)])]
           [:create-table intervals
-                         ([(interval-id integer :primary-key)
-                           (name-id integer :not-null
-                                    :references interval-names [name-id])
-                           (start-time integer :not-null)
-                           ;; The latest interval may be ongoing,
-                           ;; so the stop time may be NULL.
-                           (stop-time integer)
-                           (prop-id integer :references properties [prop-id])])]
+           ([(interval-id integer :primary-key)
+             (name-id integer :not-null
+                      :references interval-names [name-id])
+             (start-time integer :not-null)
+             ;; The latest interval may be ongoing,
+             ;; so the stop time may be NULL.
+             (stop-time integer)
+             (prop-id integer :references properties [prop-id])])]
           ;; A date contains one or more events and intervals. It may
           ;; also contain properties.
           [:create-table dates
-                         ([(date-id integer :primary-key)
-                           (date integer :unique :not-null)
-                           (prop-id integer :references properties [prop-id])])]
+           ([(date-id integer :primary-key)
+             (date integer :unique :not-null)
+             (prop-id integer :references properties [prop-id])])]
           [:create-table date-events
-                         ([(date-id integer :not-null
-                                    :references dates [date-id])
-                           (event-id integer :not-null
-                                     :references events [event-id])])]
+           ([(date-id integer :not-null
+                      :references dates [date-id])
+             (event-id integer :not-null
+                       :references events [event-id])])]
           [:create-table date-intervals
-                         ([(date-id integer :not-null
-                                    :references dates [date-id])
-                           (interval-id integer :not-null
-                                        :references intervals [interval-id])])])
+           ([(date-id integer :not-null
+                      :references dates [date-id])
+             (interval-id integer :not-null
+                          :references intervals [interval-id])])])
         do (emacsql db query)))))
 
 (defun chronometrist-iso-to-unix (timestamp)
