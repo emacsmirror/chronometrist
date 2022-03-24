@@ -528,6 +528,11 @@ SECONDS is less than 60, return a blank string."
                      minutes minute-string)))))
 ;; format-duration-long:1 ends here
 
+;; [[file:chronometrist.org::*iso-to-date][iso-to-date:1]]
+(defun chronometrist-iso-to-date (timestamp)
+  (cl-first (split-string timestamp "T")))
+;; iso-to-date:1 ends here
+
 ;; [[file:chronometrist.org::*normalize-whitespace][normalize-whitespace:1]]
 (defun chronometrist-pp-normalize-whitespace ()
   "Remove whitespace following point, and insert a space.
@@ -871,7 +876,9 @@ Return nil if BACKEND contains no records.")
 ;; [[file:chronometrist.org::*insert][insert:1]]
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.
-Return non-nil if record is inserted successfully.")
+Return non-nil if record is inserted successfully.
+
+PLIST may be an interval which crosses days.")
 
 (cl-defmethod chronometrist-insert :before ((_backend t) plist &key &allow-other-keys)
   (unless (cl-typep plist 'chronometrist-plist)
@@ -1617,7 +1624,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
               (backend-latest-date (cl-first latest-plist-group))
               (date-today          (chronometrist-date-iso))
               (insert-new-group    (not (equal date-today backend-latest-date)))
-              (start-date          (cl-first (split-string (plist-get plist :start) "T")))
+              (start-date          (chronometrist-iso-to-date (plist-get plist :start)))
               (new-plist-group-1   (if latest-plist-group
                                        (append latest-plist-group
                                                (list (or plist-1 plist)))

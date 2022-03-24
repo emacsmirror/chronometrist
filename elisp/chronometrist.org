@@ -1130,6 +1130,12 @@ SECONDS is less than 60, return a blank string."
   (should (equal (chronometrist-format-duration-long 7320) "2 hours, 2 minutes")))
 #+END_SRC
 
+*** iso-to-date                                                  :function:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-iso-to-date (timestamp)
+  (cl-first (split-string timestamp "T")))
+#+END_SRC
+
 ** Plist pretty-printing
 :PROPERTIES:
 :CUSTOM_ID: program-pretty-printer
@@ -1541,7 +1547,9 @@ Return nil if BACKEND contains no records.")
 #+BEGIN_SRC emacs-lisp
 (cl-defgeneric chronometrist-insert (backend plist)
   "Insert PLIST as new record in BACKEND.
-Return non-nil if record is inserted successfully.")
+Return non-nil if record is inserted successfully.
+
+PLIST may be an interval which crosses days.")
 
 (cl-defmethod chronometrist-insert :before ((_backend t) plist &key &allow-other-keys)
   (unless (cl-typep plist 'chronometrist-plist)
@@ -2601,7 +2609,7 @@ Situations -
               (backend-latest-date (cl-first latest-plist-group))
               (date-today          (chronometrist-date-iso))
               (insert-new-group    (not (equal date-today backend-latest-date)))
-              (start-date          (cl-first (split-string (plist-get plist :start) "T")))
+              (start-date          (chronometrist-iso-to-date (plist-get plist :start)))
               (new-plist-group-1   (if latest-plist-group
                                        (append latest-plist-group
                                                (list (or plist-1 plist)))

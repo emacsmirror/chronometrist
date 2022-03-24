@@ -63,7 +63,8 @@ Return the emacsql-sqlite connection object."
              ;; The latest interval may be ongoing,
              ;; so the stop time may be NULL.
              (stop-time integer)
-             (prop-id integer :references properties [prop-id])])]
+             (prop-id integer :references properties [prop-id])]
+            (:unique [name-id start-time stop-time]))]
           ;; A date contains one or more events and intervals. It may
           ;; also contain properties.
           [:create-table dates
@@ -111,45 +112,55 @@ Return the emacsql-sqlite connection object."
 ;; insert interval (generic)
 ;; insert date properties (generic)
 (defun chronometrist-sqlite-insert-properties (backend plist)
-  "Insert properties from PLIST to BACKEND.
+  "Insert properties from PLIST to (SQLite) BACKEND.
 Properties are key-values excluding :name, :start, and :stop.
 
 Insert nothing if the properties already exist. Return the
 prop-id of the inserted or existing property."
   (with-slots (file) backend
-    (-let* ((db   (emacsql-sqlite file))
-            (json (json-encode (chronometrist-plist-key-values plist)))
-            ((results &as (prop-id))
-             (emacsql db [:select [prop-id]
-                          :from properties
-                          :where (= properties $s1)]
-                      json)))
-      (if prop-id
-          prop-id
-        (emacsql db [:insert-into properties [properties] :values [$s1]] json)
-        (last (emacsql db [:select [prop-id] :from properties]))))))
+    (-let* ((db         (emacsql-sqlite file))
+            (props-json (json-encode (chronometrist-plist-key-values plist))))
+      (emacsql db [:insert-or-ignore-into properties [properties]
+                   :values [$s1]]
+               props-json)
+      (caar (emacsql db [:select (funcall max prop-id) :from properties])))))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
-  (-let* (((&plist :name name :start start :stop stop) plist)
-          ((name-results &as (name-id))
-           (emacsql db [:select [name-id] :from interval-names
-                        :where (= name $s1)]
-                    name))
-          (start-unix    (chronometrist-iso-to-unix start))
-          (stop-unix     (and stop (chronometrist-iso-to-unix stop))))
-    ;; insert name if it does not exist
-    (unless name-id
-      (emacsql db [:insert-into interval-names [name] :values [$s1]] name))
-    ;; XXX - insert interval properties if they do not exist
-    ;; insert interval and associate it with the date
-    (emacsql db [:insert-into intervals [name-id start-time stop-time]
-                 :values [$s1 $s2 $s3]]
-             name-id start-unix stop-unix)
-    (emacsql db [:insert-into date-intervals [date-id interval-id]
-                 :values [$s1 $s2]]
-             date-id
-             ;; the newest interval-id
-             )))
+  (-let [(plist-1 plist-2)  (chronometrist-split-plist plist)]
+    (cl-loop for plist in (if (and plist-1 plist-2)
+                              (list plist-1 plist-2)
+                            (list plist))
+      do
+      (-let* (((&plist :name name :start start :stop stop) plist)
+              (date-unix   (chronometrist-iso-to-unix (chronometrist-iso-to-date start)))
+              (start-unix  (chronometrist-iso-to-unix start))
+              (stop-unix   (and stop (chronometrist-iso-to-unix stop)))
+              name-id interval-id)
+        ;; insert name if it does not exist
+        (emacsql db [:insert-or-ignore-into interval-names [name]
+                     :values [$s1]]
+                 name)
+        ;; insert interval properties if they do not exist
+        (chronometrist-sqlite-insert-properties backend plist)
+        ;; insert interval and associate it with the date
+        (setq name-id
+              (caar (emacsql db [:select [name-id]
+                                 :from interval-names
+                                 :where (= name $s1)]
+                             name)))
+        (emacsql db [:insert-into intervals [name-id start-time stop-time]
+                     :values [$s1 $s2 $s3]]
+                 name-id start-unix stop-unix)
+        (emacsql db [:insert-or-ignore-into dates [date] :values [$s1]] date-unix)
+        (setq date-id
+              (caar (emacsql db [:select [date-id] :from dates
+                                 :where (= date $s1)]
+                             date-unix))
+              interval-id
+              (caar (emacsql db [:select (funcall max interval-id) :from intervals])))
+        (emacsql db [:insert-into date-intervals [date-id interval-id]
+                     :values [$s1 $s2]]
+                 date-id interval-id)))))
 
 (cl-defmethod chronometrist-edit-backend ((backend chronometrist-sqlite-backend))
   (require 'sql)
