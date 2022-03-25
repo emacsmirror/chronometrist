@@ -115,7 +115,14 @@ Insert nothing if the properties already exist. Return the
 prop-id of the inserted or existing property."
   (with-slots (file) backend
     (-let* ((db         (emacsql-sqlite file))
-            (props-json (json-encode (chronometrist-plist-key-values plist))))
+            (props-json (json-encode
+                         ;; `json-encode' throws an error for alists,
+                         ;; so we convert any cons cells to lists
+                         (-tree-map (lambda (elt)
+                                      (if (chronometrist-pp-pair-p elt)
+                                          (list (car elt) (cdr elt))
+                                        elt))
+                                    (chronometrist-plist-key-values plist)))))
       (emacsql db [:insert-or-ignore-into properties [properties]
                    :values [$s1]]
                props-json)
