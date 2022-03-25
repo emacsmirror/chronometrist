@@ -189,10 +189,11 @@ prop-id of the inserted or existing property."
                                  :from interval-names
                                  :where (= name $s1)]
                              name)))
-        (emacsql db [:insert-into intervals [name-id start-time stop-time]
+        (emacsql db [:insert-or-ignore-into intervals [name-id start-time stop-time]
                      :values [$s1 $s2 $s3]]
                  name-id start-unix stop-unix)
-        (emacsql db [:insert-or-ignore-into dates [date] :values [$s1]] date-unix)
+        (emacsql db [:insert-or-ignore-into dates [date]
+                     :values [$s1]] date-unix)
         (setq date-id
               (caar (emacsql db [:select [date-id] :from dates
                                  :where (= date $s1)]
