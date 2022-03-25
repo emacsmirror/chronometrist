@@ -170,19 +170,11 @@ Properties are key-values excluding :name, :start, and :stop.
 
 Insert nothing if the properties already exist. Return the
 prop-id of the inserted or existing property."
-  (with-slots (file connection) backend
-    (-let* ((props-json (json-encode
-                         ;; `json-encode' throws an error for alists,
-                         ;; so we convert any cons cells to lists
-                         (-tree-map (lambda (elt)
-                                      (if (chronometrist-pp-pair-p elt)
-                                          (list (car elt) (cdr elt))
-                                        elt))
-                                    (chronometrist-plist-key-values plist)))))
-      (emacsql connection
-               [:insert-or-ignore-into properties [properties] :values [$s1]]
-               props-json)
-      (caar (emacsql connection [:select (funcall max prop-id) :from properties])))))
+  (with-slots (connection) backend
+    (emacsql connection
+             [:insert-or-ignore-into properties [properties] :values [$s1]]
+             (chronometrist-plist-key-values plist))
+    (caar (emacsql connection [:select (funcall max prop-id) :from properties]))))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
   (-let (((plist-1 plist-2)  (chronometrist-split-plist plist))
