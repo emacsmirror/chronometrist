@@ -101,18 +101,10 @@ Return the connection object from `emacsql-sqlite'."
     (chronometrist-create-file backend file)
     (cl-loop for date in (sort (hash-table-keys hash-table) #'string-lessp) do
       ;; insert date if it does not exist
-      (-let* ((date-unix     (chronometrist-iso-to-unix date))
-              ((date-results &as (date-id))
-               (emacsql connection [:select [date-id] :from dates :where (= date $s1)]
-                        date-unix)))
-        (unless date-results
-          (emacsql connection [:insert-into dates [date] :values [$s1]] date-unix))
-        ;; XXX - insert date properties
-        (cl-loop for plist in (gethash date hash-table) do
-          (chronometrist-insert backend plist)
-          ;; XXX - insert events
-          ))
-      )))
+      (emacsql connection [:insert-or-ignore-into dates [date] :values [$s1]]
+               (chronometrist-iso-to-unix date))
+      (cl-loop for plist in (gethash date hash-table) do
+        (chronometrist-insert backend plist)))))
 
 ;; predicate to find prop-id for property if it exists
 ;; insert property if it does not exist (procedure)

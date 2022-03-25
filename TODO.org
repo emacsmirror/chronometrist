@@ -807,8 +807,14 @@ See docstring of =timeclock-log-data=
 :PROPERTIES:
 :CUSTOM_ID: new-backends-klog
 :END:
-** SQLite
+** SQLite [0%]
 Chronometrist allows the user to add arbitrary key-values. There are a few ways to do this in SQL, but [[https://mariadb.com/kb/en/entity-attribute-value-implementation/][this solution]] seems well-suited to Chronometrist - put commonly-queried keys (name, start, stop) into SQL columns, and put user key-values in a JSON/s-exp TEXT column. The latter can be queried separately. SQLite has support for [[https://www.sqlite.org/json1.html][JSON columns]].
+
+1. [ ] Use =string-remove-prefix= rather than =s-chop-prefix=
+2. [-] =to-file=
+   * [X] insert intervals
+   * [ ] insert date properties
+   * [ ] insert events
 
 ** Project Hamster
 https://github.com/projecthamster/hamster
