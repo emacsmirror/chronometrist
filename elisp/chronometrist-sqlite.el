@@ -36,44 +36,48 @@
 (cl-defmethod chronometrist-create-file ((backend chronometrist-sqlite-backend) &optional file)
   "Create file for BACKEND if it does not already exist.
 Return the emacsql-sqlite connection object."
-  (cl-loop with db = (emacsql-sqlite (or file (chronometrist-backend-file backend)))
-    for query in
-    '(;; Properties are user-defined key-values stored as JSON.
-      [:create-table properties
-       ([(prop-id integer :primary-key)
-         (properties text :unique :not-null)])]
-      ;; An event is a timestamp with a name and optional properties.
-      [:create-table event-names
-       ([(name-id integer :primary-key)
-         (name text :unique :not-null)])]
-      [:create-table events
-       ([(event-id integer :primary-key)
-         (name-id integer :not-null :references event-names [name-id])])]
-      ;; An interval is a time range with a name and optional properties.
-      [:create-table interval-names
-       ([(name-id integer :primary-key)
-         (name text :unique :not-null)])]
-      [:create-table intervals
-       ([(interval-id integer :primary-key)
-         (name-id integer :not-null :references interval-names [name-id])
-         (start-time integer :not-null)
-         ;; The latest interval may be ongoing, so the stop time may be NULL.
-         (stop-time integer)
-         (prop-id integer :references properties [prop-id])]
-        (:unique [name-id start-time stop-time]))]
-      ;; A date contains one or more events and intervals. It may
-      ;; also contain properties.
-      [:create-table dates
-       ([(date-id integer :primary-key)
-         (date integer :unique :not-null)
-         (prop-id integer :references properties [prop-id])])]
-      [:create-table date-events
-       ([(date-id integer :not-null :references dates [date-id])
-         (event-id integer :not-null :references events [event-id])])]
-      [:create-table date-intervals
-       ([(date-id integer :not-null :references dates [date-id])
-         (interval-id integer :not-null :references intervals [interval-id])])])
-    do (emacsql db query)))
+  (let ((file (or file (chronometrist-backend-file backend))))
+    (if (file-exists-p file)
+        nil
+      (cl-loop with db = (emacsql-sqlite file)
+        for query in
+        '(;; Properties are user-defined key-values stored as JSON.
+          [:create-table properties
+           ([(prop-id integer :primary-key)
+             (properties text :unique :not-null)])]
+          ;; An event is a timestamp with a name and optional properties.
+          [:create-table event-names
+           ([(name-id integer :primary-key)
+             (name text :unique :not-null)])]
+          [:create-table events
+           ([(event-id integer :primary-key)
+             (name-id integer :not-null :references event-names [name-id])])]
+          ;; An interval is a time range with a name and optional properties.
+          [:create-table interval-names
+           ([(name-id integer :primary-key)
+             (name text :unique :not-null)])]
+          [:create-table intervals
+           ([(interval-id integer :primary-key)
+             (name-id integer :not-null :references interval-names [name-id])
+             (start-time integer :not-null)
+             ;; The latest interval may be ongoing, so the stop time may be NULL.
+             (stop-time integer)
+             (prop-id integer :references properties [prop-id])]
+            (:unique [name-id start-time stop-time]))]
+          ;; A date contains one or more events and intervals. It may
+          ;; also contain properties.
+          [:create-table dates
+           ([(date-id integer :primary-key)
+             (date integer :unique :not-null)
+             (prop-id integer :references properties [prop-id])])]
+          [:create-table date-events
+           ([(date-id integer :not-null :references dates [date-id])
+             (event-id integer :not-null :references events [event-id])])]
+          [:create-table date-intervals
+           ([(date-id integer :not-null :references dates [date-id])
+             (interval-id integer :not-null :references intervals [interval-id])])])
+        do (emacsql db query)
+        finally return db))))
 
 (defun chronometrist-iso-to-unix (timestamp)
   (truncate (float-time (parse-iso8601-time-string timestamp))))
