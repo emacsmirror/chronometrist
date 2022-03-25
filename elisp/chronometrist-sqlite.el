@@ -106,12 +106,6 @@ Return the connection object from `emacsql-sqlite'."
       (cl-loop for plist in (gethash date hash-table) do
         (chronometrist-insert backend plist)))))
 
-;; predicate to find prop-id for property if it exists
-;; insert property if it does not exist (procedure)
-;; insert date if it does not exist (procedure)
-;; insert event (generic)
-;; insert interval (generic)
-;; insert date properties (generic)
 (defun chronometrist-sqlite-insert-properties (backend plist)
   "Insert properties from PLIST to (SQLite) BACKEND.
 Properties are key-values excluding :name, :start, and :stop.
@@ -119,10 +113,38 @@ Properties are key-values excluding :name, :start, and :stop.
 Insert nothing if the properties already exist. Return the
 prop-id of the inserted or existing property."
   (with-slots (connection) backend
-    (emacsql connection
-             [:insert-or-ignore-into properties [properties] :values [$s1]]
-             (chronometrist-plist-key-values plist))
-    (caar (emacsql connection [:select (funcall max prop-id) :from properties]))))
+    (let* ((plist (chronometrist-plist-key-values plist))
+           (props (if (functionp chronometrist-sqlite-properties-function)
+                      (funcall chronometrist-sqlite-properties-function plist)
+                    plist)))
+      (emacsql connection
+               [:insert-or-ignore-into properties [properties] :values [$s1]]
+               props)
+      (caar (emacsql connection [:select (funcall max prop-id) :from properties])))))
+
+(defun chronometrist-sqlite-properties-to-json (plist)
+  "Return PLIST as a JSON string."
+  (let ((json-encoding-pretty-print t))
+    (json-encode
+     ;; `json-encode' throws an error when it thinks
+     ;; it sees "alists" which have numbers as
+     ;; "keys", so we convert any cons cells and any
+     ;; lists starting with a number to vectors
+     (-tree-map (lambda (elt)
+                  (cond ((chronometrist-pp-pair-p elt)
+                         (vector (car elt) (cdr elt)))
+                        ((consp elt)
+                         (vconcat elt))
+                        (t elt)))
+                plist))))
+
+(defcustom chronometrist-sqlite-properties-function nil
+  "Function used to control the encoding of user key-values.
+The function must accept a single argument, the plist of key-values.
+
+Any non-function value results in key-values being inserted as
+s-expressions in a text column."
+  :type '(choice function (sexp :tag "Insert as s-expressions")))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
   (-let (((plist-1 plist-2)  (chronometrist-split-plist plist))
