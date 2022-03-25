@@ -168,9 +168,10 @@ prop-id of the inserted or existing property."
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
   (-let [(plist-1 plist-2)  (chronometrist-split-plist plist)]
-    (cl-loop for plist in (if (and plist-1 plist-2)
-                              (list plist-1 plist-2)
-                            (list plist))
+    (cl-loop with db = (emacsql-sqlite (chronometrist-backend-file backend))
+      for plist in (if (and plist-1 plist-2)
+                       (list plist-1 plist-2)
+                     (list plist))
       do
       (-let* (((&plist :name name :start start :stop stop) plist)
               (date-unix   (chronometrist-iso-to-unix (chronometrist-iso-to-date start)))
