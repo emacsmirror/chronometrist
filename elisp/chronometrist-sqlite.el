@@ -27,79 +27,92 @@
 (defclass chronometrist-sqlite-backend (chronometrist-backend chronometrist-file-backend-mixin)
   ((extension :initform "sqlite"
               :accessor chronometrist-backend-ext
-              :custom 'string)))
+              :custom 'string)
+   (connection :initform nil
+               :initarg :connection
+               :accessor chronometrist-backend-connection)))
 
 (chronometrist-register-backend
  :sqlite "Store records in SQLite database."
  (make-instance 'chronometrist-sqlite-backend :path chronometrist-file))
 
+(cl-defmethod initialize-instance :after ((backend chronometrist-sqlite-backend)
+                                          &rest _initargs)
+  "Initialize connection for BACKEND based on its file."
+  (with-slots (file connection) backend
+    (when (and file (not connection))
+      (setf connection (emacsql-sqlite file)))))
+
 (cl-defmethod chronometrist-create-file ((backend chronometrist-sqlite-backend) &optional file)
   "Create file for BACKEND if it does not already exist.
-Return the emacsql-sqlite connection object."
-  (let ((file (or file (chronometrist-backend-file backend))))
-    (if (file-exists-p file)
-        nil
-      (cl-loop with db = (emacsql-sqlite file)
-        for query in
-        '(;; Properties are user-defined key-values stored as JSON.
-          [:create-table properties
-           ([(prop-id integer :primary-key)
-             (properties text :unique :not-null)])]
-          ;; An event is a timestamp with a name and optional properties.
-          [:create-table event-names
-           ([(name-id integer :primary-key)
-             (name text :unique :not-null)])]
-          [:create-table events
-           ([(event-id integer :primary-key)
-             (name-id integer :not-null :references event-names [name-id])])]
-          ;; An interval is a time range with a name and optional properties.
-          [:create-table interval-names
-           ([(name-id integer :primary-key)
-             (name text :unique :not-null)])]
-          [:create-table intervals
-           ([(interval-id integer :primary-key)
-             (name-id integer :not-null :references interval-names [name-id])
-             (start-time integer :not-null)
-             ;; The latest interval may be ongoing, so the stop time may be NULL.
-             (stop-time integer)
-             (prop-id integer :references properties [prop-id])]
-            (:unique [name-id start-time stop-time]))]
-          ;; A date contains one or more events and intervals. It may
-          ;; also contain properties.
-          [:create-table dates
-           ([(date-id integer :primary-key)
-             (date integer :unique :not-null)
-             (prop-id integer :references properties [prop-id])])]
-          [:create-table date-events
-           ([(date-id integer :not-null :references dates [date-id])
-             (event-id integer :not-null :references events [event-id])])]
-          [:create-table date-intervals
-           ([(date-id integer :not-null :references dates [date-id])
-             (interval-id integer :not-null :references intervals [interval-id])])])
-        do (emacsql db query)
-        finally return db))))
+Return the connection object from `emacsql-sqlite'."
+  (let* ((file (or file (chronometrist-backend-file backend)))
+         (db   (or (chronometrist-backend-connection backend)
+                   (setf (chronometrist-backend-connection backend)
+                         (emacsql-sqlite file)))))
+    (cl-loop
+      for query in
+      '(;; Properties are user-defined key-values stored as JSON.
+        [:create-table properties
+         ([(prop-id integer :primary-key)
+           (properties text :unique :not-null)])]
+        ;; An event is a timestamp with a name and optional properties.
+        [:create-table event-names
+         ([(name-id integer :primary-key)
+           (name text :unique :not-null)])]
+        [:create-table events
+         ([(event-id integer :primary-key)
+           (name-id integer :not-null :references event-names [name-id])])]
+        ;; An interval is a time range with a name and optional properties.
+        [:create-table interval-names
+         ([(name-id integer :primary-key)
+           (name text :unique :not-null)])]
+        [:create-table intervals
+         ([(interval-id integer :primary-key)
+           (name-id integer :not-null :references interval-names [name-id])
+           (start-time integer :not-null)
+           ;; The latest interval may be ongoing, so the stop time may be NULL.
+           (stop-time integer)
+           (prop-id integer :references properties [prop-id])]
+          (:unique [name-id start-time stop-time]))]
+        ;; A date contains one or more events and intervals. It may
+        ;; also contain properties.
+        [:create-table dates
+         ([(date-id integer :primary-key)
+           (date integer :unique :not-null)
+           (prop-id integer :references properties [prop-id])])]
+        [:create-table date-events
+         ([(date-id integer :not-null :references dates [date-id])
+           (event-id integer :not-null :references events [event-id])])]
+        [:create-table date-intervals
+         ([(date-id integer :not-null :references dates [date-id])
+           (interval-id integer :not-null :references intervals [interval-id])])])
+      do (emacsql db query)
+      finally return db)))
 
 (defun chronometrist-iso-to-unix (timestamp)
   (truncate (float-time (parse-iso8601-time-string timestamp))))
 
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
-  (delete-file file)
-  (chronometrist-create-file backend file)
-  (cl-loop with db = (emacsql-sqlite file)
-    for date in (sort (hash-table-keys hash-table) #'string-lessp) do
-    ;; insert date if it does not exist
-    (-let* ((date-unix     (chronometrist-iso-to-unix date))
-            ((date-results &as (date-id))
-             (emacsql db [:select [date-id] :from dates :where (= date $s1)]
-                      date-unix)))
-      (unless date-results
-        (emacsql db [:insert-into dates [date] :values [$s1]] date-unix))
-      ;; XXX - insert date properties
-      (cl-loop for plist in (gethash date hash-table) do
-        (chronometrist-insert backend plist)
-        ;; XXX - insert events
-        ))
-    ))
+  (with-slots (connection) backend
+    (delete-file file)
+    (emacsql-close connection)
+    (setf connection nil)
+    (chronometrist-create-file backend file)
+    (cl-loop for date in (sort (hash-table-keys hash-table) #'string-lessp) do
+      ;; insert date if it does not exist
+      (-let* ((date-unix     (chronometrist-iso-to-unix date))
+              ((date-results &as (date-id))
+               (emacsql connection [:select [date-id] :from dates :where (= date $s1)]
+                        date-unix)))
+        (unless date-results
+          (emacsql connection [:insert-into dates [date] :values [$s1]] date-unix))
+        ;; XXX - insert date properties
+        (cl-loop for plist in (gethash date hash-table) do
+          (chronometrist-insert backend plist)
+          ;; XXX - insert events
+          ))
+      )))
 
 ;; predicate to find prop-id for property if it exists
 ;; insert property if it does not exist (procedure)
@@ -113,9 +126,8 @@ Properties are key-values excluding :name, :start, and :stop.
 
 Insert nothing if the properties already exist. Return the
 prop-id of the inserted or existing property."
-  (with-slots (file) backend
-    (-let* ((db         (emacsql-sqlite file))
-            (props-json (json-encode
+  (with-slots (file connection) backend
+    (-let* ((props-json (json-encode
                          ;; `json-encode' throws an error for alists,
                          ;; so we convert any cons cells to lists
                          (-tree-map (lambda (elt)
@@ -123,17 +135,17 @@ prop-id of the inserted or existing property."
                                           (list (car elt) (cdr elt))
                                         elt))
                                     (chronometrist-plist-key-values plist)))))
-      (emacsql db [:insert-or-ignore-into properties [properties]
-                   :values [$s1]]
+      (emacsql connection
+               [:insert-or-ignore-into properties [properties] :values [$s1]]
                props-json)
-      (caar (emacsql db [:select (funcall max prop-id) :from properties])))))
+      (caar (emacsql connection [:select (funcall max prop-id) :from properties])))))
 
 (cl-defmethod chronometrist-insert ((backend chronometrist-sqlite-backend) plist)
-  (-let [(plist-1 plist-2)  (chronometrist-split-plist plist)]
-    (cl-loop with db = (emacsql-sqlite (chronometrist-backend-file backend))
-      for plist in (if (and plist-1 plist-2)
-                       (list plist-1 plist-2)
-                     (list plist))
+  (-let (((plist-1 plist-2)  (chronometrist-split-plist plist))
+         (db  (chronometrist-backend-connection backend)))
+    (cl-loop for plist in (if (and plist-1 plist-2)
+                              (list plist-1 plist-2)
+                            (list plist))
       do
       (-let* (((&plist :name name :start start :stop stop) plist)
               (date-unix   (chronometrist-iso-to-unix (chronometrist-iso-to-date start)))
