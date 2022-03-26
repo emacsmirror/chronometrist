@@ -124,19 +124,18 @@ prop-id of the inserted or existing property."
 
 (defun chronometrist-sqlite-properties-to-json (plist)
   "Return PLIST as a JSON string."
-  (let ((json-encoding-pretty-print t))
-    (json-encode
-     ;; `json-encode' throws an error when it thinks
-     ;; it sees "alists" which have numbers as
-     ;; "keys", so we convert any cons cells and any
-     ;; lists starting with a number to vectors
-     (-tree-map (lambda (elt)
-                  (cond ((chronometrist-pp-pair-p elt)
-                         (vector (car elt) (cdr elt)))
-                        ((consp elt)
-                         (vconcat elt))
-                        (t elt)))
-                plist))))
+  (json-encode
+   ;; `json-encode' throws an error when it thinks
+   ;; it sees "alists" which have numbers as
+   ;; "keys", so we convert any cons cells and any
+   ;; lists starting with a number to vectors
+   (-tree-map (lambda (elt)
+                (cond ((chronometrist-pp-pair-p elt)
+                       (vector (car elt) (cdr elt)))
+                      ((consp elt)
+                       (vconcat elt))
+                      (t elt)))
+              plist)))
 
 (defcustom chronometrist-sqlite-properties-function nil
   "Function used to control the encoding of user key-values.
