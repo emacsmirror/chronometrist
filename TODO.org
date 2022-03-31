@@ -1042,3 +1042,14 @@ Similar to [[#verify-command][verify command]], perhaps, but this is really abou
 :PROPERTIES:
 :CREATED:  2022-02-28T11:35:47+0530
 :END:
+
+* customizable "total duration" fields
+:PROPERTIES:
+:CREATED:  2022-03-31T17:31:27+0530
+:END:
+e.g. I've added "Sleeping" as a task, but I don't want to factor that into the total time. I could customize the task list to hide "Sleeping", but I'd prefer being able to see the time spent on it, without it adding to the total time.
+
+Perhaps the user could define their own "total duration" fields and give each a name. The value for the field could be -
+ * a list of tasks whose time is added together to derive the duration, or
+ * a list of tasks whose time is not included in the total time, or
+ * a user-defined function which returns the duration to be displayed
