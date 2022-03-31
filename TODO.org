@@ -1043,13 +1043,8 @@ Similar to [[#verify-command][verify command]], perhaps, but this is really abou
 :CREATED:  2022-02-28T11:35:47+0530
 :END:
 
-* customizable "total duration" fields
+* User-defined categories
 :PROPERTIES:
-:CREATED:  2022-03-31T17:31:27+0530
+:CREATED:  2022-03-31T22:44:34+0530
 :END:
-e.g. I've added "Sleeping" as a task, but I don't want to factor that into the total time. I could customize the task list to hide "Sleeping", but I'd prefer being able to see the time spent on it, without it adding to the total time.
-
-Perhaps the user could define their own "total duration" fields and give each a name. The value for the field could be -
- * a list of tasks whose time is added together to derive the duration, or
- * a list of tasks whose time is not included in the total time, or
- * a user-defined function which returns the duration to be displayed
+A task can be part of any number of categories. A category may also contain other categories. The categories, and the total time spent on each one, could be displayed in the main view, separate from the tasks.
