@@ -755,6 +755,12 @@ Value must be a keyword corresponding to a key in
   (cl-second (alist-get chronometrist-active-backend chronometrist-backends-alist)))
 ;; active-backend:1 ends here
 
+;; [[file:chronometrist.org::*get-backend][get-backend:1]]
+(defun chronometrist-get-backend (keyword)
+  "Return the backend object associated with KEYWORD."
+  (cl-second (alist-get keyword chronometrist-backends-alist)))
+;; get-backend:1 ends here
+
 ;; [[file:chronometrist.org::*switch-backend][switch-backend:1]]
 (defun chronometrist-switch-backend ()
   (interactive)
@@ -788,8 +794,7 @@ be replaced."
 ;; register-backend:1 ends here
 
 ;; [[file:chronometrist.org::*read-backend-name][read-backend-name:1]]
-(defun chronometrist-read-backend-name (prompt backend-alist
-                                  &optional predicate return-keyword)
+(defun chronometrist-read-backend-name (prompt backend-alist &optional predicate return-keyword)
   "Prompt user for a Chronometrist backend name.
 BACKEND-ALIST should be an alist similar to `chronometrist-backends-alist'.
 
@@ -1876,50 +1881,50 @@ Return value is either a list in the form
 ;; remove-prefix:1 ends here
 
 ;; [[file:chronometrist.org::*migrate][migrate:1]]
-(defun chronometrist-migrate ()
+(defun chronometrist-migrate (&optional input-backend-keyword input-file
+                               output-backend-keyword output-file)
   "Convert from one Chronometrist backend to another."
   (interactive)
-  (let* ((input-backend
-          (chronometrist-read-backend-name "Backend to convert: "
-                              chronometrist-backends-alist))
-         (input-file-suggestion (chronometrist-backend-file input-backend))
-         (input-file (read-file-name "File to convert: " nil
-                                     input-file-suggestion t
-                                     input-file-suggestion))
-         (output-backend (chronometrist-read-backend-name
-                          "Backend to write: "
-                          chronometrist-backends-alist
-                          (lambda (keyword)
-                            (not (equal (cl-second
-                                         (alist-get keyword chronometrist-backends-alist))
-                                        input-backend)))))
-         (output-file-suggestion (chronometrist-backend-file output-backend))
-         (output-file (read-file-name "File to write: " nil nil nil
-                                      output-file-suggestion))
-         (input-backend-name  (chronometrist-remove-prefix
-                               (symbol-name
-                                (eieio-object-class-name input-backend))))
-         (output-backend-name (chronometrist-remove-prefix
-                               (symbol-name
-                                (eieio-object-class-name output-backend))))
-         (confirm (yes-or-no-p
-                   (format "Convert %s (%s) to %s (%s)? "
-                           input-file
-                           input-backend-name
-                           output-file
-                           output-backend-name)))
-         (confirm-overwrite
-          (if (and confirm
-                   (file-exists-p output-file)
-                   (not (chronometrist-file-empty-p output-file)))
-              (yes-or-no-p
-               (format "Overwrite existing non-empty file %s ?"
-                       output-file))
-            t)))
+  (let* ((input-backend-keyword  (or input-backend-keyword
+                                     (chronometrist-read-backend-name "Backend to convert: " chronometrist-backends-alist nil t)))
+         (input-backend          (chronometrist-get-backend input-backend-keyword))
+         (suggested-input-file   (chronometrist-backend-file input-backend))
+         (input-file             (or input-file
+                                     (read-file-name "File to convert: "
+                                                     nil suggested-input-file t suggested-input-file)))
+         (output-backend-keyword (or output-backend-keyword
+                                     (chronometrist-read-backend-name "Backend to write: "
+                                                          chronometrist-backends-alist
+                                                          (lambda (keyword)
+                                                            (not (equal (cl-second
+                                                                         (alist-get keyword chronometrist-backends-alist))
+                                                                        input-backend)))
+                                                          t)))
+         (output-backend         (chronometrist-get-backend output-backend-keyword))
+         (suggested-output-file  (chronometrist-backend-file output-backend))
+         (output-file            (or output-file
+                                     (read-file-name "File to write: " nil nil nil suggested-output-file)))
+         (input-backend-name     (chronometrist-remove-prefix (symbol-name (eieio-object-class-name input-backend))))
+         (output-backend-name    (chronometrist-remove-prefix (symbol-name (eieio-object-class-name output-backend))))
+         (confirm                (yes-or-no-p (format "Convert %s (%s) to %s (%s)? "
+                                                      input-file input-backend-name
+                                                      output-file output-backend-name)))
+         (confirm-overwrite      (if (and confirm
+                                          (file-exists-p output-file)
+                                          (not (chronometrist-file-empty-p output-file)))
+                                     (yes-or-no-p
+                                      (format "Overwrite existing non-empty file %s ?" output-file))
+                                   t)))
     (if (and confirm confirm-overwrite)
-        (chronometrist-to-file (chronometrist-backend-hash-table input-backend)
-                  output-backend
-                  output-file)
+        (start-process
+         "chronometrist-migrate" (generate-new-buffer-name "chronometrist-migrate")
+         "emacs" "--batch"
+         "--eval=(package-initialize)"
+         "--eval=(cl-loop for (pkg . desc) in package-alist
+                          when (string-match-p \"^chronometrist\" (symbol-name pkg))
+                          do (require pkg))"
+         (format "--eval=(chronometrist-to-file (chronometrist-backend-hash-table (chronometrist-get-backend %s)) (chronometrist-get-backend %s) %S)"
+                 input-backend-keyword output-backend-keyword output-file))
       (message "Conversion aborted."))))
 ;; migrate:1 ends here
 
