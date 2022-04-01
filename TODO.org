@@ -939,6 +939,37 @@ The plist backend could theoretically be extended to support it, but I'd rather 
 1. [ ] default suggested input backend should be the active backend
 2. [ ] conserve file local variables prop line for text backends
 
+** make migrate command async
+:PROPERTIES:
+:CREATED:  2022-04-01T18:02:03+0530
+:END:
+=chronometrist-migrate= / =chronometrist-to-file= can take a long time to run, freezing Emacs until completion if run synchronously.
+
+I tried using =async.el= by changing the main =if= branch of =chronometrist-migrate= to the following -
+
+#+BEGIN_SRC emacs-lisp
+(if (and confirm confirm-overwrite)
+    (async-start
+     `(lambda ()
+        (require 'cl)
+        ;; This will break if the user did not install Chronometrist
+        ;; and related packages via MELPA. An improvement would be to
+        ;; load `(locate-user-emacs-file "init.el")' if it
+        ;; exists. It's not perfect, but would cover most situations.
+        (package-initialize)
+        (cl-loop for (pkg . desc) in package-alist
+          when (string-match-p "^chronometrist" (symbol-name pkg))
+          do (require pkg))
+        ,(async-inject-variables "chronometrist-")
+        (chronometrist-to-file (chronometrist-backend-hash-table ,input-backend)
+                               ,output-backend ,output-file))
+     (lambda (result)
+       (message "Conversion complete.")))
+  (message "Conversion aborted."))
+#+END_SRC
+
+Unfortunately, this code does not work - it results in an =(invalid-read-syntax "#")= error, which seems to be a [[https://github.com/jwiegley/emacs-async/issues?q=is%3Aissue+read+syntax][common error]] with this library.
+
 * STARTED Support for the Third Time System [57%]                 :extension:
 :PROPERTIES:
 :CREATED:  2022-02-10T14:12:12+0530
