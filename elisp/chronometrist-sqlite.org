@@ -115,25 +115,14 @@ Return the connection object from `emacsql-sqlite'."
       finally return db)))
 #+END_SRC
 
-** to-file                                                          :method:
-#+BEGIN_SRC emacs-lisp :load no :tangle no
-(cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
-  (cl-loop with db = (emacsql-sqlite file)
-    with count = 0
-    for records being the hash-values of hash-table do
-    (cl-loop for record in records do
-      (chronometrist-insert record db)
-      (cl-incf count)
-      (when (zerop (% count 5))
-        (message "chronometrist-migrate - %s records converted" count)))
-    finally return count do
-    (message "chronometrist-migrate - finished converting %s events." count)))
-#+END_SRC
-
+** iso-to-unix                                                    :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-iso-to-unix (timestamp)
   (truncate (float-time (parse-iso8601-time-string timestamp))))
+#+END_SRC
 
+** to-file                                                          :method:
+#+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
   (with-slots (connection) backend
     (delete-file file)
