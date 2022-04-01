@@ -1882,8 +1882,19 @@ Return value is either a list in the form
 
 ;; [[file:chronometrist.org::*migrate][migrate:1]]
 (defun chronometrist-migrate (&optional input-backend-keyword input-file
-                               output-backend-keyword output-file)
-  "Convert from one Chronometrist backend to another."
+                            output-backend-keyword output-file
+                            &rest load-files)
+  "Convert from one Chronometrist backend to another.
+
+INPUT-BACKEND-KEYWORD and OUTPUT-BACKEND-KEYWORD must be keywords
+corresponding to entries in `chronometrist-backends-alist'.
+
+INPUT-FILE and OUTPUT-FILE must be file names. INPUT-FILE must
+already exist.
+
+LOAD-FILES must be paths to Elisp files. These files are `load'ed
+before conversion. They may be used to point to Chronometrist
+source files to be used."
   (interactive)
   (let* ((input-backend-keyword  (or input-backend-keyword
                                      (chronometrist-read-backend-name "Backend to convert: " chronometrist-backends-alist nil t)))
@@ -1923,7 +1934,9 @@ Return value is either a list in the form
          "--eval=(cl-loop for (pkg . desc) in package-alist
                           when (string-match-p \"^chronometrist\" (symbol-name pkg))
                           do (require pkg))"
-         (format "--eval=(chronometrist-to-file (chronometrist-backend-hash-table (chronometrist-get-backend %s)) (chronometrist-get-backend %s) %S)"
+         (format "--eval=(cl-loop for file in (quote %S) do (load file))" load-files)
+         ;; the hash table slot may be empty, so we generate the hash table from scratch
+         (format "--eval=(chronometrist-to-file (chronometrist-to-hash-table (chronometrist-get-backend %s)) (chronometrist-get-backend %s) %S)"
                  input-backend-keyword output-backend-keyword output-file))
       (message "Conversion aborted."))))
 ;; migrate:1 ends here

@@ -96,7 +96,7 @@ Return the connection object from `emacsql-sqlite'."
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
   (with-slots (connection) backend
     (delete-file file)
-    (emacsql-close connection)
+    (when connection (emacsql-close connection))
     (setf connection nil)
     (chronometrist-create-file backend file)
     (cl-loop for date in (sort (hash-table-keys hash-table) #'string-lessp) do
@@ -205,6 +205,6 @@ s-expressions in a text column."
 (cl-defmethod chronometrist-replace-last ((backend chronometrist-sqlite-backend) plist)
   (emacsql db [:delete-from events :where ]))
 
-(provide 'chronometrist-sqlite3)
+(provide 'chronometrist-sqlite)
 
-;;; chronometrist-sqlite3.el ends here
+;;; chronometrist-sqlite.el ends here
