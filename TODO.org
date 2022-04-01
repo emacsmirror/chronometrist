@@ -936,8 +936,10 @@ The plist backend could theoretically be extended to support it, but I'd rather 
 :PROPERTIES:
 :CREATED:  2022-01-08T23:32:37+0530
 :END:
-1. [ ] default suggested input backend should be the active backend
-2. [ ] conserve file local variables prop line for text backends
+1. [ ] On first launch, offer list of supported backends to migrate from
+   + Some backends may not be installed - "see MELPA for more formats"
+2. [ ] Use active backend as the suggested input backend
+3. [ ] Conserve file local variables prop line for text backends
 
 * STARTED Support for the Third Time System [57%]                 :extension:
 :PROPERTIES:
