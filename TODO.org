@@ -1042,3 +1042,9 @@ Similar to [[#verify-command][verify command]], perhaps, but this is really abou
 :PROPERTIES:
 :CREATED:  2022-02-28T11:35:47+0530
 :END:
+
+* User-defined categories
+:PROPERTIES:
+:CREATED:  2022-03-31T22:44:34+0530
+:END:
+A task can be part of any number of categories. A category may also contain other categories. The categories, and the total time spent on each one, could be displayed in the main view, separate from the tasks.
