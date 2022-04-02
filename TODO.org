@@ -373,7 +373,7 @@ Cons
 4. [ ] Fix heading link to "midnight-spanning intervals" - jumps to the correct heading in HTML export, but jumps to its own self in Org mode.
 5. [ ] Figure out some way to hide package prefixes in identifiers in Org mode (without actually affecting the contents, a la nameless-mode)
 
-** UX [30%]
+** UX [33%]
    1. [X] Optimization - (jonasw) store length and hash of previous file, see if the new file has the same hash until old-length bytes.
       * [X] Check for type of change to file
         + [X] Handle last expression being removed
@@ -381,14 +381,13 @@ Cons
       * [X] BUG - if something was removed from the last expression (thereby decreasing the length of the file), =chronometrist-file-change-type= returns =t= instead of =:last=
       * [X] BUG - args out of range error when last plist is removed
    2. [X] Optimization - generate history before querying, not when the file changes.
-   3. [ ] Don't suggest nil when asking for first project on first run
-   4. [ ] When starting a project with time of "-" (i.e. not worked on today until now), immediately set time to 0 instead of waiting for the first timer refresh
-   5. [ ] Mouse commands should work only on buttons.
-   6. [X] Button actions should accept prefix arguments and behave exactly like their keyboard counterparts.
-   7. [ ] mouse-3 should clock-out without asking for reason.
-   8. [ ] Some way to ask for the reason just before starting a project. Even when clocking out, the reason is asked /before/ clocking out, which adds time to the project.
-   9. [ ] Allow calling chronometrist-in/out from anywhere-within-Emacs (a la timeclock) as well as from the chronometrist buffer.
-   10. [ ] =chronometrist-timer= - if =chronometrist-file= is being edited (buffer exists and modified), don't refresh - this will (hopefully) prevent Emacs from going crazy with errors in trying to parse malformed data.
+   3. [ ] When starting a project with time of "-" (i.e. not worked on today until now), immediately set time to 0 instead of waiting for the first timer refresh
+   4. [ ] Mouse commands should work only on buttons.
+   5. [X] Button actions should accept prefix arguments and behave exactly like their keyboard counterparts.
+   6. [ ] mouse-3 should clock-out without asking for reason.
+   7. [ ] Some way to ask for the reason just before starting a project. Even when clocking out, the reason is asked /before/ clocking out, which adds time to the project.
+   8. [ ] Allow calling chronometrist-in/out from anywhere-within-Emacs (a la timeclock) as well as from the chronometrist buffer.
+   9. [ ] =chronometrist-timer= - if =chronometrist-file= is being edited (buffer exists and modified), don't refresh - this will (hopefully) prevent Emacs from going crazy with errors in trying to parse malformed data.
 
 * Maybe
 ** New features
@@ -936,8 +935,8 @@ The plist backend could theoretically be extended to support it, but I'd rather 
 :PROPERTIES:
 :CREATED:  2022-01-08T23:32:37+0530
 :END:
-1. [ ] default suggested input backend should be the active backend
-2. [ ] conserve file local variables prop line for text backends
+1. [ ] Use active backend as the suggested input backend when migrating
+2. [ ] Conserve file local variables prop line for text backends
 
 ** make migrate command async
 :PROPERTIES:
@@ -1079,3 +1078,11 @@ Similar to [[#verify-command][verify command]], perhaps, but this is really abou
 :CREATED:  2022-03-31T22:44:34+0530
 :END:
 A task can be part of any number of categories. A category may also contain other categories. The categories, and the total time spent on each one, could be displayed in the main view, separate from the tasks.
+
+* First run behaviour                                                    :ux:
+:PROPERTIES:
+:CREATED:  2022-04-02T17:28:33+0530
+:END:
+1. [ ] Look for any existing Chronometrist database in the default location. If one is found, use it to determine the default active backend. Otherwise, offer to import from one of the supported backends.
+   + Some backends may not be installed - "see MELPA for more formats"
+2. [ ] Don't suggest nil when asking for first project on first run
