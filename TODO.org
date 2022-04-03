@@ -1065,9 +1065,14 @@ A task can be part of any number of categories. A category may also contain othe
 :PROPERTIES:
 :CREATED:  2022-04-03T09:36:53+0530
 :END:
-** Replacing =add-variable-watcher=
+** Replace =add-variable-watcher=
 Common Lisp does not have Elisp's =add-variable-watcher=. The Elisp code used that to automatically update the =file= slot of the active backend object when the user changes the value of =chronometrist-file=. The new solution is to remove direct accesses to the =file= slot, define a =backend-file= method which returns the value of =file= if non-nil (it's usually nil), or derives a file path from =*user-data-file*= and the backend's extension.
 
 It seems that the =file= slot is now unnecessary - =backend-file= can check =path= instead of =file=, and use either =path= or =*user-data-file*= to derive the full path.
 
 1. [X] Remove the =file= slot
+
+** Use pathnames instead of namestrings
+:PROPERTIES:
+:CREATED:  2022-04-03T12:30:24+0530
+:END:
