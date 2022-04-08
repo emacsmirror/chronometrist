@@ -1076,3 +1076,48 @@ It seems that the =file= slot is now unnecessary - =backend-file= can check =pat
 :PROPERTIES:
 :CREATED:  2022-04-03T12:30:24+0530
 :END:
+
+** CLIM UI design
+:PROPERTIES:
+:CREATED:  2022-04-08T18:19:58+0530
+:END:
+*** main view (overview for a day)
+Main view has a table of tasks and maybe also a table of categories
+
+The table of tasks has the columns -
+1. task name
+   * Right-click on task to toggle inline display of either key-value breakdown, or interval breakdown.
+2. task duration today
+3. task activity indicator
+4. graph of daily task durations
+   * Click on a point in the graph to open that day in the Details View.
+
+The table of categories has the columns -
+1. category
+2. time duration today
+
+*** day browsing view
+:PROPERTIES:
+:CREATED:  2022-04-08T18:23:42+0530
+:END:
+display (day-grouped) tables of intervals and events in date range (default - today)
+
+can select interval to edit its data
+
+*** commands
+:PROPERTIES:
+:CREATED:  2022-04-08T18:33:09+0530
+:END:
+Commands accepting tasks
+1. clock in, clock out, discard, restart, etc
+2. show long-term graph
+
+Commands accepting intervals
+
+Commands accepting events
+
+*** view/edit database as
+:PROPERTIES:
+:CREATED:  2022-04-08T19:56:38+0530
+:END:
+some way to view/edit the database in a different format, e.g. Lisp plists
