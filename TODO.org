@@ -1112,6 +1112,13 @@ It seems that the =file= slot is now unnecessary - =backend-file= can check =pat
 
 click on row to show taller graph and inline display of either key-value breakdown, or interval breakdown.
 
+commands
+1. clock in, clock out, etc
+2. toggle details for row
+3. toggle details for all rows
+4. next/previous day
+5. set displayed day
+
 *** Categories table
 :PROPERTIES:
 :CREATED:  2022-04-10T08:11:20+0530
@@ -1131,13 +1138,18 @@ click on row to show taller graph and inline display of either key-value breakdo
 :PROPERTIES:
 :CREATED:  2022-04-08T18:23:42+0530
 :END:
-Displays tables of intervals and events, grouped by day, in date/week/month/year range (default - today)
+Displays tables of day properties, intervals, and events, grouped by day, in date/week/month/year range (default - today)
 
-can select interval to edit its data
+can select a day property/interval/event to edit its data
 
-buttons to add new intervals, events, and day properties
+buttons to add new day properties, intervals, and events
 
 When there are no intervals/events/day properties, show placeholder text - "No intervals recorded on this day." / "No events recorded on this day." / "No properties for this day."
+
+Commands
+1. filter contents
+2. next/previous day (or range)
+3. set displayed day (or range)
 
 *** Graph views
 :PROPERTIES:
