@@ -1081,28 +1081,65 @@ It seems that the =file= slot is now unnecessary - =backend-file= can check =pat
 :PROPERTIES:
 :CREATED:  2022-04-08T18:19:58+0530
 :END:
-*** main view (overview for a day)
-Main view has a table of tasks and maybe also a table of categories
-
-The table of tasks has the columns -
+*** Task list + duration table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:09:18+0530
+:END:
 1. task name
    * Right-click on task to toggle inline display of either key-value breakdown, or interval breakdown.
 2. task duration today
 3. task activity indicator
+   * click to clock in/out (hover to show icon)
 4. graph of daily task durations
-   * Click on a point in the graph to open that day in the Details View.
+   * Click on a point in the graph to view that day in the Details View.
 
-The table of categories has the columns -
+click on row to show taller graph
+
+*** Categories table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:11:20+0530
+:END:
 1. category
 2. time duration today
 
-*** day browsing view
+*** Events table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:12:58+0530
+:END:
+("Useful for recording things like weight, medication, waist circumference, etc.")
+1. event name
+2. time of occurrence
+
+*** Day-grouped log
 :PROPERTIES:
 :CREATED:  2022-04-08T18:23:42+0530
 :END:
-display (day-grouped) tables of intervals and events in date range (default - today)
+Displays (day-grouped) tables of intervals and events in date range (default - today)
 
 can select interval to edit its data
+
+*** Task-over-time table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:14:15+0530
+:END:
+List of days, weeks, or months (can vary), one task (with optional key-value filter [fn:2]), horizontal graph (and durations/stats?)
++ columns
+  1. range (ISO date, week, or year-month)
+  2. per-range graph (vertical/interals if days, horizontal/days if weeks or months)
++ [ ] commands [0%]
+  1. [ ] toggle week/month
+  2. [ ] set [task/key-value] filter
+  3. [ ] set range
++ [ ] non-tabular text [fn:3]
+
+*** Task key-value table
+list of unique key-values for a task, one day [fn:1], durations and graphs
++ commands [0%]
+  1. [ ] set task
+  2. [ ] set range
+
+*** Default view (overview for a day)
+Default view is a composition of the task-list/duration table, day-grouped log, and the categories table.
 
 *** commands
 :PROPERTIES:
