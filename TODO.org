@@ -1099,7 +1099,7 @@ It seems that the =file= slot is now unnecessary - =backend-file= can check =pat
 :END:
 
 ** CLIM UI design
-*** Task list + duration table
+*** One-day task-duration table
 :PROPERTIES:
 :CREATED:  2022-04-10T08:09:18+0530
 :END:
@@ -1121,7 +1121,7 @@ commands
 4. next/previous day
 5. set displayed day
 
-*** Categories table
+*** One-day category-duration table
 :PROPERTIES:
 :CREATED:  2022-04-10T08:11:20+0530
 :END:
@@ -1132,19 +1132,21 @@ commands
 1. toggle details for row (show tasks in each category)
 2. toggle details for all rows
 
-*** Events table
+*** One-day event-occurrence table
 :PROPERTIES:
 :CREATED:  2022-04-10T08:12:58+0530
 :END:
 ("Useful for recording things like weight, medication, waist circumference, etc.")
-1. event name
-2. time of occurrence
+1. index (prefix argument)
+2. event name
+3. time of occurrence
+4. graph of past occurrences
 
 commands
 1. add event
 2. record event
 
-*** Day-grouped log
+*** 1+ day editable log
 :PROPERTIES:
 :CREATED:  2022-04-08T18:23:42+0530
 :END:
@@ -1161,31 +1163,29 @@ Commands
 2. next/previous day (or range)
 3. set displayed day (or range)
 
-*** Graph views
+*** Line chart views
 :PROPERTIES:
 :CREATED:  [2022-04-10 Sun 14:35]
 :END:
-Graph of one or more tasks/task-property combinations/numeric property value/function with numeric output (adjustable) over time range (adjustable), with points for days/weeks/months/years (adjustable)
+Line chart with one or more (adjustable) metrics -
+ * duration for task
+ * task-property combinations
+ * numeric property value/function with numeric output
+...over a time range (adjustable), with points for days/weeks/months/years (adjustable)
 
 User can switch between single graph vs separate graphs, different types of graphs, etc.
 
+Commands
+1. Add metric, remove metric
+2. Increase/decrease/set range, next/previous range
+3. Increase/decrease/set granularity
+
 *** Default view (overview for a day)
-Default view is a tiled composition of the task-list/duration table, day-grouped log, and the categories table.
-
-*** commands
-:PROPERTIES:
-:CREATED:  2022-04-08T18:33:09+0530
-:END:
-Commands accepting tasks
-1. clock in, clock out, discard, restart, etc
-2. show long-term graph
-
-Commands accepting intervals
-
-Commands accepting events
+Default view is a tiled composition of the one-day task-duration table, one-day grouped log, and the one-day category-duration table.
 
 *** view/edit database as
 :PROPERTIES:
 :CREATED:  2022-04-08T19:56:38+0530
 :END:
 some way to view/edit the database in a different format, e.g. Lisp plists
+
