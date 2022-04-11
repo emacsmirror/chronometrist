@@ -1103,11 +1103,13 @@ It seems that the =file= slot is now unnecessary - =backend-file= can check =pat
 :PROPERTIES:
 :CREATED:  2022-04-10T08:09:18+0530
 :END:
-1. task name
-2. task duration today
-3. task activity indicator
+columns
+1. index (for numeric argument)
+2. task name
+3. task duration today
+4. task activity indicator
    * click to clock in/out (hover to show icon)
-4. graph of daily task durations
+5. graph of daily task durations
    * Click on a point in the graph to view that day in the Details View.
 
 click on row to show taller graph and inline display of either key-value breakdown, or interval breakdown.
@@ -1126,6 +1128,10 @@ commands
 1. category
 2. time duration today
 
+commands
+1. toggle details for row (show tasks in each category)
+2. toggle details for all rows
+
 *** Events table
 :PROPERTIES:
 :CREATED:  2022-04-10T08:12:58+0530
@@ -1133,6 +1139,10 @@ commands
 ("Useful for recording things like weight, medication, waist circumference, etc.")
 1. event name
 2. time of occurrence
+
+commands
+1. add event
+2. record event
 
 *** Day-grouped log
 :PROPERTIES:
