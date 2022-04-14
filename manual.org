@@ -74,11 +74,15 @@ The Org file can also be loaded directly using the [[https://github.com/jingtaoz
 :PROPERTIES:
 :CUSTOM_ID: license
 :END:
-I dream of a world where all software is liberated - transparent, trustable, and accessible for anyone to use or improve. But I don't want to make demands or threats (e.g. via legal conditions) to get there.
+I'd /like/ for all software to be liberated - transparent, trustable, and accessible for anyone to use, study, or improve.
 
-I'd rather make a request - please do everything you can to help that dream come true. Please Unlicense as much software as you can.
+I'd /like/ anyone using my software to credit me for the work.
 
-Chronometrist is released under your choice of [[https://unlicense.org/][Unlicense]] or the [[http://www.wtfpl.net/][WTFPL]].
+I'd /like/ to receive financial support for my efforts, so I can spend all my time doing what I find meaningful.
+
+But I don't want to make demands or threats (e.g. via legal conditions) to accomplish all that, nor restrict my services to only those who can pay.
+
+Thus, Chronometrist is released under your choice of [[https://unlicense.org/][Unlicense]] or the [[http://www.wtfpl.net/][WTFPL]].
 
 (See files [[file:UNLICENSE][UNLICENSE]] and [[file:WTFPL][WTFPL]]).
 
