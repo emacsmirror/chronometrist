@@ -8,10 +8,12 @@
 * v0.3.0 [100%]
   1. [X] +Release or+ bundle plist-pp.el
   2. [X] -report - error opening when clocked in
+
 * MELPA, hosting [0%]
 1. [ ] merge =chronometrist-goal= into this repository
 2. [X] move project to codeberg.org or tildegit.org
 3. [X] ...and then, update the MELPA recipes.
+
 * Chronometrist
 1. implement point restore for =chronometrist=/=chronometrist-report=/=chronometrist-statistics= in a kill-buffer-hook, so it works whenever the buffer is killed, not just when we call the command.
 
@@ -34,11 +36,13 @@
         5. Delete =:stop= time and save
         6. Clock out again
         7. Accept the already-inserted key-value. Duplicate!
+
 ** Features [50%]
    1. [ ] Hook enhancement - can we supply the whole plist (including tags and key-values) to the task-start hooks, so users can have even smarter hook functions?
       * That would mean ensuring that -kv-read runs before other hooks.
       * Actually, it should be trivial to access the last expression in the file, so maybe this is unnecessary.
    2. [X] Revisit 'no reason' commands - maybe we should ask for tags and key-values with the regular commands, and skip them with the 'no reason' variants?
+
 *** Key-values [66%]
     1. [X] bug - value-history appears in chronological rather than reverse chronological order
     2. [X] generate history hash table from chronometrist-file.
@@ -70,6 +74,7 @@
     15. [X] bug - tag history starts at the beginning (wtf?), value history is empty (wtf?)
         * Does not occur on master, only on dev
         * Does not occur if you disable lexical binding (introduced in 4e89836)
+
 **** Values
      What forms can they take?
      1. Integers, floating point numbers - easy to identify via regexp
@@ -109,6 +114,7 @@
 ** Maybe
 1. Add a new kind of plist - =(:name "NAME" :time "TIME" ...)=
    To record events for which the time interval is not relevant. These won't be shown in =chronometrist= - perhaps in a different buffer.
+
 * Optimization
 ** DONE Don't update task list from data when user has set their own
 :PROPERTIES:
@@ -135,6 +141,7 @@ Defer (tag/key/value) history generation from file-change-time to prompt-time, a
 + Reduce memory use by allowing user to restrict number of s-expressions read.
 + Per-task history generation will create problems - e.g. values for a given key for one task won't be suggested for values for the same key in another 🤦
   * Tags and keys are already task-sensitive; just don't make values task-sensitive.
+
 ** DONE Hash file contents to optimize for common changes
 Compare partial hashes of file to know what has changed - only update memory when necessary.
 
@@ -143,20 +150,24 @@ Don't store entire file into memory; instead, split midnight-spanning intervals 
 + Will increase load time for each forward/backward command in =chronometrist-report= and =chronometrist-statistics=
 + Will reduce memory used by =chronometrist-events=.
   * Further reductions can take place, if we automatically discard cache entries past a certain limit. (perhaps excluding data for the current day, week, or month)
+
 ** Split and save midnight-spanning intervals to disk
 It will remove the need for an in-memory version of data with split midnight-spanning intervals.
 + Least memory use?
 + Might make the file harder for a user to edit.
+
 ** Save timestamps as UNIX epoch time
 + Will (probably) greatly speed up time parsing and interval splitting.
 + Will greatly impede human editing of the file, too. 🤔
   * An editing UI could help - pretty sure every timestamp edit I've ever made has been for the last interval, or at most an interval in today's data.
     - The editing UI could have commands for next/previous interval; one could also have a command which, in the file, opens the plist at point for editing.
+
 ** Use an SQL database instead of a text file
 That is, assuming SQL can
 1. find the difference between ISO-8601 timestamps
 2. compare ISO-8601 timestamps, and
 3. do 1 and 2 faster than Elisp.
+
 ** Change data structure
 Instead of storing each plist as-is, split each into two, one with the =:start= and one with the =:end=. Now we have the elegance of the one-plist-is-a-complete-interval schema in the file, and the ease and speed of detection of midnight spanning intervals in memory.
 
@@ -168,6 +179,7 @@ Instead of storing each plist as-is, split each into two, one with the =:start= 
     (:stop "<timestamp>")
     ...)
    #+END_SRC
+
 ** Change file timestamp format to =("<iso-date>" "<iso-time>")=
 ** Change file schema
 Pros
@@ -225,6 +237,7 @@ Cons
    + Anything requiring split intervals will first look in =chronometrist-events=, and if not found, will read from the file and update =chronometrist-events=.
    + When the file changes, use the file byte length and hash strategy described below to know whether to keep the cache.
    + Save cache to a file, so that event splitting is avoided by reading from that.
+
 ** (old) ideas to make -refresh-file faster
    1. Support multiple files, so we read and process lesser data when one of them changes.
    2. Make file writing async
@@ -236,12 +249,14 @@ Cons
           * Or even the first expression of the current date. That way, we just re-read the intervals for today. Because chronometrist-events uses dates as keys, it's easy to work on the basis of dates.
    6. [ ] Don't generate tag/keyword/value history from the entire log, just from the last N days (where N is user-customizable).
    7. [ ] Just why are we reading the whole file? ~chronometrist~ should not read more than a day; ~chronometrist-report~ should not read more than a week at a time, and so on. Make a branch which works on this logic, see if it is faster.
+
 * Certain
 1. [ ] statistics UI for arbitrary queries
    * user provides a predicate
    * we show buffer with
      + matched unique tag groups, and sparklines for time spent on each
      + matched key-values, and sparklines for time spent on each
+
 ** plist-pp [66%]
 1. [X] plist-pp - work recursively for plist/alist values
 2. [ ] Fix alignment of alist dots
@@ -457,6 +472,7 @@ Cons
    - untouched project with target defined - red
    - target ±5 minutes - green
    - target*2 and above - red
+
 * viewing/editing frontends
 :PROPERTIES:
 :CUSTOM_ID: viewing-editing-frontends
@@ -476,7 +492,6 @@ A way to represent s-expressions as Markdown, Org, etc, so the entire plist can 
  * see [[info:elisp#Swapping Text][swapping text]]
 
 *** A binding in the key-value buffer, which will insert the string at point in a buffer of a certain mode.
-
 * documentation discoverability                                         :doc:
 Ensure that the user manual is easily discoverable.
 
@@ -686,10 +701,13 @@ list of tasks, one day, durations and graphs
   2. [ ] set day (blank input to reset to today's date)
   3. [ ] set duration format
   4. [ ] display sparkline for total time
+
 *** report
 list of tasks, one week, durations only
+
 *** statistics
 list of tasks, one week/month/year [fn:1]
+
 *** details (intervals for a day) [16%]
 list of intervals, one day [fn:1]
 + [-] commands [50%]
@@ -706,12 +724,14 @@ list of intervals, one day [fn:1]
 
 Bugs
 1. [ ] day-crossing events have the wrong duration and time. e.g. ~1   Exercise  walking  30 minutes   from 23:37 to 00:07~
+
 ** New frontends I want
 *** task-key-values
 list of unique key-values for a task, one day [fn:1], durations and graphs
 + commands [0%]
   1. [ ] set task
   2. [ ] set range
+
 *** task-graph [0%]
 list of days, weeks, or months [fn:1], one task (with optional key-value filter [fn:2]), horizontal graph (and durations/stats?)
 + columns
@@ -806,6 +826,7 @@ See docstring of =timeclock-log-data=
 :PROPERTIES:
 :CUSTOM_ID: new-backends-klog
 :END:
+
 ** SQLite [0%]
 Chronometrist allows the user to add arbitrary key-values. There are a few ways to do this in SQL, but [[https://mariadb.com/kb/en/entity-attribute-value-implementation/][this solution]] seems well-suited to Chronometrist - put commonly-queried keys (name, start, stop) into SQL columns, and put user key-values in a JSON/s-exp TEXT column. The latter can be queried separately. SQLite has support for [[https://www.sqlite.org/json1.html][JSON columns]].
 
@@ -850,7 +871,6 @@ Command to delete the interval currently being recorded. (bind to 'k')
 * pretty printer
 ** fix handling of tagged alist group values                           :bug:
 ** put each list element on its own line if length of list exceeds fill-column :feature:
-
 * verify command [20%]                                              :feature:
 :PROPERTIES:
 :CUSTOM_ID: verify-command
@@ -938,36 +958,15 @@ The plist backend could theoretically be extended to support it, but I'd rather 
 1. [ ] Use active backend as the suggested input backend when migrating
 2. [ ] Conserve file local variables prop line for text backends
 
-** make migrate command async
+** make migrate command async [33%]
 :PROPERTIES:
 :CREATED:  2022-04-01T18:02:03+0530
 :END:
 =chronometrist-migrate= / =chronometrist-to-file= can take a long time to run, freezing Emacs until completion if run synchronously.
 
-I tried using =async.el= by changing the main =if= branch of =chronometrist-migrate= to the following -
-
-#+BEGIN_SRC emacs-lisp
-(if (and confirm confirm-overwrite)
-    (async-start
-     `(lambda ()
-        (require 'cl)
-        ;; This will break if the user did not install Chronometrist
-        ;; and related packages via MELPA. An improvement would be to
-        ;; load `(locate-user-emacs-file "init.el")' if it
-        ;; exists. It's not perfect, but would cover most situations.
-        (package-initialize)
-        (cl-loop for (pkg . desc) in package-alist
-          when (string-match-p "^chronometrist" (symbol-name pkg))
-          do (require pkg))
-        ,(async-inject-variables "chronometrist-")
-        (chronometrist-to-file (chronometrist-backend-hash-table ,input-backend)
-                               ,output-backend ,output-file))
-     (lambda (result)
-       (message "Conversion complete.")))
-  (message "Conversion aborted."))
-#+END_SRC
-
-Unfortunately, this code does not work - it results in an =(invalid-read-syntax "#")= error, which seems to be a [[https://github.com/jwiegley/emacs-async/issues?q=is%3Aissue+read+syntax][common error]] with this library.
+1. [X] basic async export
+2. [ ] display message on start and completion
+3. [ ] test the INPUT-FILE argument
 
 * STARTED Support for the Third Time System [57%]                 :extension:
 :PROPERTIES:
@@ -1086,3 +1085,116 @@ A task can be part of any number of categories. A category may also contain othe
 1. [ ] Look for any existing Chronometrist database in the default location. If one is found, use it to determine the default active backend. Otherwise, offer to import from one of the supported backends.
    + Some backends may not be installed - "see MELPA for more formats"
 2. [ ] Don't suggest nil when asking for first project on first run
+
+* Common Lisp port
+:PROPERTIES:
+:CREATED:  2022-04-03T09:36:53+0530
+:END:
+
+** DONE Replace =add-variable-watcher=
+Common Lisp does not have Elisp's =add-variable-watcher=. The Elisp code used that to automatically update the =file= slot of the active backend object when the user changes the value of =chronometrist-file=. The new solution is to remove direct accesses to the =file= slot, define a =backend-file= method which returns the value of =file= if non-nil (it's usually nil), or derives a file path from =*user-data-file*= and the backend's extension.
+
+It seems that the =file= slot is now unnecessary - =backend-file= can check =path= instead of =file=, and use either =path= or =*user-data-file*= to derive the full path.
+
+1. [X] Remove the =file= slot
+
+** DONE Use pathnames instead of namestrings
+:PROPERTIES:
+:CREATED:  2022-04-03T12:30:24+0530
+:END:
+
+** CLIM UI design
+*** One-day task-duration table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:09:18+0530
+:END:
+columns
+1. index (for numeric argument)
+2. task name
+3. task duration today
+4. task activity indicator
+   * click to clock in/out (hover to show icon)
+5. graph of daily task durations
+   * Click on a point in the graph to view that day in the Details View.
+
+click on row to show taller graph and inline display of either key-value breakdown, or interval breakdown.
+
+commands
+1. clock in, clock out, etc
+2. toggle details for row
+3. toggle details for all rows
+4. next/previous day
+5. set displayed day
+6. cycle graph heights (self/comparative)
+   * the height of the graphs can be based on the range of each individual graph's own data ('self') or based on the range of all data ('comparative').
+
+settings
+1. default graph height
+
+*** One-day category-duration table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:11:20+0530
+:END:
+1. category
+2. time duration today
+
+commands
+1. toggle details for row (show tasks in each category)
+2. toggle details for all rows
+
+*** One-day event-occurrence table
+:PROPERTIES:
+:CREATED:  2022-04-10T08:12:58+0530
+:END:
+("Useful for recording things like weight, medication, waist circumference, etc.")
+1. index (prefix argument)
+2. event name
+3. time of occurrence
+4. graph of past occurrences
+
+commands
+1. add event
+2. record event
+
+*** 1+ day editable log
+:PROPERTIES:
+:CREATED:  2022-04-08T18:23:42+0530
+:END:
+Displays tables of day properties, intervals, and events, grouped by day, in date/week/month/year range (default - today)
+
+can select a day property/interval/event to edit its data
+
+buttons to add new day properties, intervals, and events
+
+When there are no intervals/events/day properties, show placeholder text - "No intervals recorded on this day." / "No events recorded on this day." / "No properties for this day."
+
+Commands
+1. filter contents
+2. next/previous day (or range)
+3. set displayed day (or range)
+
+*** Line chart views
+:PROPERTIES:
+:CREATED:  [2022-04-10 Sun 14:35]
+:END:
+Line chart with one or more (adjustable) metrics -
+ * duration for task
+ * task-property combinations
+ * numeric property value/function with numeric output
+...over a time range (adjustable), with points for days/weeks/months/years (adjustable)
+
+User can switch between single graph vs separate graphs, different types of graphs, etc.
+
+Commands
+1. Add metric, remove metric
+2. Increase/decrease/set range, next/previous range
+3. Increase/decrease/set granularity
+
+*** Default view (overview for a day)
+Default view is a tiled composition of the one-day task-duration table, one-day grouped log, and the one-day category-duration table.
+
+*** view/edit database as
+:PROPERTIES:
+:CREATED:  2022-04-08T19:56:38+0530
+:END:
+some way to view/edit the database in a different format, e.g. Lisp plists

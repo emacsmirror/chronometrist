@@ -115,29 +115,18 @@ Return the connection object from `emacsql-sqlite'."
       finally return db)))
 #+END_SRC
 
-** to-file                                                          :method:
-#+BEGIN_SRC emacs-lisp :load no :tangle no
-(cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
-  (cl-loop with db = (emacsql-sqlite file)
-    with count = 0
-    for records being the hash-values of hash-table do
-    (cl-loop for record in records do
-      (chronometrist-insert record db)
-      (cl-incf count)
-      (when (zerop (% count 5))
-        (message "chronometrist-migrate - %s records converted" count)))
-    finally return count do
-    (message "chronometrist-migrate - finished converting %s events." count)))
-#+END_SRC
-
+** iso-to-unix                                                    :function:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-iso-to-unix (timestamp)
   (truncate (float-time (parse-iso8601-time-string timestamp))))
+#+END_SRC
 
+** to-file                                                          :method:
+#+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-to-file (hash-table (backend chronometrist-sqlite-backend) file)
   (with-slots (connection) backend
     (delete-file file)
-    (emacsql-close connection)
+    (when connection (emacsql-close connection))
     (setf connection nil)
     (chronometrist-create-file backend file)
     (cl-loop for date in (sort (hash-table-keys hash-table) #'string-lessp) do
@@ -164,7 +153,10 @@ prop-id of the inserted or existing property."
       (emacsql connection
                [:insert-or-ignore-into properties [properties] :values [$s1]]
                props)
-      (caar (emacsql connection [:select (funcall max prop-id) :from properties])))))
+      (caar (emacsql connection [:select [prop-id]
+                                 :from properties
+                                 :where (= properties $s1)]
+                     props)))))
 #+END_SRC
 
 *** properties-to-json                                           :function:
@@ -209,22 +201,23 @@ s-expressions in a text column."
               (date-unix   (chronometrist-iso-to-unix (chronometrist-iso-to-date start)))
               (start-unix  (chronometrist-iso-to-unix start))
               (stop-unix   (and stop (chronometrist-iso-to-unix stop)))
-              name-id interval-id)
+              name-id interval-id prop-id)
         ;; insert name if it does not exist
         (emacsql db [:insert-or-ignore-into interval-names [name]
                      :values [$s1]]
                  name)
         ;; insert interval properties if they do not exist
-        (chronometrist-sqlite-insert-properties backend plist)
+        (setq prop-id (chronometrist-sqlite-insert-properties backend plist))
         ;; insert interval and associate it with the date
         (setq name-id
               (caar (emacsql db [:select [name-id]
                                  :from interval-names
                                  :where (= name $s1)]
                              name)))
-        (emacsql db [:insert-or-ignore-into intervals [name-id start-time stop-time]
-                     :values [$s1 $s2 $s3]]
-                 name-id start-unix stop-unix)
+        (emacsql db [:insert-or-ignore-into intervals
+                     [name-id start-time stop-time prop-id]
+                     :values [$s1 $s2 $s3 $s4]]
+                 name-id start-unix stop-unix prop-id)
         (emacsql db [:insert-or-ignore-into dates [date]
                      :values [$s1]] date-unix)
         (setq date-id
@@ -272,9 +265,9 @@ s-expressions in a text column."
 
 ** Provide
 #+BEGIN_SRC emacs-lisp
-(provide 'chronometrist-sqlite3)
+(provide 'chronometrist-sqlite)
 
-;;; chronometrist-sqlite3.el ends here
+;;; chronometrist-sqlite.el ends here
 #+END_SRC
 
 * Local variables                                                  :noexport:
