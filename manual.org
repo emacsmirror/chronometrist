@@ -220,6 +220,9 @@ Evaluate or add to your init.el the following -
 :PROPERTIES:
 :CUSTOM_ID: how-to-literate-elisp
 :END:
+The literate Org document will automatically =literate-elisp-load= itself when opened, if =literate-elisp= is installed via =package.el=.
+
+If you want it to be loaded with =literate-elisp-load= on Emacs startup, add the following to your init.el -
 #+BEGIN_SRC emacs-lisp
 (add-to-list 'load-path "<directory containing chronometrist.org>")
 
