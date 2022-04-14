@@ -1207,3 +1207,19 @@ some way to view/edit the database in a different format, e.g. Lisp plists
 2. Revamp tutorials - https://diataxis.fr/tutorials/#the-language-of-tutorials
 3. Make how-to guides more general?
 4. Move some how-to guide code into a contrib directory?
+
+** tutorial and how-to topic revamp
+tutorials
+1. installation (MELPA) -> first run
+2. adding the first task
+3. clocking in, clocking out
+4. customization - open a file when starting a task (move from how-to)
+5. customization - warn when exiting with an active task
+6. clocking in/out without running hooks
+7. restarting or discarding an activity
+8. key-value extension - installation -> customization -> testing/results
+9. graph extension - installation -> customization -> testing/results
+
+how-to guides
+1. how to install (Git, MELPA, Quelpa, etc)
+2. how to attach tags and properties to time intervals (cover different commands)

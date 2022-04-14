@@ -251,9 +251,9 @@ Evaluate or add to your init.el the following -
 1. Add =chronometrist-kv-add= to one or more of these hooks [fn:2] -
 
    #+BEGIN_SRC emacs-lisp
-   (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
-   (add-to-list 'chronometrist-before-out-functions 'chronometrist-kv-add)
-   (add-to-list 'chronometrist-after-out-functions 'chronometrist-kv-add)
+(add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
+(add-to-list 'chronometrist-before-out-functions 'chronometrist-kv-add)
+(add-to-list 'chronometrist-after-out-functions 'chronometrist-kv-add)
    #+END_SRC
 
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press =C-c C-c= to accept the key-values, or =C-c C-k= to cancel.
