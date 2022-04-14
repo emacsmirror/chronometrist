@@ -1086,7 +1086,7 @@ A task can be part of any number of categories. A category may also contain othe
    + Some backends may not be installed - "see MELPA for more formats"
 2. [ ] Don't suggest nil when asking for first project on first run
 
-* Common Lisp port
+* STARTED Common Lisp port
 :PROPERTIES:
 :CREATED:  2022-04-03T09:36:53+0530
 :END:
@@ -1198,3 +1198,12 @@ Default view is a tiled composition of the one-day task-duration table, one-day 
 :CREATED:  2022-04-08T19:56:38+0530
 :END:
 some way to view/edit the database in a different format, e.g. Lisp plists
+
+* Documentation restructuring                                           :doc:
+:PROPERTIES:
+:CREATED:  2022-04-14T18:04:21+0530
+:END:
+1. Move documentation from LPs to manual.org
+2. Revamp tutorials - https://diataxis.fr/tutorials/#the-language-of-tutorials
+3. Make how-to guides more general?
+4. Move some how-to guide code into a contrib directory?
