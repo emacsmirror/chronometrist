@@ -1120,6 +1120,11 @@ commands
 3. toggle details for all rows
 4. next/previous day
 5. set displayed day
+6. cycle graph heights (self/comparative)
+   * the height of the graphs can be based on the range of each individual graph's own data ('self') or based on the range of all data ('comparative').
+
+settings
+1. default graph height
 
 *** One-day category-duration table
 :PROPERTIES:
