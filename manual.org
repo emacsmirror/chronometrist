@@ -60,6 +60,33 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 + Chronometrist's UI is cleaner, since the storage is separate from the display. It doesn't show tasks as trees like Org, but it uses tags and key-values to achieve that. Additionally, navigating a flat list takes fewer user operations than navigating a tree.
 + Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
 
+** Common Lisp port
+In March 2022, work began on the long-awaited Common Lisp port of Chronometrist, which aims to create -
+1. a greater variety of backends (e.g. SQLite)
+2. a common reusable library for frontends to use,
+3. a greater variety of frontends, such as -
+   * a command line interface (CLI), for UNIX scripting;
+   * a terminal user inteface (TUI), for those so inclined;
+   * a CLIM (Common Lisp Interface Manager) GUI [fn:1],
+   * Qt and Android interfaces using [[https://gitlab.com/eql/lqml][LQML]],
+   * web frontends (possibly via [[https://common-lisp.net/project/parenscript/][Parenscript]] or [[https://github.com/rabbibotton/clog][CLOG]]),
+   * and perhaps even an interface for wearable devices!
+
+The port was also driven by the desire to have access to Common Lisp's better performance, and features such as namespaces, a /de facto/ standard build system, multithreading, SQLite bindings, a more fully-featured implementation of CLOS and MOP, and type annotations, checking, and inference.
+
+Currently, this port can -
+1. import from a plist-group file and export to an SQLite database
+   #+BEGIN_SRC lisp
+(chronometrist:to-file (chronometrist:to-hash-table
+                        (make-instance 'chronometrist.plist-group:plist-group-backend
+                                       :file "/path/to/file.plg"))
+                       (make-instance 'chronometrist.sqlite:sqlite-backend)
+                       "/path/to/file.sqlite")
+   #+END_SRC
+2. display a (WIP) CLIM GUI - =(chronometrist.clim:run-chronometrist)=
+
+[fn:1] McCLIM also has an incomplete ncurses backend - when completed, a CLIM frontend could provide a TUI "for free".
+
 ** Literate Program
 :PROPERTIES:
 :CUSTOM_ID: explanation-literate-program
@@ -175,7 +202,7 @@ All buffers keep themselves updated via an idle timer - no need to frequently pr
 
 If you wish you could define time goals for some tasks, and have Chronometrist notify you when you're approaching the goal, completing it, or exceeding it, check out the extension [[https://github.com/contrapunctus-1/chronometrist-goal/][chronometrist-goal.el]].
 
-* How-to
+* How-to Guides
 :PROPERTIES:
 :CUSTOM_ID: how-to
 :END:
@@ -295,7 +322,7 @@ Return nil (and run `magit-status') if the user answers no."
 :PROPERTIES:
 :CUSTOM_ID: how-to-backup
 :END:
-I suggest backing up Chronometrist data on each save using the [[https://tildegit.org/contrapunctus/async-backup][async-backup]] package.[fn:1] Here's how you can do that.
+I suggest backing up Chronometrist data on each save using the [[https://tildegit.org/contrapunctus/async-backup][async-backup]] package.[fn:3] Here's how you can do that.
 
 1. Add the following to your init.
    #+BEGIN_SRC emacs-lisp
@@ -306,7 +333,7 @@ I suggest backing up Chronometrist data on each save using the [[https://tildegi
    : M-x add-file-local-variable-prop-line RET eval RET (add-hook 'after-save-hook #'async-backup nil t) RET
 3. Optionally, configure =backup-directory-alist= to set a specific directory for the backups.
 
-[fn:1] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
+[fn:3] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
 
 ** How to configure Vertico for use with Chronometrist
 :PROPERTIES:
