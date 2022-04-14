@@ -1,4 +1,5 @@
-#+TITLE: Chronometrist - a personal time tracker and analyzer for Emacs and CLIM
+#+TITLE: Chronometrist
+#+SUBTITLE: Friendly and powerful personal time tracker/analyzer with Emacs and CLIM frontends
 #+DESCRIPTION: User Manual
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
