@@ -1,5 +1,4 @@
-#+TITLE: Chronometrist - an extensible time tracker for Emacs
-#+SUBTITLE: Friendly and powerful personal time tracker and analyzer for Emacs
+#+TITLE: Chronometrist - a personal time tracker and analyzer for Emacs and CLIM
 #+DESCRIPTION: User Manual
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css" />
 
@@ -13,12 +12,13 @@
 </a>
 #+END_EXPORT
 
-Chronometrist is a friendly and powerful personal time tracker and analyzer for Emacs.
+* Explanation
+Chronometrist is a friendly and powerful personal time tracker and analyzer. It has frontends for Emacs and [[https://mcclim.common-lisp.dev/][CLIM]].
 
 #+CAPTION: The main Chronometrist buffer, with the enabled extensions [[#time-goals][chronometrist-goal]] ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).
 [[file:doc/2022-02-20 13-26-53.png]]
 
-* Benefits
+** Benefits
 :PROPERTIES:
 :CUSTOM_ID: benefits
 :END:
@@ -29,32 +29,30 @@ Chronometrist is a friendly and powerful personal time tracker and analyzer for 
 5. Hooks to let you perform arbitrary actions when starting/stopping tasks
 6. Fancy graphs with the =chronometrist-spark= extension
 
-* Limitations
+** Limitations
 :PROPERTIES:
 :CUSTOM_ID: limitations
 :END:
 1. No support for concurrent tasks.
 
-* Comparisons
+** Comparisons
 :PROPERTIES:
 :CUSTOM_ID: comparisons
 :END:
-** timeclock.el
+*** timeclock.el (Emacs built-in)
 :PROPERTIES:
 :CUSTOM_ID: timeclock.el
 :END:
-
 Compared to timeclock.el, Chronometrist
 + stores data in an s-expression format rather than a line-based one
 + supports attaching tags and arbitrary key-values to time intervals
 + has commands to shows useful summaries
 + has more hooks
 
-** Org time tracking
+*** Org time tracking
 :PROPERTIES:
 :CUSTOM_ID: org-time-tracking
 :END:
-
 Chronometrist and Org time tracking seem to be equivalent in terms of capabilities, approaching the same ends through different means.
 + Chronometrist doesn't have a mode line indicator at the moment. (planned)
 + Chronometrist doesn't have Org's sophisticated querying facilities. (an SQLite backend is planned)
@@ -62,23 +60,61 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 + Chronometrist's UI is cleaner, since the storage is separate from the display. It doesn't show tasks as trees like Org, but it uses tags and key-values to achieve that. Additionally, navigating a flat list takes fewer user operations than navigating a tree.
 + Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
 
-* Installation
+** Literate Program
+:PROPERTIES:
+:CUSTOM_ID: explanation-literate-program
+:END:
+Chronometrist is a literate program, made using Org - the canonical source is the =chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file).
+
+The Org file can also be loaded directly using the [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file, within the context of the concerned documentation. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
+
+=chronometrist.org= is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
+
+** License
+:PROPERTIES:
+:CUSTOM_ID: license
+:END:
+I dream of a world where all software is liberated - transparent, trustable, and accessible for anyone to use or improve. But I don't want to make demands or threats (e.g. via legal conditions) to get there.
+
+I'd rather make a request - please do everything you can to help that dream come true. Please Unlicense as much software as you can.
+
+Chronometrist is released under your choice of [[https://unlicense.org/][Unlicense]] or the [[http://www.wtfpl.net/][WTFPL]].
+
+(See files [[file:UNLICENSE][UNLICENSE]] and [[file:WTFPL][WTFPL]]).
+
+** Thanks
+:PROPERTIES:
+:CUSTOM_ID: thanks
+:END:
+The main buffer and the report buffer are copied from the Android application, [[https://github.com/netmackan/ATimeTracker][A Time Tracker]]
+
+wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
+
+jwiegley for =timeclock.el=, which we used as a backend in earlier versions
+
+blandest for helping me with the name
+
+fiete and wu-lee for testing and bug reports
+
+* Tutorials
+:PROPERTIES:
+:CUSTOM_ID: usage
+:END:
+** Installation
 :PROPERTIES:
 :CUSTOM_ID: installation
 :END:
-** from MELPA
+*** from MELPA
 :PROPERTIES:
 :CUSTOM_ID: install-from-melpa
 :END:
-
 1. Set up MELPA - https://melpa.org/#/getting-started
 2. =M-x package-install RET chronometrist RET=
 
-** from Git
+*** from Git
 :PROPERTIES:
 :CUSTOM_ID: install-from-git
 :END:
-
 You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometrist or https://codeberg.org/contrapunctus/chronometrist
 
 =chronometrist= requires
@@ -86,18 +122,12 @@ You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometris
 + [[https://github.com/magnars/dash.el][dash.el]]
 + [[https://github.com/alphapapa/ts.el][ts.el]]
 
-Add the "elisp/" subdirectory to your load-path, and =(require 'chronometrist)=.
-
-* Usage
-:PROPERTIES:
-:CUSTOM_ID: usage
-:END:
+Add the ="elisp/"= subdirectory to your load-path, and =(require 'chronometrist)=.
 
 ** chronometrist
 :PROPERTIES:
 :CUSTOM_ID: usage-chronometrist
 :END:
-
 Run =M-x chronometrist= to see your projects, the time you spent on them today, which one is active, and the total time clocked today.
 
 Click or hit =RET= (=chronometrist-toggle-task=) on a project to start tracking time for it. If it's already clocked in, it will be clocked out.
@@ -110,7 +140,6 @@ Press =r= to see a weekly report (see =chronometrist-report=)
 :PROPERTIES:
 :CUSTOM_ID: usage-chronometrist-report
 :END:
-
 Run =M-x chronometrist-report= (or =chronometrist= with a prefix argument of 1, or press =r= in the =chronometrist= buffer) to see a weekly report.
 
 Press =b= to look at past weeks, and =f= for future weeks.
@@ -119,7 +148,6 @@ Press =b= to look at past weeks, and =f= for future weeks.
 :PROPERTIES:
 :CUSTOM_ID: usage-chronometrist-statistics
 :END:
-
 Run =M-x chronometrist-statistics= (or =chronometrist= with a prefix argument of 2) to view statistics.
 
 Press =b= to look at past time ranges, and =f= for future ones.
@@ -147,14 +175,12 @@ If you wish you could define time goals for some tasks, and have Chronometrist n
 :PROPERTIES:
 :CUSTOM_ID: how-to
 :END:
-
 See the Customize groups =chronometrist= and =chronometrist-report= for variables intended to be user-customizable.
 
 ** How to display a prompt when exiting with an active task
 :PROPERTIES:
 :CUSTOM_ID: how-to-prompt-when-exiting-emacs
 :END:
-
 Evaluate or add to your init.el the following -
 =(add-hook 'kill-emacs-query-functions 'chronometrist-query-stop)=
 
@@ -162,7 +188,6 @@ Evaluate or add to your init.el the following -
 :PROPERTIES:
 :CUSTOM_ID: how-to-literate-elisp
 :END:
-
 #+BEGIN_SRC emacs-lisp
 (add-to-list 'load-path "<directory containing chronometrist.org>")
 
@@ -174,7 +199,6 @@ Evaluate or add to your init.el the following -
 :PROPERTIES:
 :CUSTOM_ID: how-to-tags
 :END:
-
 1. Add =chronometrist-tags-add= to one or more of these hooks [fn:2] -
 
    #+BEGIN_SRC emacs-lisp
@@ -192,7 +216,6 @@ Evaluate or add to your init.el the following -
 :PROPERTIES:
 :CUSTOM_ID: how-to-key-value-pairs
 :END:
-
 1. Add =chronometrist-kv-add= to one or more of these hooks [fn:2] -
 
    #+BEGIN_SRC emacs-lisp
@@ -210,7 +233,6 @@ Use =M-RET= (=chronometrist-toggle-task-no-hooks=) to clock in/out.
 :PROPERTIES:
 :CUSTOM_ID: how-to-open-files-on-task-start
 :END:
-
 An idea from the author's own init -
 
 #+BEGIN_SRC emacs-lisp
@@ -228,7 +250,6 @@ An idea from the author's own init -
 :PROPERTIES:
 :CUSTOM_ID: how-to-warn-uncommitted-changes
 :END:
-
 Another one, prompting the user if they have uncommitted changes in a git repository (assuming they use [[https://magit.vc/][Magit]]) -
 
 #+BEGIN_SRC emacs-lisp
@@ -253,7 +274,6 @@ Return nil (and run `magit-status') if the user answers no."
 :PROPERTIES:
 :CUSTOM_ID: how-to-activity-indicator
 :END:
-
 #+BEGIN_SRC emacs-lisp
 (defun my-activity-indicator ()
   (--> (chronometrist-latest-record (chronometrist-active-backend))
@@ -306,17 +326,6 @@ Or use =vertico-multiform= to disable sorting for only specific commands -
           (chronometrist-key-values-unified-prompt      (vertico-sort-function . nil)))))
 #+END_SRC
 
-* Explanation
-** Literate Program
-:PROPERTIES:
-:CUSTOM_ID: explanation-literate-program
-:END:
-Chronometrist is a literate program, made using Org - the canonical source is the =chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file).
-
-The Org file can also be loaded directly using the [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file, within the context of the concerned documentation. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
-
-=chronometrist.org= is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
-
 * User's reference
 All variables intended for user customization are listed here. They serve as the public API for this project for the purpose of semantic versioning. Any changes to these which require a user to modify their configuration are considered breaking changes.
 
@@ -348,7 +357,6 @@ Hooks
 :PROPERTIES:
 :CUSTOM_ID: contributions-contact
 :END:
-
 Feedback and MRs are very welcome. 🙂
 + [[file:TODO.org]] has a long list of tasks
 + [[file:elisp/chronometrist.org]] contains all developer-oriented documentation
@@ -356,33 +364,6 @@ Feedback and MRs are very welcome. 🙂
 If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [[https://conversations.im/j/emacs@salas.suchat.org][xmpp:emacs@salas.suchat.org?join]] ([[https://inverse.chat/#converse/room?jid=emacs@salas.suchat.org][web chat]])
 
 (For help in getting started with Jabber, [[https://xmpp.org/getting-started/][click here]])
-
-* License
-:PROPERTIES:
-:CUSTOM_ID: license
-:END:
-
-I dream of a world where all software is liberated - transparent, trustable, and accessible for anyone to use or improve. But I don't want to make demands or threats (e.g. via legal conditions) to get there.
-
-I'd rather make a request - please do everything you can to help that dream come true. Please Unlicense as much software as you can.
-
-Chronometrist is released under your choice of [[https://unlicense.org/][Unlicense]] or the [[http://www.wtfpl.net/][WTFPL]].
-
-(See files [[file:UNLICENSE][UNLICENSE]] and [[file:WTFPL][WTFPL]]).
-
-* Thanks
-:PROPERTIES:
-:CUSTOM_ID: thanks
-:END:
-The main buffer and the report buffer are copied from the Android application, [[https://github.com/netmackan/ATimeTracker][A Time Tracker]]
-
-wasamasa, bpalmer, aidalgol, pjb and the rest of #emacs for their tireless help and support
-
-jwiegley for =timeclock.el=, which we used as a backend in earlier versions
-
-blandest for helping me with the name
-
-fiete and wu-lee for testing and bug reports
 
 * Local variables                                                  :noexport:
 # Local Variables:
