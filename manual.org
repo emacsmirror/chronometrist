@@ -98,6 +98,18 @@ The Org file can also be loaded directly using the [[https://github.com/jingtaoz
 
 =chronometrist.org= is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
 
+** Contributions and contact
+:PROPERTIES:
+:CUSTOM_ID: contributions-contact
+:END:
+Feedback and MRs are very welcome. 🙂
++ [[file:TODO.org]] has a long list of tasks
++ [[file:elisp/chronometrist.org]] contains all developer-oriented documentation
+
+If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [[https://conversations.im/j/emacs@salas.suchat.org][xmpp:emacs@salas.suchat.org?join]] ([[https://inverse.chat/#converse/room?jid=emacs@salas.suchat.org][web chat]])
+
+(For help in getting started with Jabber, [[https://xmpp.org/getting-started/][click here]])
+
 ** License
 :PROPERTIES:
 :CUSTOM_ID: license
@@ -387,18 +399,6 @@ Hooks
 7. =chronometrist-after-out-functions=
 8. =chronometrist-file-change-hook=
 9. =chronometrist-timer-hook=
-
-* Contributions and contact
-:PROPERTIES:
-:CUSTOM_ID: contributions-contact
-:END:
-Feedback and MRs are very welcome. 🙂
-+ [[file:TODO.org]] has a long list of tasks
-+ [[file:elisp/chronometrist.org]] contains all developer-oriented documentation
-
-If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [[https://conversations.im/j/emacs@salas.suchat.org][xmpp:emacs@salas.suchat.org?join]] ([[https://inverse.chat/#converse/room?jid=emacs@salas.suchat.org][web chat]])
-
-(For help in getting started with Jabber, [[https://xmpp.org/getting-started/][click here]])
 
 * Local variables                                                  :noexport:
 # Local Variables:
