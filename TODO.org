@@ -1223,3 +1223,4 @@ tutorials
 how-to guides
 1. how to install (Git, MELPA, Quelpa, etc)
 2. how to attach tags and properties to time intervals (cover different commands)
+3. how to configure Emacs for Chronometrist development

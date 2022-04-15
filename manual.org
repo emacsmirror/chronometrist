@@ -85,17 +85,21 @@ Currently, this port can -
    #+END_SRC
 2. display a (WIP) CLIM GUI - =(chronometrist.clim:run-chronometrist)=
 
+The literate sources for the Common Lisp port may be found in =cl/chronometrist.org=.
+
 [fn:1] McCLIM also has an incomplete ncurses backend - when completed, a CLIM frontend could provide a TUI "for free".
 
-** Literate Program
+** Literate program
 :PROPERTIES:
 :CUSTOM_ID: explanation-literate-program
 :END:
-Chronometrist is a literate program, made using Org - the canonical source is the =chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file).
+Chronometrist is written as an Org literate program, which makes it easy to obtain different views of the program source, thanks to tree- and source-block folding, tags, properties, and the =org-match= command.
 
-The Org file can also be loaded directly using the [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file, within the context of the concerned documentation. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
+The canonical source is the =elisp/chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file). [fn:2]
 
-=chronometrist.org= is also included in MELPA installs, although not used directly by default, since doing so would interfere with automatic generation of autoloads.
+The Org literate program can also be loaded directly using the [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
+
+[fn:2] =chronometrist.org= is also included in MELPA installs, although not loaded through =literate-elisp-load= by default, since doing so would interfere with automatic generation of autoloads.
 
 ** Contributions and contact
 :PROPERTIES:
@@ -245,7 +249,7 @@ If you want it to be loaded with =literate-elisp-load= on Emacs startup, add the
 :PROPERTIES:
 :CUSTOM_ID: how-to-tags
 :END:
-1. Add =chronometrist-tags-add= to one or more of these hooks [fn:2] -
+1. Add =chronometrist-tags-add= to one or more of these hooks [fn:3] -
 
    #+BEGIN_SRC emacs-lisp
    (add-to-list 'chronometrist-after-in-functions 'chronometrist-tags-add)
@@ -256,13 +260,13 @@ If you want it to be loaded with =literate-elisp-load= on Emacs startup, add the
 
    The prompt suggests past combinations you used for the current task, which you can browse with =M-p=/=M-n=. You can leave it blank by pressing =RET=.
 
-[fn:2] but not =chronometrist-before-in-functions=
+[fn:3] but not =chronometrist-before-in-functions=
 
 ** How to attach key-values to time intervals
 :PROPERTIES:
 :CUSTOM_ID: how-to-key-value-pairs
 :END:
-1. Add =chronometrist-kv-add= to one or more of these hooks [fn:2] -
+1. Add =chronometrist-kv-add= to one or more of these hooks [fn:3] -
 
    #+BEGIN_SRC emacs-lisp
 (add-to-list 'chronometrist-after-in-functions 'chronometrist-kv-add)
@@ -337,7 +341,7 @@ Return nil (and run `magit-status') if the user answers no."
 :PROPERTIES:
 :CUSTOM_ID: how-to-backup
 :END:
-I suggest backing up Chronometrist data on each save using the [[https://tildegit.org/contrapunctus/async-backup][async-backup]] package.[fn:3] Here's how you can do that.
+I suggest backing up Chronometrist data on each save using the [[https://tildegit.org/contrapunctus/async-backup][async-backup]] package.[fn:4] Here's how you can do that.
 
 1. Add the following to your init.
    #+BEGIN_SRC emacs-lisp
@@ -349,7 +353,7 @@ I suggest backing up Chronometrist data on each save using the [[https://tildegi
 3. Optionally, configure =async-backup-location= to set a specific directory for the backups -
    : (setq async-backup-location "/path/to/backup/dir/")
 
-[fn:3] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
+[fn:4] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
 
 ** How to configure Vertico for use with Chronometrist
 :PROPERTIES:
