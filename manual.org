@@ -24,11 +24,10 @@ Chronometrist is a friendly and powerful personal time tracker and analyzer. It 
 :CUSTOM_ID: benefits
 :END:
 1. Extremely simple and efficient to use
-2. Displays useful information about your time usage
+2. Displays useful information about your time usage (including fancy graphs with the =chronometrist-spark= extension)
 3. Support for both mouse and keyboard
-4. Human errors in tracking are easily fixed by editing a plain text file
-5. Hooks to let you perform arbitrary actions when starting/stopping tasks
-6. Fancy graphs with the =chronometrist-spark= extension
+4. Human errors in tracking can be easily fixed by editing a plain text file
+5. Hooks to integrate time tracking into your workflow
 
 ** Limitations
 :PROPERTIES:
