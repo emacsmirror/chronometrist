@@ -74,7 +74,7 @@ In March 2022, work began on the long-awaited Common Lisp port of Chronometrist,
 
 The port was also driven by the desire to have access to Common Lisp's better performance, and features such as namespaces, a /de facto/ standard build system, multithreading, SQLite bindings, a more fully-featured implementation of CLOS and MOP, and type annotations, checking, and inference.
 
-Currently, this port can -
+The literate sources for the Common Lisp port may be found in =cl/chronometrist.org=. Currently, this port can -
 1. import from a plist-group file and export to an SQLite database
    #+BEGIN_SRC lisp
 (chronometrist:to-file (chronometrist:to-hash-table
@@ -85,7 +85,7 @@ Currently, this port can -
    #+END_SRC
 2. display a (WIP) CLIM GUI - =(chronometrist.clim:run-chronometrist)=
 
-The literate sources for the Common Lisp port may be found in =cl/chronometrist.org=.
+The Emacs Lisp codebase will probably become an Emacs frontend to a future Common Lisp CLI client.
 
 [fn:1] McCLIM also has an incomplete ncurses backend - when completed, a CLIM frontend could provide a TUI "for free".
 
