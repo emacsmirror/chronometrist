@@ -55,16 +55,6 @@ Chronometrist records /time intervals/ (earlier called "events") as plists. Each
 
 See also [[#explanation-time-formats][Currently-Used Time Formats]]
 
-** Overview
-At its most basic, we read data from a [[#program-backend][backend]], store it in a [[#program-data-structures][hash table]], and [[#program-frontend-chronometrist][display it]] as a [[elisp:(find-library "tabulated-list-mode")][=tabulated-list-mode=]] buffer. When the file is changed—whether by the program or the user—we [[refresh-file][update the hash table]] and the [[#program-frontend-chronometrist-refresh][buffer]].
-
-In addition, we implement a [[#program-pretty-printer][plist pretty-printer]] and some [[#program-migration][migration commands]].
-
-Extensions exist for -
-1. [[file:chronometrist-key-values.org][attaching arbitrary metadata]] to time intervals, and
-2. support for the [[file:chronometrist-third.org][Third Time system]]
-3. [[https://tildegit.org/contrapunctus/chronometrist-goal][time goals and alerts]]
-
 ** Optimization
 It is of great importance that Chronometrist be responsive -
 + A responsive program is more likely to be used; recall our design goal of 'incentivizing use'.

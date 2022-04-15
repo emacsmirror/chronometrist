@@ -74,14 +74,14 @@ In March 2022, work began on the long-awaited Common Lisp port of Chronometrist,
 
 The port was also driven by the desire to have access to Common Lisp's better performance, and features such as namespaces, a /de facto/ standard build system, multithreading, SQLite bindings, a more fully-featured implementation of CLOS and MOP, and type annotations, checking, and inference.
 
-The literate sources for the Common Lisp port may be found in =cl/chronometrist.org=. Currently, this port can -
+The literate sources for the Common Lisp port may be found in [[file:cl/chronometrist.org][cl/chronometrist.org]]. Currently, this port can -
 1. import from a plist-group file and export to an SQLite database
    #+BEGIN_SRC lisp
-(chronometrist:to-file (chronometrist:to-hash-table
-                        (make-instance 'chronometrist.plist-group:plist-group-backend
-                                       :file "/path/to/file.plg"))
-                       (make-instance 'chronometrist.sqlite:sqlite-backend)
-                       "/path/to/file.sqlite")
+   (chronometrist:to-file (chronometrist:to-hash-table
+                           (make-instance 'chronometrist.plist-group:plist-group-backend
+                                          :file "/path/to/file.plg"))
+                          (make-instance 'chronometrist.sqlite:sqlite-backend)
+                          "/path/to/file.sqlite")
    #+END_SRC
 2. display a (WIP) CLIM GUI - =(chronometrist.clim:run-chronometrist)=
 
@@ -95,11 +95,23 @@ The Emacs Lisp codebase will probably become an Emacs frontend to a future Commo
 :END:
 Chronometrist is written as an Org literate program, which makes it easy to obtain different views of the program source, thanks to tree- and source-block folding, tags, properties, and the =org-match= command.
 
-The canonical source is the =elisp/chronometrist.org= file, which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file). [fn:2]
+The canonical source file is [[file:elisp/chronometrist.org][elisp/chronometrist.org]], which contains source blocks. These are provided to users after /tangling/ (extracting the source into an Emacs Lisp file). [fn:2]
 
 The Org literate program can also be loaded directly using the [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] package, so that all source links (e.g. =xref=, =describe-function=) lead to the Org file. See [[#how-to-literate-elisp][How to load the program using literate-elisp]].
 
-[fn:2] =chronometrist.org= is also included in MELPA installs, although not loaded through =literate-elisp-load= by default, since doing so would interfere with automatic generation of autoloads.
+[fn:2] the literate source is also included in MELPA installs, although not loaded through =literate-elisp-load= by default, since doing so would interfere with automatic generation of autoloads.
+
+** Source code overview
+At its most basic, we read data from a [[file:elisp/chronometrist.org::#program-backend][backend]] and [[file:elisp/chronometrist.org::#program-frontend-chronometrist][display it]] as a [[elisp:(find-library "tabulated-list")][=tabulated-list-mode=]] buffer.
+
+The plist and plist-group backends (collectively known as the s-expression backends) =read= a text file containing s-expressions into a [[file:elisp/chronometrist.org::#program-data-structures][hash table]], and query that. When the file is changed—whether by the program or the user—they [[file:elisp/chronometrist.org::refresh-file][update the hash table]] and the [[file:elisp/chronometrist.org::#program-frontend-chronometrist-refresh][buffer]]. The s-expression backends also make use of a [[file:elisp/chronometrist.org::#program-pretty-printer][plist pretty-printer]] of their own.
+
+There are also some [[file:elisp/chronometrist.org::#program-migration][migration commands]].
+
+Extensions exist for -
+1. [[file:elisp/chronometrist-key-values.org][attaching arbitrary metadata]] to time intervals,
+2. [[https://tildegit.org/contrapunctus/chronometrist-goal][time goals and alerts]], and
+3. support for the [[file:elisp/chronometrist-third.org][Third Time system]]
 
 ** Contributions and contact
 :PROPERTIES:
