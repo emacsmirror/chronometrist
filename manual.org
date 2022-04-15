@@ -347,7 +347,8 @@ I suggest backing up Chronometrist data on each save using the [[https://tildegi
 2. Open your Chronometrist file and add =async-backup= to a buffer-local =after-save-hook=.
    : M-x chronometrist-open-log
    : M-x add-file-local-variable-prop-line RET eval RET (add-hook 'after-save-hook #'async-backup nil t) RET
-3. Optionally, configure =backup-directory-alist= to set a specific directory for the backups.
+3. Optionally, configure =async-backup-location= to set a specific directory for the backups -
+   : (setq async-backup-location "/path/to/backup/dir/")
 
 [fn:3] It is possible to use Emacs' built-in backup system to do it, but since it is synchronous, doing so will greatly slow down saving of the Chronometrist file.
 
