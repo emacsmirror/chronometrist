@@ -840,6 +840,14 @@ Chronometrist allows the user to add arbitrary key-values. There are a few ways 
 https://github.com/projecthamster/hamster
 + https://github.com/projecthamster/hamster/wiki/Our-datamodel
 
+** [[https://gitlab.com/Harag/cl-naive-store][cl-naive-store]]
+:PROPERTIES:
+:CREATED:  2022-04-16T21:11:07+0530
+:END:
+Reimplementing the plist/plist-group backends in Common Lisp, without the buffer visualisation and buffer-movement commands provided by Emacs/Elisp, is not something I'm very enthusiastic about. Even if those turn out to not be major factors, implementing these backends in Elisp taught me that making your own database can be a lot of work. Especially if you just care about your application, and writing a database was not what you set out to do (I severely underestimated the work involved).
+
+Yet, some may prefer the plist-group backend to an SQLite database. I trust that a cl-naive-store backend could have the same capabilities as the plist-group backend, but without the maintenance burden of an /ad hoc/ s-expression store.
+
 * Functions doing similar things                                       :code:
 1. =task-time-one-day=
 2. =interval= (unused)
@@ -1090,7 +1098,6 @@ A task can be part of any number of categories. A category may also contain othe
 :PROPERTIES:
 :CREATED:  2022-04-03T09:36:53+0530
 :END:
-
 ** DONE Replace =add-variable-watcher=
 Common Lisp does not have Elisp's =add-variable-watcher=. The Elisp code used that to automatically update the =file= slot of the active backend object when the user changes the value of =chronometrist-file=. The new solution is to remove direct accesses to the =file= slot, define a =backend-file= method which returns the value of =file= if non-nil (it's usually nil), or derives a file path from =*user-data-file*= and the backend's extension.
 
