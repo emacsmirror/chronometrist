@@ -1231,3 +1231,13 @@ how-to guides
 1. how to install (Git, MELPA, Quelpa, etc)
 2. how to attach tags and properties to time intervals (cover different commands)
 3. how to configure Emacs for Chronometrist development
+
+* Concurrent tasks
+:PROPERTIES:
+:CREATED:  2022-04-19T22:12:54+0530
+:END:
+I'm not interested in using this myself, so it must be possible to enable/disable it.
++ Does enabling/disabling it just affect how the clock-in command works? Perhaps data verification, too?
+
+How might it affect the data consumer?
+1. Calculation of total time tracked (in any range, e.g. a day) will definitely require a more complex algorithm.
