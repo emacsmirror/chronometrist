@@ -1193,9 +1193,10 @@ Line chart with one or more (adjustable) metrics -
 User can switch between single graph vs separate graphs, different types of graphs, etc.
 
 Commands
-1. Add metric, remove metric
-2. Increase/decrease/set range, next/previous range
-3. Increase/decrease/set granularity
+1. new/open/save/delete view
+2. add/remove metric (a line on the graph)
+3. increase/decrease/set range, next/previous range
+4. increase/decrease/set granularity
 
 *** Default view (overview for a day)
 Default view is a tiled composition of the one-day task-duration table, one-day grouped log, and the one-day category-duration table.
@@ -1237,7 +1238,7 @@ how-to guides
 :CREATED:  2022-04-19T22:12:54+0530
 :END:
 I'm not interested in using this myself, so it must be possible to enable/disable it.
-+ Does enabling/disabling it just affect how the clock-in command works? Perhaps data verification, too?
++ Enabling/disabling it would just affect how the clock-in command works. Perhaps data verification, too.
 
 How might it affect the data consumer?
 1. Calculation of total time tracked (in any range, e.g. a day) will definitely require a more complex algorithm.
