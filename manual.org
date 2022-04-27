@@ -14,6 +14,9 @@
 #+END_EXPORT
 
 * Explanation
+:PROPERTIES:
+:CUSTOM_ID: explanation
+:END:
 Chronometrist is a friendly and powerful personal time tracker and analyzer. It has frontends for Emacs and [[https://mcclim.common-lisp.dev/][CLIM]].
 
 #+CAPTION: The main Chronometrist buffer, with the enabled extensions [[#time-goals][chronometrist-goal]] ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).
@@ -61,6 +64,9 @@ Chronometrist and Org time tracking seem to be equivalent in terms of capabiliti
 + Chronometrist data is just s-expressions (plists), and may be easier to parse than a complex text format with numerous use-cases.
 
 ** Common Lisp port
+:PROPERTIES:
+:CUSTOM_ID: common-lisp-port
+:END:
 In March 2022, work began on the long-awaited Common Lisp port of Chronometrist, which aims to create -
 1. a greater variety of backends (e.g. SQLite)
 2. a common reusable library for frontends to use,
@@ -102,6 +108,9 @@ The Org literate program can also be loaded directly using the [[https://github.
 [fn:2] the literate source is also included in MELPA installs, although not loaded through =literate-elisp-load= by default, since doing so would interfere with automatic generation of autoloads.
 
 ** Source code overview
+:PROPERTIES:
+:CUSTOM_ID: source-code-overview
+:END:
 At its most basic, we read data from a [[file:elisp/chronometrist.org::#program-backend][backend]] and [[file:elisp/chronometrist.org::#program-frontend-chronometrist][display it]] as a [[elisp:(find-library "tabulated-list")][=tabulated-list-mode=]] buffer.
 
 The plist and plist-group backends (collectively known as the s-expression backends) =read= a text file containing s-expressions into a [[file:elisp/chronometrist.org::#program-data-structures][hash table]], and query that. When the file is changed—whether by the program or the user—they [[file:elisp/chronometrist.org::refresh-file][update the hash table]] and the [[file:elisp/chronometrist.org::#program-frontend-chronometrist-refresh][buffer]]. The s-expression backends also make use of a [[file:elisp/chronometrist.org::#program-pretty-printer][plist pretty-printer]] of their own.
@@ -212,6 +221,9 @@ Run =M-x chronometrist-statistics= (or =chronometrist= with a prefix argument of
 Press =b= to look at past time ranges, and =f= for future ones.
 
 ** chronometrist-details
+:PROPERTIES:
+:CUSTOM_ID: chronometrist-details
+:END:
 
 ** common commands
 :PROPERTIES:
@@ -289,6 +301,9 @@ If you want it to be loaded with =literate-elisp-load= on Emacs startup, add the
 To exit the prompt, press the key it indicates for quitting - you can then edit the resulting key-values by hand if required. Press =C-c C-c= to accept the key-values, or =C-c C-k= to cancel.
 
 ** How to skip running hooks/attaching tags and key values
+:PROPERTIES:
+:CUSTOM_ID: how-to-skip-running-hooks/attaching-tags-and-key-values
+:END:
 Use =M-RET= (=chronometrist-toggle-task-no-hooks=) to clock in/out.
 
 ** How to open certain files when you start a task
@@ -390,6 +405,9 @@ Or use =vertico-multiform= to disable sorting for only specific commands -
 #+END_SRC
 
 * User's reference
+:PROPERTIES:
+:CUSTOM_ID: users-reference
+:END:
 All variables intended for user customization are listed here. They serve as the public API for this project for the purpose of semantic versioning. Any changes to these which require a user to modify their configuration are considered breaking changes.
 
 1. =chronometrist-file=
@@ -417,6 +435,9 @@ Hooks
 9. =chronometrist-timer-hook=
 
 * Local variables                                                  :noexport:
+:PROPERTIES:
+:CUSTOM_ID: local-variables
+:END:
 # Local Variables:
 # my-org-src-default-lang: "emacs-lisp"
 # End:
