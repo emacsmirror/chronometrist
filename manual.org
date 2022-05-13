@@ -22,21 +22,17 @@ Chronometrist is a friendly and powerful personal time tracker and analyzer. It 
 #+CAPTION: The main Chronometrist buffer, with the enabled extensions [[#time-goals][chronometrist-goal]] ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).
 [[file:doc/2022-02-20 13-26-53.png]]
 
-** Benefits
+** Characteristics
 :PROPERTIES:
-:CUSTOM_ID: benefits
+:CUSTOM_ID: characteristics
 :END:
-1. Extremely simple and efficient to use
-2. Displays useful information about your time usage (including fancy graphs with the =chronometrist-spark= extension)
-3. Support for both mouse and keyboard
-4. Human errors in tracking can be easily fixed by editing a plain text file
-5. Hooks to integrate time tracking into your workflow
-
-** Limitations
-:PROPERTIES:
-:CUSTOM_ID: limitations
-:END:
-1. No support for concurrent tasks.
+1. Made for personal use - by default, your data is stored on your machine and is only accessible to you
+2. Extremely simple and efficient to use
+3. Displays useful information about your time usage (including fancy graphs with the =chronometrist-spark= extension)
+4. Support for both mouse and keyboard
+5. Human errors in tracking can be easily fixed by editing a plain text file
+6. Hooks to integrate time tracking into your workflow
+7. No support for concurrent tasks (planned)
 
 ** Comparisons
 :PROPERTIES:
