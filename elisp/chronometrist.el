@@ -3172,13 +3172,13 @@ If ARG is a numeric argument, go forward that many times."
   :group 'chronometrist)
 ;; details:1 ends here
 
-;; [[file:chronometrist.org::*buffer-name-base][buffer-name-base:1]]
+;; [[file:chronometrist.org::#frontend-details-buffer-name-base][buffer-name-base:1]]
 (defcustom chronometrist-details-buffer-name-base "chronometrist-details"
   "Name of buffer created by `chronometrist-details'."
   :type 'string)
 ;; buffer-name-base:1 ends here
 
-;; [[file:chronometrist.org::*buffer-name][buffer-name:1]]
+;; [[file:chronometrist.org::#frontend-details-buffer-name][buffer-name:1]]
 (defun chronometrist-details-buffer-name (&optional suffix)
   "Return buffer name based on `chronometrist-details-buffer-name-base' and SUFFIX."
   (if suffix
@@ -3186,7 +3186,7 @@ If ARG is a numeric argument, go forward that many times."
     (format "*%s*" chronometrist-details-buffer-name-base)))
 ;; buffer-name:1 ends here
 
-;; [[file:chronometrist.org::*display-tags][display-tags:1]]
+;; [[file:chronometrist.org::#frontend-details-display-tags][display-tags:1]]
 (defcustom chronometrist-details-display-tags "%s"
   "How to display tags in `chronometrist-details' buffers.
 Value can be
@@ -3199,7 +3199,7 @@ To disable display of tags, customize `chronometrist-details-schema'."
   :type '(choice nil string function))
 ;; display-tags:1 ends here
 
-;; [[file:chronometrist.org::*display-key-values][display-key-values:1]]
+;; [[file:chronometrist.org::#frontend-details-display-key-values][display-key-values:1]]
 (defcustom chronometrist-details-display-key-values "%s"
   "How to display tags in `chronometrist-details' buffers.
 Value can be
@@ -3287,6 +3287,8 @@ using `chronometrist-details-schema-transformers'.")
     (define-key map (kbd "r") #'chronometrist-report)
     (define-key map (kbd "l") #'chronometrist-open-log)
     (define-key map (kbd "G") #'chronometrist-reset)
+    (define-key map (kbd "n") #'chronometrist-details-next-range)
+    (define-key map (kbd "p") #'chronometrist-details-previous-range)
     map))
 ;; map:1 ends here
 
@@ -3339,8 +3341,11 @@ BUFFER-OR-NAME must be an existing buffer."
 (defvar chronometrist-details-range nil
   "Time range for intervals displayed by `chronometrist-details'.
 Values can be one of -
+
 nil - no range. Display all intervals for today.
-An ISO date string - display intervals for this date.
+
+An ISO date string, e.g. \"2022-12-31\" - display intervals for this date.
+
 A cons cell in the form (BEGIN . END), where BEGIN and END are
 ISO date strings (inclusive) or date-time strings (\"BEGIN\"
 inclusive, \"END\" exclusive) - display intervals in this
@@ -3451,6 +3456,40 @@ TABLE must be a hash table as returned by
       (setq-local chronometrist-details-range new-value)
       (tabulated-list-revert))))
 ;; set-range:1 ends here
+
+;; [[file:chronometrist.org::*previous-range][previous-range:1]]
+(defun chronometrist-details-previous-range (prefix)
+  "Scroll backward through data in a `chronometrist-details' buffer.
+With numeric PREFIX, scroll backward PREFIX ranges."
+  (interactive "P")
+  (let ((arg (or prefix 1)))
+    (chronometrist-details-next-range (- arg))))
+;; previous-range:1 ends here
+
+;; [[file:chronometrist.org::*next-range][next-range:1]]
+(defun chronometrist-details-next-range (prefix)
+  "Scroll forward through data in a `chronometrist-details' buffer.
+With numeric PREFIX, scroll forward PREFIX ranges."
+  (interactive "P")
+  (let* ((arg         (or prefix 1))
+         (date-today  (chronometrist-date-ts))
+         (target-date (pcase chronometrist-details-range
+                        ('nil
+                         (ts-adjust 'day arg date-today))
+                        ((pred chronometrist-iso-date-p)
+                         (ts-adjust 'day arg (chronometrist-iso-to-ts chronometrist-details-range)))
+                        ;; ((pred chronometrist-pp-pair-p)
+                        ;;  (let* ((old-start-ts   (chronometrist-iso-to-ts (first chronometrist-details-range)))
+                        ;;         (old-end-ts     (chronometrist-iso-to-ts (rest chronometrist-details-range)))
+                        ;;         (range-duration (ts-diff old-end-ts old-start-ts))
+                        ;;         (new-start-ts   ()))
+                        ;;    ()))
+                        )))
+    (if (ts<= target-date date-today)
+        (setq chronometrist-details-range (chronometrist-date-iso target-date))
+      (message "chronometrist-details: no more data."))
+    (revert-buffer)))
+;; next-range:1 ends here
 
 ;; [[file:chronometrist.org::*filter][filter:1]]
 (defvar chronometrist-details-filter nil

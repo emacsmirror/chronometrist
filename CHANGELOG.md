@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 1. `chronometrist-third`, an extension to add support for the [Third Time](https://www.lesswrong.com/posts/RWu8eZqbwgB9zaerh/third-time-a-better-way-to-work) system.
 2. New custom variable `chronometrist-key-value-preset-alist`, to define completion suggestions in advance.
 3. New custom variable `chronometrist-key-value-use-database-history`, to control whether database history is used for key-value suggestions.
+4. New commands `chronometrist-details-next-range` and `chronometrist-details-previous-range` to scroll through data in `chronometrist-details` buffers.
 
 ## [0.10.0] - 2022-02-15
 ### Changed

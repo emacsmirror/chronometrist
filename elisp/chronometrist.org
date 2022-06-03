@@ -4344,6 +4344,9 @@ If ARG is a numeric argument, go forward that many times."
 #+END_SRC
 
 **** buffer-name-base                                    :custom:variable:
+:PROPERTIES:
+:CUSTOM_ID: frontend-details-buffer-name-base
+:END:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-details-buffer-name-base "chronometrist-details"
   "Name of buffer created by `chronometrist-details'."
@@ -4352,6 +4355,9 @@ If ARG is a numeric argument, go forward that many times."
 #+END_SRC
 
 **** buffer-name                                                  :reader:
+:PROPERTIES:
+:CUSTOM_ID: frontend-details-buffer-name
+:END:
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-details-buffer-name (&optional suffix)
   "Return buffer name based on `chronometrist-details-buffer-name-base' and SUFFIX."
@@ -4361,7 +4367,11 @@ If ARG is a numeric argument, go forward that many times."
 
 #+END_SRC
 
-**** display-tags                                        :custom:variable:
+**** controlling the output
+***** display-tags                                      :custom:variable:
+:PROPERTIES:
+:CUSTOM_ID: frontend-details-display-tags
+:END:
 If the value of this variable is a function and the string it returns contains a newline, the results may be undesirable...but hardly unrecoverable, so try it and see, if you wish.
 
 #+BEGIN_SRC emacs-lisp
@@ -4377,7 +4387,10 @@ To disable display of tags, customize `chronometrist-details-schema'."
   :type '(choice nil string function))
 #+END_SRC
 
-**** display-key-values                                  :custom:variable:
+***** display-key-values                                :custom:variable:
+:PROPERTIES:
+:CUSTOM_ID: frontend-details-display-key-values
+:END:
 If the value of this variable is a function and the string it returns contains a newline, the results may be undesirable...but hardly unrecoverable, so try it and see, if you wish.
 
 #+BEGIN_SRC emacs-lisp
@@ -4394,7 +4407,7 @@ To disable display of key-values, set this to nil and customize
   :type '(choice nil string function))
 #+END_SRC
 
-**** time-format-string                                  :custom:variable:
+***** time-format-string                                :custom:variable:
 #+BEGIN_SRC emacs-lisp
 (defcustom chronometrist-details-time-format-string "%H:%M"
   "String specifying time format in `chronometrist-details' buffers.
@@ -4402,7 +4415,7 @@ See `format-time-string'."
   :type 'string)
 #+END_SRC
 
-**** FIXME schema                                        :custom:variable:
+***** FIXME schema                                      :custom:variable:
 This was originally called =chronometrist-details-table-format=, but "schema" is both shorter and a term I'm more familiar with.
 
 1. Index column does not sort correctly with 10 or more rows - see =tabulated-list-format=
@@ -4422,7 +4435,7 @@ See `tabulated-list-format'."
   :type '(vector))
 #+END_SRC
 
-**** schema-transformers                              :extension:variable:
+***** schema-transformers                            :extension:variable:
 #+BEGIN_SRC emacs-lisp
 (defvar chronometrist-details-schema-transformers nil
   "List of functions to transform `chronometrist-details-schema' (which see).
@@ -4497,8 +4510,9 @@ using `chronometrist-details-schema-transformers'.")
     (define-key map (kbd "r") #'chronometrist-report)
     (define-key map (kbd "l") #'chronometrist-open-log)
     (define-key map (kbd "G") #'chronometrist-reset)
+    (define-key map (kbd "n") #'chronometrist-details-next-range)
+    (define-key map (kbd "p") #'chronometrist-details-previous-range)
     map))
-
 #+END_SRC
 
 **** chronometrist-details-menu                                     :menu:
@@ -4556,8 +4570,11 @@ BUFFER-OR-NAME must be an existing buffer."
 (defvar chronometrist-details-range nil
   "Time range for intervals displayed by `chronometrist-details'.
 Values can be one of -
+
 nil - no range. Display all intervals for today.
-An ISO date string - display intervals for this date.
+
+An ISO date string, e.g. \"2022-12-31\" - display intervals for this date.
+
 A cons cell in the form (BEGIN . END), where BEGIN and END are
 ISO date strings (inclusive) or date-time strings (\"BEGIN\"
 inclusive, \"END\" exclusive) - display intervals in this
@@ -4675,6 +4692,42 @@ TABLE must be a hash table as returned by
     (with-current-buffer buffer-name
       (setq-local chronometrist-details-range new-value)
       (tabulated-list-revert))))
+#+END_SRC
+
+**** previous-range                                       :command:writer:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details-previous-range (prefix)
+  "Scroll backward through data in a `chronometrist-details' buffer.
+With numeric PREFIX, scroll backward PREFIX ranges."
+  (interactive "P")
+  (let ((arg (or prefix 1)))
+    (chronometrist-details-next-range (- arg))))
+#+END_SRC
+
+**** next-range                                           :command:writer:
+#+BEGIN_SRC emacs-lisp
+(defun chronometrist-details-next-range (prefix)
+  "Scroll forward through data in a `chronometrist-details' buffer.
+With numeric PREFIX, scroll forward PREFIX ranges."
+  (interactive "P")
+  (let* ((arg         (or prefix 1))
+         (date-today  (chronometrist-date-ts))
+         (target-date (pcase chronometrist-details-range
+                        ('nil
+                         (ts-adjust 'day arg date-today))
+                        ((pred chronometrist-iso-date-p)
+                         (ts-adjust 'day arg (chronometrist-iso-to-ts chronometrist-details-range)))
+                        ;; ((pred chronometrist-pp-pair-p)
+                        ;;  (let* ((old-start-ts   (chronometrist-iso-to-ts (first chronometrist-details-range)))
+                        ;;         (old-end-ts     (chronometrist-iso-to-ts (rest chronometrist-details-range)))
+                        ;;         (range-duration (ts-diff old-end-ts old-start-ts))
+                        ;;         (new-start-ts   ()))
+                        ;;    ()))
+                        )))
+    (if (ts<= target-date date-today)
+        (setq chronometrist-details-range (chronometrist-date-iso target-date))
+      (message "chronometrist-details: no more data."))
+    (revert-buffer)))
 #+END_SRC
 
 **** filter                                                     :variable:
