@@ -3354,13 +3354,14 @@ range.")
 ;; range:1 ends here
 
 ;; [[file:chronometrist.org::*iso-date-p][iso-date-p:1]]
-(defun chronometrist-iso-date-p (string)
-  "Return non-nil if STRING is a date in the ISO-8601 format."
-  (string-match-p
-   (rx (and string-start
-            (>= 1 num) "-" (= 2 num) "-" (= 2 num)
-            string-end))
-   string))
+(defun chronometrist-iso-date-p (object)
+  "Return non-nil if OBJECT is a date in the ISO-8601 format."
+  (when (stringp object)
+    (string-match-p
+     (rx (and string-start
+              (>= 1 num) "-" (= 2 num) "-" (= 2 num)
+              string-end))
+     object)))
 ;; iso-date-p:1 ends here
 
 ;; [[file:chronometrist.org::*intervals-for-range][intervals-for-range:1]]
@@ -3472,22 +3473,27 @@ With numeric PREFIX, scroll backward PREFIX ranges."
 With numeric PREFIX, scroll forward PREFIX ranges."
   (interactive "P")
   (let* ((arg         (or prefix 1))
-         (date-today  (chronometrist-date-ts))
-         (target-date (pcase chronometrist-details-range
-                        ('nil
-                         (ts-adjust 'day arg date-today))
-                        ((pred chronometrist-iso-date-p)
-                         (ts-adjust 'day arg (chronometrist-iso-to-ts chronometrist-details-range)))
-                        ;; ((pred chronometrist-pp-pair-p)
-                        ;;  (let* ((old-start-ts   (chronometrist-iso-to-ts (first chronometrist-details-range)))
-                        ;;         (old-end-ts     (chronometrist-iso-to-ts (rest chronometrist-details-range)))
-                        ;;         (range-duration (ts-diff old-end-ts old-start-ts))
-                        ;;         (new-start-ts   ()))
-                        ;;    ()))
-                        )))
-    (if (ts<= target-date date-today)
-        (setq chronometrist-details-range (chronometrist-date-iso target-date))
-      (message "chronometrist-details: no more data."))
+         (date-today  (chronometrist-date-ts)))
+    (pcase chronometrist-details-range
+      ((or 'nil (pred chronometrist-iso-date-p))
+       (let* ((base-date   (if (null chronometrist-details-range)
+                               date-today
+                             (chronometrist-iso-to-ts chronometrist-details-range)))
+              (target-date (ts-adjust 'day arg base-date)))
+         (if (ts<= target-date date-today)
+             (setq chronometrist-details-range (chronometrist-date-iso target-date))
+           (message "chronometrist-details: no more data."))))
+      ((pred chronometrist-pp-pair-p)
+       (let* ((old-start-ts   (chronometrist-iso-to-ts (first chronometrist-details-range)))
+              (old-end-ts     (chronometrist-iso-to-ts (rest chronometrist-details-range)))
+              (range-duration (ts-diff old-start-ts old-end-ts))
+              (new-start-ts   (ts-adjust 'second range-duration
+                                         old-start-ts))
+              (new-end-ts     (ts-adjust 'second range-duration
+                                         old-end-ts)))
+         (setq chronometrist-details-range
+               (cons (chronometrist-iso-to-ts new-start-ts)
+                     (chronometrist-iso-to-ts new-end-ts))))))
     (revert-buffer)))
 ;; next-range:1 ends here
 
