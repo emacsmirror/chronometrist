@@ -348,7 +348,7 @@ If REPLACE is non-nil, replace the last interval with PLIST."
          (car it))))
 ;; ht-last:1 ends here
 
-;; [[file:chronometrist.org::#program-data-structures-ht-subset][ht-subset:1]]
+;; [[file:chronometrist.org::*ht-subset][ht-subset:1]]
 (defun chronometrist-ht-subset (start end hash-table)
   "Return a subset of HASH-TABLE.
 The subset will contain values between dates START and END (both
@@ -1024,7 +1024,7 @@ hash table values must be in chronological order.")
   "Return number of records in BACKEND.")
 ;; count-records:1 ends here
 
-;; [[file:chronometrist.org::#file-backend-mixin][file-backend-mixin:1]]
+;; [[file:chronometrist.org::*file-backend-mixin][file-backend-mixin:1]]
 (defclass chronometrist-file-backend-mixin ()
   ((path :initform nil
     :initarg :path
@@ -1337,15 +1337,14 @@ unchanged."
 ;; remove-from-task-list:1 ends here
 
 ;; [[file:chronometrist.org::*on-change][on-change:1]]
-(cl-defmethod chronometrist-on-change ((backend chronometrist-elisp-sexp-backend) fs-event)
+(cl-defmethod chronometrist-on-change
+  ((backend chronometrist-elisp-sexp-backend) fs-event)
   "Function called when BACKEND file is changed.
 This may happen within Chronometrist (through the backend
 protocol) or outside it (e.g. a user editing the backend file).
 
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
-  (with-slots (file hash-table file-watch
-                    rest-start rest-end rest-hash
-                    file-length last-hash) backend
+  (with-slots (file rest-start rest-end rest-hash file-length last-hash) backend
     (-let* (((_ action _ _) fs-event)
             (file-state-bound-p (and rest-start rest-end rest-hash
                                      file-length last-hash))
@@ -1356,7 +1355,8 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
       (chronometrist-debug-message "[Method] on-change: file change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
-      (cond ((or reset-watch-p
+      (cond ((eq action 'stopped) nil)
+            ((or reset-watch-p
                  (not file-state-bound-p) ;; why?
                  (eq change t))
              (chronometrist-reset-backend backend))
@@ -1542,7 +1542,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
            (setf (gethash date hash-table) it)))))
 ;; on-remove:1 ends here
 
-;; [[file:chronometrist.org::#program-backend-plist-latest-record][latest-record:1]]
+;; [[file:chronometrist.org::*latest-record][latest-record:1]]
 (cl-defmethod chronometrist-latest-record ((backend chronometrist-plist-backend))
   (chronometrist-backend-run-assertions backend)
   (chronometrist-sexp-in-file (chronometrist-backend-file backend)
@@ -1665,7 +1665,7 @@ This is meant to be run in `chronometrist-file' when using an s-expression backe
         t))))
 ;; insert:1 ends here
 
-;; [[file:chronometrist.org::#program-data-structures-plists-split-p][plists-split-p:1]]
+;; [[file:chronometrist.org::*plists-split-p][plists-split-p:1]]
 (defun chronometrist-plists-split-p (old-plist new-plist)
   "Return t if OLD-PLIST and NEW-PLIST are split plists.
 Split plists means the :stop time of old-plist must be the same as
@@ -2336,7 +2336,7 @@ task. N must be a positive integer."
     (chronometrist-task-at-point)))
 ;; goto-nth-task:1 ends here
 
-;; [[file:chronometrist.org::#program-frontend-chronometrist-refresh][refresh:1]]
+;; [[file:chronometrist.org::*refresh][refresh:1]]
 (defun chronometrist-refresh (&optional _ignore-auto _noconfirm)
   "Refresh the `chronometrist' buffer, without re-reading `chronometrist-file'.
 The optional arguments _IGNORE-AUTO and _NOCONFIRM are ignored,
@@ -2611,7 +2611,7 @@ Has no effect if a task is active."
       (message "Nothing to discard - use this when clocked in."))))
 ;; discard-active:1 ends here
 
-;; [[file:chronometrist.org::#program-frontend-chronometrist-command][chronometrist:1]]
+;; [[file:chronometrist.org::*chronometrist][chronometrist:1]]
 ;;;###autoload
 (defun chronometrist (&optional arg)
   "Display the user's tasks and the time spent on them today.
@@ -2845,7 +2845,7 @@ If FIRSTONLY is non-nil, insert only the first keybinding found."
   (chronometrist-setup-file-watch))
 ;; report-mode:1 ends here
 
-;; [[file:chronometrist.org::#program-frontend-report-command][chronometrist-report:1]]
+;; [[file:chronometrist.org::*chronometrist-report][chronometrist-report:1]]
 ;;;###autoload
 (defun chronometrist-report (&optional keep-date)
   "Display a weekly report of the data in `chronometrist-file'.
@@ -3096,7 +3096,7 @@ value of `revert-buffer-function'."
   (chronometrist-setup-file-watch))
 ;; statistics-mode:1 ends here
 
-;; [[file:chronometrist.org::#program-frontend-statistics-command][chronometrist-statistics:1]]
+;; [[file:chronometrist.org::*chronometrist-statistics][chronometrist-statistics:1]]
 ;;;###autoload
 (defun chronometrist-statistics (&optional preserve-state)
   "Display statistics for Chronometrist data.
@@ -3172,13 +3172,13 @@ If ARG is a numeric argument, go forward that many times."
   :group 'chronometrist)
 ;; details:1 ends here
 
-;; [[file:chronometrist.org::#frontend-details-buffer-name-base][buffer-name-base:1]]
+;; [[file:chronometrist.org::*buffer-name-base][buffer-name-base:1]]
 (defcustom chronometrist-details-buffer-name-base "chronometrist-details"
   "Name of buffer created by `chronometrist-details'."
   :type 'string)
 ;; buffer-name-base:1 ends here
 
-;; [[file:chronometrist.org::#frontend-details-buffer-name][buffer-name:1]]
+;; [[file:chronometrist.org::*buffer-name][buffer-name:1]]
 (defun chronometrist-details-buffer-name (&optional suffix)
   "Return buffer name based on `chronometrist-details-buffer-name-base' and SUFFIX."
   (if suffix
@@ -3186,7 +3186,7 @@ If ARG is a numeric argument, go forward that many times."
     (format "*%s*" chronometrist-details-buffer-name-base)))
 ;; buffer-name:1 ends here
 
-;; [[file:chronometrist.org::#frontend-details-display-tags][display-tags:1]]
+;; [[file:chronometrist.org::*display-tags][display-tags:1]]
 (defcustom chronometrist-details-display-tags "%s"
   "How to display tags in `chronometrist-details' buffers.
 Value can be
@@ -3199,7 +3199,7 @@ To disable display of tags, customize `chronometrist-details-schema'."
   :type '(choice nil string function))
 ;; display-tags:1 ends here
 
-;; [[file:chronometrist.org::#frontend-details-display-key-values][display-key-values:1]]
+;; [[file:chronometrist.org::*display-key-values][display-key-values:1]]
 (defcustom chronometrist-details-display-key-values "%s"
   "How to display tags in `chronometrist-details' buffers.
 Value can be

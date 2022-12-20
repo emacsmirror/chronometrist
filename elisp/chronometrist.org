@@ -2147,15 +2147,14 @@ unchanged."
 
 **** on-change                                             :writer:method:
 #+BEGIN_SRC emacs-lisp
-(cl-defmethod chronometrist-on-change ((backend chronometrist-elisp-sexp-backend) fs-event)
+(cl-defmethod chronometrist-on-change
+  ((backend chronometrist-elisp-sexp-backend) fs-event)
   "Function called when BACKEND file is changed.
 This may happen within Chronometrist (through the backend
 protocol) or outside it (e.g. a user editing the backend file).
 
 FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-watch')."
-  (with-slots (file hash-table file-watch
-                    rest-start rest-end rest-hash
-                    file-length last-hash) backend
+  (with-slots (file rest-start rest-end rest-hash file-length last-hash) backend
     (-let* (((_ action _ _) fs-event)
             (file-state-bound-p (and rest-start rest-end rest-hash
                                      file-length last-hash))
@@ -2166,7 +2165,8 @@ FS-EVENT is the event passed by the `filenotify' library (see `file-notify-add-w
       (chronometrist-debug-message "[Method] on-change: file change type %s" change)
       ;; If only the last plist was changed, update hash table and
       ;; task list, otherwise clear and repopulate hash table.
-      (cond ((or reset-watch-p
+      (cond ((eq action 'stopped) nil)
+            ((or reset-watch-p
                  (not file-state-bound-p) ;; why?
                  (eq change t))
              (chronometrist-reset-backend backend))
