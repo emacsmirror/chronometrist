@@ -696,7 +696,8 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
   (with-temp-buffer
     (lisp-mode-variables nil)
     (set-syntax-table emacs-lisp-mode-syntax-table)
-    (let ((print-quoted t))
+    (let ((print-quoted t)
+          (print-length nil))
       (prin1 object (current-buffer)))
     (goto-char (point-min))
     (chronometrist-pp-buffer)
