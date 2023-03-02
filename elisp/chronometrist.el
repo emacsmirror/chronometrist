@@ -2378,7 +2378,6 @@ refresh the `chronometrist' buffer."
 (defun chronometrist-in (task &optional _prefix)
   "Clock in to TASK; record current time in `chronometrist-file'.
 TASK is the name of the task, a string. PREFIX is ignored."
-  (interactive "P")
   (let ((plist `(:name ,task :start ,(chronometrist-format-time-iso8601))))
     (chronometrist-insert (chronometrist-active-backend) plist)
     (chronometrist-refresh)))
@@ -2388,7 +2387,6 @@ TASK is the name of the task, a string. PREFIX is ignored."
 (defun chronometrist-out (&optional _prefix)
   "Record current moment as stop time to last s-exp in `chronometrist-file'.
 PREFIX is ignored."
-  (interactive "P")
   (let* ((latest (chronometrist-latest-record (chronometrist-active-backend)))
          (plist  (plist-put latest :stop (chronometrist-format-time-iso8601))))
     (chronometrist-replace-last (chronometrist-active-backend) plist)))
