@@ -17,10 +17,14 @@
 :PROPERTIES:
 :CUSTOM_ID: explanation
 :END:
-Chronometrist is a friendly and powerful personal time tracker and analyzer. It has frontends for Emacs and [[https://mcclim.common-lisp.dev/][CLIM]].
+Chronometrist is a friendly and powerful personal time tracker and analyzer.
+
+Possible uses for Chronometrist include tracking work, exercise, and sleep. Possible reasons for tracking time include introspection, prioritization of time, and aiding memory.
 
 #+CAPTION: The main Chronometrist buffer, with the enabled extensions [[#time-goals][chronometrist-goal]] ("Targets" column + alerts) and chronometrist-spark ("Graph" column displaying the activity for the past 4 weeks).
 [[file:doc/2022-02-20 13-26-53.png]]
+
+This is the Emacs Lisp implementation. There's also a [[https://codeberg.org/contrapunctus/chronometrist-cl][Common Lisp implementation]], with a [[https://mcclim.common-lisp.dev][CLIM]] frontend, in early stages of development.
 
 ** Characteristics
 :PROPERTIES:
