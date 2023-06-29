@@ -164,8 +164,8 @@ break time is up."
 
 ;; [[file:chronometrist-third.org::*third-minor-mode][third-minor-mode:1]]
 ;;;###autoload
-(define-minor-mode chronometrist-third-minor-mode
-  nil nil nil nil
+(define-minor-mode chronometrist-third-minor-mode nil
+  :init-value nil
   (cond (chronometrist-third-minor-mode
          (add-hook 'chronometrist-after-in-functions #'chronometrist-third-clock-in)
          (add-hook 'chronometrist-after-out-functions #'chronometrist-third-clock-out))

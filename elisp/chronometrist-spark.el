@@ -95,8 +95,8 @@ SCHEMA should be a vector as specified by `tabulated-list-format'."
         chronometrist-schema-transformers
         (remove #'chronometrist-spark-schema-transformer chronometrist-schema-transformers)))
 
-(define-minor-mode chronometrist-spark-minor-mode
-  nil nil nil nil
+(define-minor-mode chronometrist-spark-minor-mode nil
+  :init-value nil
   ;; when being enabled/disabled, `chronometrist-spark-minor-mode' will already be t/nil here
   (if chronometrist-spark-minor-mode (chronometrist-spark-setup) (chronometrist-spark-teardown)))
 
