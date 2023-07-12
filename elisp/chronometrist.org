@@ -385,22 +385,13 @@ Use =org-babel= (=org-babel-tangle= / =org-babel-tangle-file=), /not/ =literate-
 ** Library headers and commentary
 Library headers are necessary once more, since we're back to tangling instead of =literate-elisp-load=.
 
-Once, for sake of neatness, I made the value of =Package-Requires:= multiline -
-#+BEGIN_SRC emacs-lisp :tangle no :load no
-;; Package-Requires: ((emacs "25.1")
-;;                    (dash "2.16.0")
-;;                    (seq "2.20")
-;;                    (ts "0.2"))
-#+END_SRC
-But I discovered that if I do that, =package-lint= says - =error: Couldn't parse "Package-Requires" header: End of file during parsing=.
-
 #+BEGIN_SRC emacs-lisp :comments no
 ;;; chronometrist.el --- Friendly and powerful personal time tracker and analyzer -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabjab.de>
 ;; Keywords: calendar
-;; Homepage: https://tildegit.org/contrapunctus/chronometrist
+;; Homepage: https://codeberg.org/contrapunctus/chronometrist
 ;; Package-Requires: ((emacs "27.1") (dash "2.16.0") (seq "2.20") (ts "0.2"))
 ;; Version: 0.10.0
 
