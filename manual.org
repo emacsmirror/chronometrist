@@ -183,14 +183,19 @@ fiete and wu-lee for testing and bug reports
 :PROPERTIES:
 :CUSTOM_ID: install-from-git
 :END:
-You can get =chronometrist= from https://tildegit.org/contrapunctus/chronometrist or https://codeberg.org/contrapunctus/chronometrist
+1. Ensure you have =git=, and Emacs 27.1 or newer
 
-=chronometrist= requires
-+ Emacs v25 or higher
-+ [[https://github.com/magnars/dash.el][dash.el]]
-+ [[https://github.com/alphapapa/ts.el][ts.el]]
+2. In a terminal, run =git clone https://codeberg.org/contrapunctus/chronometrist=
 
-Add the ="elisp/"= subdirectory to your load-path, and =(require 'chronometrist)=.
+3. Install the dependencies -
+   1. [[https://github.com/magnars/dash.el][dash.el]]
+   2. [[https://github.com/alphapapa/ts.el][ts.el]]
+
+4. Add the ="elisp/"= subdirectory to your =load-path=
+
+   =(add-to-list 'load-path "path/to/chronometrist/elisp/")=
+
+5. Type =M-: (require 'chronometrist) RET=.
 
 ** chronometrist
 :PROPERTIES:
