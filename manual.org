@@ -130,7 +130,7 @@ Feedback and MRs are very welcome. 🙂
 + [[file:TODO.org]] has a long list of tasks
 + [[file:elisp/chronometrist.org]] contains all developer-oriented documentation
 
-If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [[https://conversations.im/j/emacs@salas.suchat.org][xmpp:emacs@salas.suchat.org?join]] ([[https://inverse.chat/#converse/room?jid=emacs@salas.suchat.org][web chat]])
+If you have tried using Chronometrist, I'd love to hear your experiences! Get in touch with the author and other Emacs users in the Emacs channel on the Jabber network - [[https://xmpp.link/#emacs@conference.conversations.im][xmpp:emacs@conference.conversations.im?join]] ([[https://inverse.chat/#converse/room?jid=emacs@conference.conversations.im][web chat]])
 
 (For help in getting started with Jabber, [[https://xmpp.org/getting-started/][click here]])
 
