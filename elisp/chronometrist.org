@@ -1804,8 +1804,8 @@ These can be implemented in terms of the minimal protocol above.
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-backend-modified-p ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (buffer-modified-p (or (get-file-buffer file)
-                           (find-file-noselect file)))))
+    (let ((query-about-changed-file nil))
+      (buffer-modified-p (find-file-noselect file)))))
 #+END_SRC
 
 **** on-file-path-change                                   :writer:method:
@@ -1869,8 +1869,9 @@ These can be implemented in terms of the minimal protocol above.
 (defmacro chronometrist-sexp-in-file (file &rest body)
   "Run BODY in a buffer visiting FILE, restoring point afterwards."
   (declare (indent defun) (debug t))
-  `(with-current-buffer (or (get-file-buffer ,file)
-                            (find-file-noselect ,file))
+  `(with-current-buffer
+       (let ((query-about-changed-file nil))
+         (find-file-noselect ,file))
      (save-excursion ,@body)))
 #+END_SRC
 

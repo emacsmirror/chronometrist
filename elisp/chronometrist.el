@@ -1114,8 +1114,8 @@ hash table values must be in chronological order.")
 ;; [[file:chronometrist.org::*backend-modified-p][backend-modified-p:1]]
 (cl-defmethod chronometrist-backend-modified-p ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (buffer-modified-p (or (get-file-buffer file)
-                           (find-file-noselect file)))))
+    (let ((query-about-changed-file nil))
+      (buffer-modified-p (find-file-noselect file)))))
 ;; backend-modified-p:1 ends here
 
 ;; [[file:chronometrist.org::*on-file-path-change][on-file-path-change:1]]
@@ -1174,8 +1174,9 @@ hash table values must be in chronological order.")
 (defmacro chronometrist-sexp-in-file (file &rest body)
   "Run BODY in a buffer visiting FILE, restoring point afterwards."
   (declare (indent defun) (debug t))
-  `(with-current-buffer (or (get-file-buffer ,file)
-                            (find-file-noselect ,file))
+  `(with-current-buffer
+       (let ((query-about-changed-file nil))
+         (find-file-noselect ,file))
      (save-excursion ,@body)))
 ;; in-file:1 ends here
 
