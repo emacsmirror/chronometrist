@@ -1330,8 +1330,10 @@ IN-SUBLIST, if non-nil, means point is inside an inner list."
 #+BEGIN_SRC emacs-lisp
 (defun chronometrist-plist-pp (object &optional stream)
   "Pretty-print OBJECT and output to STREAM (see `princ')."
-  (princ (chronometrist-pp-to-string object)
-         (or stream standard-output)))
+  (let ((print-quoted t)
+        (print-length nil))
+    (princ (chronometrist-pp-to-string object)
+           (or stream standard-output))))
 #+END_SRC
 
 ** Backends
@@ -1376,7 +1378,7 @@ EIEIO object such as one returned by `make-instance'.")
 
 **** active-backend                                      :custom:variable:
 #+BEGIN_SRC emacs-lisp
-(defcustom chronometrist-active-backend :plist
+(defcustom chronometrist-active-backend :plist-group
   "The backend currently in use.
 Value must be a keyword corresponding to a key in
 `chronometrist-backends-alist'."
@@ -1802,9 +1804,8 @@ These can be implemented in terms of the minimal protocol above.
 #+BEGIN_SRC emacs-lisp
 (cl-defmethod chronometrist-backend-modified-p ((backend chronometrist-file-backend-mixin))
   (with-slots (file) backend
-    (buffer-modified-p
-     (get-buffer-create
-      (find-file-noselect file)))))
+    (buffer-modified-p (or (get-file-buffer file)
+                           (find-file-noselect file)))))
 #+END_SRC
 
 **** on-file-path-change                                   :writer:method:
@@ -1868,7 +1869,8 @@ These can be implemented in terms of the minimal protocol above.
 (defmacro chronometrist-sexp-in-file (file &rest body)
   "Run BODY in a buffer visiting FILE, restoring point afterwards."
   (declare (indent defun) (debug t))
-  `(with-current-buffer (find-file-noselect ,file)
+  `(with-current-buffer (or (get-file-buffer ,file)
+                            (find-file-noselect ,file))
      (save-excursion ,@body)))
 #+END_SRC
 
